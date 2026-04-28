@@ -6,7 +6,9 @@ This is the **template repository** — all deployable code lives here. Per-clie
 
 ## Status
 
-**Foundation only.** No app code yet — this commit lays the database schema, RLS policies, the NIST CSF 2.0 seed, the audit trigger, and the operational documentation. App code (Next.js / Supabase client / Entra SSO) is the next PR.
+**Phase 1 landed.** Next.js 14 (App Router) + Supabase SSR client + Microsoft Entra SSO + the worksheet UI ported from the original `index.html` + the legacy data import endpoint. Run locally with `npm install && npm run dev` after copying `.env.local.example` to `.env.local` and filling in the Supabase + tenant values.
+
+Phases not yet built: snapshots UI ("Lock & Label"), trend chart, realtime live view for viewers, audit log surface, PDF/PPTX exports, snapshot sharing inbox.
 
 ## Tenants
 
