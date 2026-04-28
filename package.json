@@ -1,0 +1,31 @@
+{
+  "name": "cyber-attainment-worksheet",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multi-tenant cyber framework attainment platform (NIST CSF 2.0 today; CIS / HIPAA / ISO future). Template repo deployed to one Vercel project per tenant.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.45.0",
+    "next": "14.2.15",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.0",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.0",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "14.2.15",
+    "typescript": "^5.5.4"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
