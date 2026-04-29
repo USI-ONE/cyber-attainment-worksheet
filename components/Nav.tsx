@@ -13,6 +13,8 @@ const TABS: { href: string; label: string; group: 'core' | 'planning' | 'governa
   { href: '/policy',      label: 'Security Policy',    group: 'governance' },
   { href: '/maturity',    label: 'Maturity Levels',    group: 'reporting' },
   { href: '/worksheet',   label: 'Worksheet',          group: 'core' },
+  { href: '/snapshots',   label: 'Snapshots',          group: 'reporting' },
+  { href: '/trend',       label: 'Trend',              group: 'reporting' },
 ];
 
 export default function Nav() {
