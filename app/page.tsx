@@ -41,8 +41,41 @@ export default async function Page() {
     );
   }
 
-  // Load this tenant's current scores. RLS filters to memberships server-side.
   const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Check membership before loading scores. Without a membership row, RLS will
+  // silently return no rows, but the user experience is better with an explicit
+  // "you don't have access yet" banner than a confusing empty worksheet.
+  const { data: membership } = await supabase
+    .from('memberships')
+    .select('role')
+    .eq('user_id', user?.id ?? '')
+    .eq('tenant_id', tenant.id)
+    .maybeSingle();
+
+  if (!membership) {
+    return (
+      <>
+        <Header tenant={tenant} frameworkLabel={null} userEmail={user?.email ?? null} />
+        <main className="app-main">
+          <div className="banner">
+            <strong>You&apos;re signed in as {user?.email ?? '(unknown)'}.</strong>
+            <br />
+            You don&apos;t have access to <strong>{tenant.display_name}</strong> yet.
+            Ask the administrator (the CIO) to grant you a membership for tenant
+            slug <code>{tenant.slug}</code>. Once granted, refresh this page.
+          </div>
+        </main>
+        <Footer tenant={tenant} />
+      </>
+    );
+  }
+
+  // Load current scores. RLS scopes rows to memberships, but we already
+  // confirmed membership above, so this returns the tenant's full score set.
   const { data: scoreRows, error } = await supabase
     .from('current_scores')
     .select('*')
@@ -57,10 +90,6 @@ export default async function Page() {
   for (const r of (scoreRows ?? []) as CurrentScore[]) {
     scores[r.control_id] = r;
   }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   const totalControls = fw.definition.groups.reduce(
     (acc, g) => acc + g.categories.reduce((a, c) => a + c.controls.length, 0),

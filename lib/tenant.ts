@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/server';
 import type { Tenant } from '@/lib/supabase/types';
 
 /**
@@ -8,10 +8,14 @@ import type { Tenant } from '@/lib/supabase/types';
  *  1. TENANT_SLUG env var (set per-Vercel-project; pins the deployment to one tenant).
  *  2. Hostname match against `tenants.hostname` column.
  *
- * In local dev, set TENANT_SLUG in .env.local to whichever tenant you're working on.
+ * Uses the service-role client because tenant identity is deployment metadata,
+ * not user-scoped data. RLS on the `tenants` table requires a membership, so a
+ * user signing in for the first time would otherwise be unable to load the
+ * page they just authenticated to. The service-role client is server-side only
+ * and only used to fetch the public tenant row (slug, hostname, branding).
  */
 export async function resolveTenant(host?: string): Promise<Tenant | null> {
-  const supabase = createClient();
+  const supabase = createServiceRoleClient();
   const envSlug = process.env.TENANT_SLUG?.trim();
 
   if (envSlug) {
