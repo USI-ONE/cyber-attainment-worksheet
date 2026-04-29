@@ -1,5 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import Nav from '@/components/Nav';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import { resolveTenant } from '@/lib/tenant';
 import { headers } from 'next/headers';
 
@@ -17,7 +20,6 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Resolve tenant once at the layout level so metadata + crown image are tenant-scoped.
   const host = headers().get('host') ?? undefined;
   const tenant = await resolveTenant(host);
   const logoUrl = tenant?.brand_config?.logo_url;
@@ -35,7 +37,12 @@ export default async function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&family=JetBrains+Mono:wght@500;600&display=swap"
         />
       </head>
-      <body style={rootStyle}>{children}</body>
+      <body style={rootStyle}>
+        {tenant && <Header tenant={tenant} frameworkLabel={null} userEmail={null} />}
+        {tenant && <Nav />}
+        {children}
+        {tenant && <Footer tenant={tenant} />}
+      </body>
     </html>
   );
 }

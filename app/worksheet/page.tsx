@@ -1,31 +1,19 @@
 import { headers } from 'next/headers';
+import WorksheetView from '@/components/WorksheetView';
 import { resolveTenant } from '@/lib/tenant';
 import { loadActiveFramework } from '@/lib/framework';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import type { CurrentScore } from '@/lib/supabase/types';
-import SummaryDashboard from '@/components/SummaryDashboard';
 
 export const dynamic = 'force-dynamic';
 
-export default async function Page() {
+export default async function WorksheetPage() {
   const host = headers().get('host') ?? undefined;
   const tenant = await resolveTenant(host);
-  if (!tenant) {
-    return (
-      <main className="app-main">
-        <div className="banner error">No tenant resolved.</div>
-      </main>
-    );
-  }
+  if (!tenant) return <main className="app-main"><div className="banner error">No tenant.</div></main>;
 
   const fw = await loadActiveFramework(tenant);
-  if (!fw) {
-    return (
-      <main className="app-main">
-        <div className="banner error">No active framework.</div>
-      </main>
-    );
-  }
+  if (!fw) return <main className="app-main"><div className="banner error">No framework.</div></main>;
 
   const supabase = createServiceRoleClient();
   const { data: scoreRows } = await supabase
@@ -39,7 +27,12 @@ export default async function Page() {
 
   return (
     <main className="app-main">
-      <SummaryDashboard definition={fw.definition} scores={scores} />
+      <WorksheetView
+        tenantId={tenant.id}
+        frameworkVersionId={fw.version.id}
+        definition={fw.definition}
+        initialScores={scores}
+      />
     </main>
   );
 }

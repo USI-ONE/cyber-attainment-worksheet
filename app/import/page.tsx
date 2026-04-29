@@ -1,9 +1,6 @@
 import { headers } from 'next/headers';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
 import ImportClient from '@/components/ImportClient';
 import { resolveTenant } from '@/lib/tenant';
-import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,19 +16,9 @@ export default async function ImportPage() {
       </main>
     );
   }
-
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   return (
-    <>
-      <Header tenant={tenant} frameworkLabel={'Legacy Import'} userEmail={user?.email ?? null} />
-      <main className="app-main">
-        <ImportClient tenantSlug={tenant.slug} />
-      </main>
-      <Footer tenant={tenant} />
-    </>
+    <main className="app-main">
+      <ImportClient tenantSlug={tenant.slug} />
+    </main>
   );
 }
