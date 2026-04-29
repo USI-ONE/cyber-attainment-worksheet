@@ -1,11 +1,38 @@
-import Placeholder from '@/components/Placeholder';
+import { headers } from 'next/headers';
+import { resolveTenant } from '@/lib/tenant';
+import { loadActiveFramework } from '@/lib/framework';
+import { createServiceRoleClient } from '@/lib/supabase/server';
+import PrioritiesClient from '@/components/PrioritiesClient';
 
-export default function Page() {
+export const dynamic = 'force-dynamic';
+
+export default async function PrioritiesPage() {
+  const host = headers().get('host') ?? undefined;
+  const tenant = await resolveTenant(host);
+  if (!tenant) return <main className="app-main"><div className="banner error">No tenant.</div></main>;
+  const fw = await loadActiveFramework(tenant);
+
+  const supabase = createServiceRoleClient();
+  const { data } = await supabase
+    .from('priorities')
+    .select('*')
+    .eq('tenant_id', tenant.id)
+    .order('completed_at', { ascending: true, nullsFirst: true })
+    .order('priority_level', { ascending: false })
+    .order('due_date', { ascending: true, nullsFirst: false });
+
+  const controls: { id: string; outcome: string }[] = [];
+  if (fw) {
+    for (const g of fw.definition.groups) {
+      for (const cat of g.categories) {
+        for (const c of cat.controls) controls.push({ id: c.id, outcome: c.outcome });
+      }
+    }
+  }
+
   return (
-    <Placeholder
-      title="30-Day Priorities"
-      phase="Phase 2B"
-      summary="A short list of 3–5 controls to focus on for the next 30 days, each with an owner, due date, and status. Pulls from the active framework's controls; visible on the Summary Dashboard once configured."
-    />
+    <main className="app-main">
+      <PrioritiesClient initial={data ?? []} controls={controls} />
+    </main>
   );
 }
