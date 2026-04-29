@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type {
   CurrentScore,
   FrameworkDefinition,
@@ -17,8 +17,6 @@ import {
   computeOverallTotals,
   type GroupAverage,
 } from '@/lib/scoring';
-import { createClient } from '@/lib/supabase/client';
-
 type Scores = Record<string, Partial<CurrentScore>>;
 
 type Filter = 'ALL' | string;
@@ -46,8 +44,6 @@ export default function WorksheetView({
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [savingMessage, setSavingMessage] = useState<string | null>(null);
 
-  const supabase = useMemo(() => createClient(), []);
-
   const groupAverages = useMemo(
     () => computeGroupAverages(definition, scores),
     [definition, scores],
@@ -73,25 +69,27 @@ export default function WorksheetView({
 
     setSavingMessage('Saving…');
 
-    const { error } = await supabase
-      .from('current_scores')
-      .upsert(
-        {
-          tenant_id: tenantId,
-          framework_version_id: frameworkVersionId,
+    try {
+      const res = await fetch('/api/score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           control_id: controlId,
-          [field]: value,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'tenant_id,framework_version_id,control_id' },
-      );
-
-    if (error) {
-      console.error('Save failed', error);
-      setSavingMessage(`Save failed: ${error.message}`);
+          framework_version_id: frameworkVersionId,
+          field,
+          value,
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        setSavingMessage(`Save failed: ${j.error ?? 'unknown'}`);
+        setTimeout(() => setSavingMessage(null), 4000);
+      } else {
+        setSavingMessage(null);
+      }
+    } catch (e) {
+      setSavingMessage(`Save failed: ${e instanceof Error ? e.message : 'network error'}`);
       setTimeout(() => setSavingMessage(null), 4000);
-    } else {
-      setSavingMessage(null);
     }
   };
 
