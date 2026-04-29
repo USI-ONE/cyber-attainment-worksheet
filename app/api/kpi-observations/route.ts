@@ -57,8 +57,7 @@ export async function DELETE(request: NextRequest) {
     .select('id, kpi_definition_id, kpi_definitions!inner(tenant_id)')
     .eq('id', id)
     .maybeSingle();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const ownerTenant = (obs as any)?.kpi_definitions?.tenant_id;
+  const ownerTenant = (obs as { kpi_definitions?: { tenant_id?: string } } | null)?.kpi_definitions?.tenant_id;
   if (!obs || ownerTenant !== tenant.id) {
     return NextResponse.json({ error: 'observation not found for tenant' }, { status: 404 });
   }

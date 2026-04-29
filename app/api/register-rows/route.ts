@@ -42,8 +42,8 @@ export async function PATCH(request: NextRequest) {
   const { data: row } = await supabase.from('register_rows')
     .select('id, register_id, register_definitions!inner(tenant_id)')
     .eq('id', body.id).maybeSingle();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if (!row || (row as any).register_definitions?.tenant_id !== tenant.id) {
+  const ownerTenant = (row as { register_definitions?: { tenant_id?: string } } | null)?.register_definitions?.tenant_id;
+  if (!row || ownerTenant !== tenant.id) {
     return NextResponse.json({ error: 'row not in tenant' }, { status: 404 });
   }
 
@@ -65,8 +65,8 @@ export async function DELETE(request: NextRequest) {
   const { data: row } = await supabase.from('register_rows')
     .select('id, register_id, register_definitions!inner(tenant_id)')
     .eq('id', id).maybeSingle();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if (!row || (row as any).register_definitions?.tenant_id !== tenant.id) {
+  const ownerTenant = (row as { register_definitions?: { tenant_id?: string } } | null)?.register_definitions?.tenant_id;
+  if (!row || ownerTenant !== tenant.id) {
     return NextResponse.json({ error: 'row not in tenant' }, { status: 404 });
   }
   const { error } = await supabase.from('register_rows').delete().eq('id', id);
