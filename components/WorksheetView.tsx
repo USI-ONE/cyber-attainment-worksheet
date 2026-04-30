@@ -30,10 +30,12 @@ const RADAR = {
 };
 
 export default function WorksheetView({
-  tenantId,
+  tenantId: _tenantId,
   frameworkVersionId,
   definition,
   initialScores,
+  saveEndpoint,
+  extraSaveFields,
 }: {
   tenantId: string;
   frameworkVersionId: string;
@@ -41,8 +43,6 @@ export default function WorksheetView({
   initialScores: Record<string, CurrentScore>;
   saveEndpoint?: string;
   extraSaveFields?: Record<string, unknown>;
-  title?: string;
-  subtitle?: string;
 }) {
   const [scores, setScores] = useState<Scores>(initialScores);
   const [filter, setFilter] = useState<Filter>('ALL');
