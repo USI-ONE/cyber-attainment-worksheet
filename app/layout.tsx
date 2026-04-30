@@ -40,15 +40,18 @@ export default async function RootLayout({
   // dark-navy chrome rebrands without needing per-component overrides.
   // The platform default is the gold scheme; tenants can substitute
   // (e.g., USI uses Juniper #458C5E + Nebula #3B697A).
-  const rootStyle: React.CSSProperties = {};
-  if (brand.logo_url) rootStyle['--crown-image' as never] = `url("${brand.logo_url}")`;
-  if (brand.theme?.primary)        rootStyle['--gold' as never]         = brand.theme.primary;
-  if (brand.theme?.primary_light)  rootStyle['--gold-light' as never]   = brand.theme.primary_light;
-  if (brand.theme?.primary_bright) rootStyle['--gold-bright' as never]  = brand.theme.primary_bright;
-  if (brand.theme?.primary_pale)   rootStyle['--gold-pale' as never]    = brand.theme.primary_pale;
-  if (brand.theme?.primary_border) rootStyle['--gold-border' as never]  = brand.theme.primary_border;
-  if (brand.theme?.secondary)      rootStyle['--brand-secondary' as never] = brand.theme.secondary;
-  if (brand.theme?.accent)         rootStyle['--brand-accent' as never]    = brand.theme.accent;
+  // Built as Record<string, string> because React.CSSProperties does not
+  // permit arbitrary CSS-variable property assignment under strict TS.
+  const cssVars: Record<string, string> = {};
+  if (brand.logo_url) cssVars['--crown-image'] = `url("${brand.logo_url}")`;
+  if (brand.theme?.primary)        cssVars['--gold']             = brand.theme.primary;
+  if (brand.theme?.primary_light)  cssVars['--gold-light']       = brand.theme.primary_light;
+  if (brand.theme?.primary_bright) cssVars['--gold-bright']      = brand.theme.primary_bright;
+  if (brand.theme?.primary_pale)   cssVars['--gold-pale']        = brand.theme.primary_pale;
+  if (brand.theme?.primary_border) cssVars['--gold-border']      = brand.theme.primary_border;
+  if (brand.theme?.secondary)      cssVars['--brand-secondary']  = brand.theme.secondary;
+  if (brand.theme?.accent)         cssVars['--brand-accent']     = brand.theme.accent;
+  const rootStyle = cssVars as React.CSSProperties;
 
   return (
     <html lang="en">
