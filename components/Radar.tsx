@@ -13,12 +13,31 @@ export default function Radar({ avgs }: { avgs: GroupAverage[] }) {
   const N = avgs.length;
   const dense = N >= 12;
   const cx = 220, cy = 220, viewSize = 440;
-  const maxR = dense ? 150 : 130;
+  const maxR = dense ? 140 : 130;
   const pt = (i: number, value: number, max = TIER_MAX): [number, number] => {
     const angle = ((i * (360 / N)) - 90) * Math.PI / 180;
     const r = (value / max) * maxR;
     return [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
   };
+  const ptAt = (angleDeg: number, r: number): [number, number] => {
+    const a = (angleDeg - 90) * Math.PI / 180;
+    return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+  };
+
+  // Group consecutive same-parent_id categories so we can draw an outer ring with function names.
+  // Each segment captures the angular sweep its categories cover, so a function label sits at
+  // the midpoint of its categories and a thin arc spans the function's slice of the chart.
+  type Seg = { parent_id: string; startIdx: number; endIdx: number };
+  const segments: Seg[] = [];
+  if (dense) {
+    for (let i = 0; i < avgs.length; i++) {
+      const p = avgs[i].parent_id ?? avgs[i].group_id;
+      const last = segments[segments.length - 1];
+      if (last && last.parent_id === p) last.endIdx = i;
+      else segments.push({ parent_id: p, startIdx: i, endIdx: i });
+    }
+  }
+  const stepDeg = 360 / N;
   const polyPts = (key: 'pol' | 'pra' | 'gol') =>
     avgs.map((a, i) => pt(i, a[key])).map((p) => p.join(',')).join(' ');
   const ringPts = (level: number) =>
@@ -29,8 +48,38 @@ export default function Radar({ avgs }: { avgs: GroupAverage[] }) {
   const valueFontSize = dense ? 8 : 10;
   const showAxisValues = !dense;
 
+  // Outer ring showing the 6 NIST CSF functions when we're plotting categories (dense mode).
+  // Each function gets an accent-colored arc spanning its categories plus a function-code label
+  // (GV/ID/PR/DE/RS/RC) anchored at the angular midpoint. Helps the board read the radar at
+  // both levels — the polygon vertices are categories, the outer ring is the parent function.
+  const outerArcR = dense ? 168 : 0;
+  const outerLabelR = dense ? 188 : 0;
+  const arcPath = (startDeg: number, endDeg: number, r: number) => {
+    const [x1, y1] = ptAt(startDeg, r);
+    const [x2, y2] = ptAt(endDeg, r);
+    const largeArc = endDeg - startDeg > 180 ? 1 : 0;
+    return `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`;
+  };
+
   return (
     <svg className="radar-svg" viewBox={`0 0 ${viewSize} ${viewSize}`} xmlns="http://www.w3.org/2000/svg">
+      {dense && segments.map((s) => {
+        const accent = GROUP_COLORS[s.parent_id]?.accent ?? '#C9A961';
+        // Arc covers from the leading edge of the first category slice to the trailing edge of the last.
+        const startDeg = s.startIdx * stepDeg - stepDeg / 2;
+        const endDeg = s.endIdx * stepDeg + stepDeg / 2;
+        const midDeg = (startDeg + endDeg) / 2;
+        const [lx, ly] = ptAt(midDeg, outerLabelR);
+        return (
+          <g key={`fn-${s.parent_id}-${s.startIdx}`}>
+            <path d={arcPath(startDeg, endDeg, outerArcR)} fill="none" stroke={accent} strokeOpacity={0.55} strokeWidth={3} strokeLinecap="round" />
+            <text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle"
+              fill={accent} fontSize={14} fontWeight={700} fontFamily="Oswald" letterSpacing="0.1em">
+              {s.parent_id}
+            </text>
+          </g>
+        );
+      })}
       {[1, 2, 3, 4, 5].map((level) => {
         const isTarget = level === 3;
         return (
