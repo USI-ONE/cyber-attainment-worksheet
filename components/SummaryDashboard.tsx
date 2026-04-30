@@ -5,7 +5,6 @@ import type { CurrentScore, FrameworkDefinition } from '@/lib/supabase/types';
 import {
   GROUP_COLORS,
   computeGroupAverages,
-  computeCategoryAverages,
   computeOverallTotals,
   type GroupAverage,
 } from '@/lib/scoring';
@@ -21,7 +20,6 @@ export default function SummaryDashboard({
   scores: Scores;
 }) {
   const avgs = useMemo(() => computeGroupAverages(definition, scores), [definition, scores]);
-  const catAvgs = useMemo(() => computeCategoryAverages(definition, scores), [definition, scores]);
   const totals = useMemo(() => computeOverallTotals(avgs), [avgs]);
 
   return (
@@ -33,13 +31,13 @@ export default function SummaryDashboard({
           <div>
             <div className="scorecard-title">Executive Scorecard</div>
             <div className="scorecard-tag" style={{ marginTop: 4 }}>
-              Policy · Practice · Goal — radar by Category ({catAvgs.length}); table by Function (6)
+              Policy · Practice · Goal — averaged across all six NIST CSF functions
             </div>
           </div>
         </div>
         <div className="scorecard-grid">
           <div className="radar-wrap">
-            <Radar avgs={catAvgs} />
+            <Radar avgs={avgs} />
             <div className="radar-legend">
               <Legend swatch="#C9A961" label="Policy" />
               <Legend swatch="#F59E0B" label="Practice" />
