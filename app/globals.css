@@ -13,11 +13,14 @@
   --bg-border:#2A3550;
   --bg-line:#3A4660;
 
+  /* Default brand accents; tenants can override via brand_config.theme on <body> */
   --gold:#C9A961;
   --gold-light:#E8D29B;
   --gold-bright:#D9B97A;
   --gold-pale:rgba(201,169,97,0.14);
   --gold-border:rgba(201,169,97,0.42);
+  --brand-secondary:#5B7FA8;  /* fallback secondary accent */
+  --brand-accent:#A89060;     /* fallback warm tertiary accent */
 
   --white:#FFFFFF;
   --text:#E8EDF2;

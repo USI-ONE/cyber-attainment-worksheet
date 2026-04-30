@@ -11,9 +11,10 @@ import {
   GROUP_COLORS,
   PRIORITY_LABELS,
   STATUS_OPTIONS,
-  TIER_COLORS,
   TIER_LABELS,
   TIER_MAX,
+  TIER_VALUES,
+  tierColor,
   computeGroupAverages,
   computeOverallTotals,
   type GroupAverage,
@@ -38,6 +39,10 @@ export default function WorksheetView({
   frameworkVersionId: string;
   definition: FrameworkDefinition;
   initialScores: Record<string, CurrentScore>;
+  saveEndpoint?: string;
+  extraSaveFields?: Record<string, unknown>;
+  title?: string;
+  subtitle?: string;
 }) {
   const [scores, setScores] = useState<Scores>(initialScores);
   const [filter, setFilter] = useState<Filter>('ALL');
@@ -55,7 +60,9 @@ export default function WorksheetView({
     const value: string | number | null =
       raw === '' || raw == null
         ? null
-        : field === 'pol' || field === 'pra' || field === 'gol' || field === 'prio'
+        : field === 'pol' || field === 'pra' || field === 'gol'
+        ? parseFloat(raw)
+        : field === 'prio'
         ? parseInt(raw)
         : raw;
 
@@ -71,7 +78,7 @@ export default function WorksheetView({
     setSavingMessage('Saving…');
 
     try {
-      const res = await fetch('/api/score', {
+      const res = await fetch(saveEndpoint ?? '/api/score', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -79,6 +86,7 @@ export default function WorksheetView({
           framework_version_id: frameworkVersionId,
           field,
           value,
+          ...(extraSaveFields ?? {}),
         }),
       });
       if (!res.ok) {
@@ -660,22 +668,24 @@ function ScoreSelect({
   value: number | null | undefined;
   onChange: (value: string) => void;
 }) {
-  const v = value ?? 0;
-  const has = !!v;
-  const color = has ? TIER_COLORS[v] : 'transparent';
-  const pct = has ? (v / TIER_MAX) * 100 : 0;
+  const v = value == null ? null : (typeof value === 'number' ? value : parseFloat(String(value)));
+  const has = v != null && v > 0;
+  const color = has ? tierColor(v) : 'transparent';
+  const pct = has ? (Math.min(v, TIER_MAX) / TIER_MAX) * 100 : 0;
+  const valStr = v == null ? '' : Number.isInteger(v) ? v.toString() : v.toFixed(1);
   return (
     <div className="score-cell">
       <div className="score-wrap" style={{ ['--score-color' as never]: color }}>
         <select
           className={`score-select ${has ? 'has-value' : ''}`}
-          value={value ?? ''}
+          value={valStr}
           onChange={(e) => onChange(e.target.value)}
         >
           <option value="">—</option>
-          {[1, 2, 3, 4, 5].map((i) => (
-            <option key={i} value={i}>{i} — {TIER_LABELS[i]}</option>
-          ))}
+          {TIER_VALUES.map((tv) => {
+            const lbl = Number.isInteger(tv) ? `${tv} — ${TIER_LABELS[tv]}` : `${tv.toFixed(1)}`;
+            return <option key={tv} value={tv}>{lbl}</option>;
+          })}
         </select>
         <div className="score-bar"><div className="score-bar-fill" style={{ width: `${pct}%` }} /></div>
       </div>

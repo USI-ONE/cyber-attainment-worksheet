@@ -22,10 +22,33 @@ export default async function RootLayout({
 }) {
   const host = headers().get('host') ?? undefined;
   const tenant = await resolveTenant(host);
-  const logoUrl = tenant?.brand_config?.logo_url;
-  const rootStyle: React.CSSProperties = logoUrl
-    ? { ['--crown-image' as never]: `url("${logoUrl}")` }
-    : {};
+  const brand = (tenant?.brand_config ?? {}) as {
+    logo_url?: string;
+    tagline?: string;
+    theme?: {
+      primary?: string;
+      primary_light?: string;
+      primary_bright?: string;
+      primary_pale?: string;
+      primary_border?: string;
+      secondary?: string;
+      accent?: string;
+    };
+  };
+
+  // Map brand theme tokens onto the existing CSS variables so the whole
+  // dark-navy chrome rebrands without needing per-component overrides.
+  // The platform default is the gold scheme; tenants can substitute
+  // (e.g., USI uses Juniper #458C5E + Nebula #3B697A).
+  const rootStyle: React.CSSProperties = {};
+  if (brand.logo_url) rootStyle['--crown-image' as never] = `url("${brand.logo_url}")`;
+  if (brand.theme?.primary)        rootStyle['--gold' as never]         = brand.theme.primary;
+  if (brand.theme?.primary_light)  rootStyle['--gold-light' as never]   = brand.theme.primary_light;
+  if (brand.theme?.primary_bright) rootStyle['--gold-bright' as never]  = brand.theme.primary_bright;
+  if (brand.theme?.primary_pale)   rootStyle['--gold-pale' as never]    = brand.theme.primary_pale;
+  if (brand.theme?.primary_border) rootStyle['--gold-border' as never]  = brand.theme.primary_border;
+  if (brand.theme?.secondary)      rootStyle['--brand-secondary' as never] = brand.theme.secondary;
+  if (brand.theme?.accent)         rootStyle['--brand-accent' as never]    = brand.theme.accent;
 
   return (
     <html lang="en">

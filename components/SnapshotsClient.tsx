@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 
 interface SnapshotRow {
@@ -110,12 +111,13 @@ export default function SnapshotsClient({ initialSnapshots }: { initialSnapshots
               <th>Period</th>
               <th>Taken</th>
               <th>Notes</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
             {snapshots.length === 0 && (
               <tr>
-                <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px 0' }}>
+                <td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px 0' }}>
                   No snapshots yet. Click <strong>Lock &amp; Label</strong> to capture the current scoring state.
                 </td>
               </tr>
@@ -130,6 +132,7 @@ export default function SnapshotsClient({ initialSnapshots }: { initialSnapshots
                 <td style={{ color: 'var(--text-mid)', fontSize: 11, maxWidth: 360, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {s.notes_md ?? '—'}
                 </td>
+                <td><Link href={`/snapshots/${s.id}`} className="action-btn">Edit scores</Link></td>
               </tr>
             ))}
           </tbody>
