@@ -1,6 +1,6 @@
 'use client';
 
-import { GROUP_COLORS, type GroupAverage } from '@/lib/scoring';
+import { GROUP_COLORS, TIER_MAX, type GroupAverage } from '@/lib/scoring';
 
 const RADAR = {
   pol: { stroke: '#C9A961', fill: 'rgba(201,169,97,0.18)' },
@@ -11,7 +11,7 @@ const RADAR = {
 export default function Radar({ avgs }: { avgs: GroupAverage[] }) {
   const cx = 180, cy = 180, maxR = 130;
   const N = avgs.length;
-  const pt = (i: number, value: number, max = 4): [number, number] => {
+  const pt = (i: number, value: number, max = TIER_MAX): [number, number] => {
     const angle = ((i * (360 / N)) - 90) * Math.PI / 180;
     const r = (value / max) * maxR;
     return [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
@@ -23,7 +23,7 @@ export default function Radar({ avgs }: { avgs: GroupAverage[] }) {
 
   return (
     <svg className="radar-svg" viewBox="0 0 360 360" xmlns="http://www.w3.org/2000/svg">
-      {[1, 2, 3, 4].map((level) => {
+      {[1, 2, 3, 4, 5].map((level) => {
         const isTarget = level === 3;
         return (
           <polygon
@@ -37,10 +37,10 @@ export default function Radar({ avgs }: { avgs: GroupAverage[] }) {
         );
       })}
       {avgs.map((_, i) => {
-        const [x, y] = pt(i, 4);
+        const [x, y] = pt(i, TIER_MAX);
         return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="rgba(255,255,255,0.1)" strokeWidth={1} />;
       })}
-      {[1, 2, 3, 4].map((level) => {
+      {[1, 2, 3, 4, 5].map((level) => {
         const [x, y] = pt(0, level);
         return (
           <text key={level} x={x + 4} y={y + 3} fill="rgba(255,255,255,0.35)" fontSize={9} fontFamily="JetBrains Mono">
@@ -49,7 +49,7 @@ export default function Radar({ avgs }: { avgs: GroupAverage[] }) {
         );
       })}
       {avgs.map((a, i) => {
-        const [x, y] = pt(i, 4.5);
+        const [x, y] = pt(i, TIER_MAX + 0.5);
         const c = GROUP_COLORS[a.group_id] ?? { accent: '#C9A961' };
         return (
           <text key={a.group_id} x={x} y={y} textAnchor="middle" dominantBaseline="middle"

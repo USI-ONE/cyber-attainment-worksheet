@@ -13,6 +13,7 @@ import {
   STATUS_OPTIONS,
   TIER_COLORS,
   TIER_LABELS,
+  TIER_MAX,
   computeGroupAverages,
   computeOverallTotals,
   type GroupAverage,
@@ -318,7 +319,7 @@ function Radar({ avgs }: { avgs: GroupAverage[] }) {
   const cx = 180, cy = 180, maxR = 130;
   const axes = avgs.map((a) => a.group_id);
   const N = axes.length;
-  const pt = (i: number, value: number, max = 4) => {
+  const pt = (i: number, value: number, max = TIER_MAX) => {
     const angle = ((i * (360 / N)) - 90) * Math.PI / 180;
     const r = (value / max) * maxR;
     return [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
@@ -330,7 +331,7 @@ function Radar({ avgs }: { avgs: GroupAverage[] }) {
 
   return (
     <svg className="radar-svg" viewBox="0 0 360 360" xmlns="http://www.w3.org/2000/svg">
-      {[1, 2, 3, 4].map((level) => {
+      {[1, 2, 3, 4, 5].map((level) => {
         const isTarget = level === 3;
         return (
           <polygon
@@ -344,12 +345,12 @@ function Radar({ avgs }: { avgs: GroupAverage[] }) {
         );
       })}
       {axes.map((_, i) => {
-        const [x, y] = pt(i, 4);
+        const [x, y] = pt(i, TIER_MAX);
         return (
           <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="rgba(255,255,255,0.1)" strokeWidth={1} />
         );
       })}
-      {[1, 2, 3, 4].map((level) => {
+      {[1, 2, 3, 4, 5].map((level) => {
         const [x, y] = pt(0, level);
         return (
           <text key={level} x={x + 4} y={y + 3} fill="rgba(255,255,255,0.35)" fontSize={9} fontFamily="JetBrains Mono">
@@ -358,7 +359,7 @@ function Radar({ avgs }: { avgs: GroupAverage[] }) {
         );
       })}
       {axes.map((id, i) => {
-        const [x, y] = pt(i, 4.5);
+        const [x, y] = pt(i, TIER_MAX + 0.5);
         const c = GROUP_COLORS[id] ?? { accent: '#C9A961' };
         return (
           <text
@@ -662,7 +663,7 @@ function ScoreSelect({
   const v = value ?? 0;
   const has = !!v;
   const color = has ? TIER_COLORS[v] : 'transparent';
-  const pct = has ? (v / 4) * 100 : 0;
+  const pct = has ? (v / TIER_MAX) * 100 : 0;
   return (
     <div className="score-cell">
       <div className="score-wrap" style={{ ['--score-color' as never]: color }}>
@@ -672,7 +673,7 @@ function ScoreSelect({
           onChange={(e) => onChange(e.target.value)}
         >
           <option value="">—</option>
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3, 4, 5].map((i) => (
             <option key={i} value={i}>{i} — {TIER_LABELS[i]}</option>
           ))}
         </select>

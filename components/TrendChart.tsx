@@ -24,7 +24,7 @@ export default function TrendChart({ series }: { series: TrendSeries[] }) {
   const xs = allPoints.map((p) => p.x);
   const xMin = Math.min(...xs), xMax = Math.max(...xs);
   const xRange = Math.max(1, xMax - xMin);
-  const yMin = 0, yMax = 4;
+  const yMin = 0, yMax = 5;
 
   const xScale = (x: number) => PAD_L + ((x - xMin) / xRange) * innerW;
   const yScale = (y: number) => PAD_T + innerH - ((y - yMin) / (yMax - yMin)) * innerH;
@@ -35,7 +35,7 @@ export default function TrendChart({ series }: { series: TrendSeries[] }) {
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block', maxWidth: '100%' }}>
       {/* Y grid lines */}
-      {[0, 1, 2, 3, 4].map((y) => (
+      {[0, 1, 2, 3, 4, 5].map((y) => (
         <g key={y}>
           <line
             x1={PAD_L} y1={yScale(y)} x2={W - PAD_R} y2={yScale(y)}

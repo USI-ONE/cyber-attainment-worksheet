@@ -72,8 +72,12 @@ export function computeOverallTotals(avgs: GroupAverage[]): OverallTotals {
   };
 }
 
-export const TIER_LABELS = ['', 'Partial', 'Risk Informed', 'Repeatable', 'Adaptive'];
-export const TIER_COLORS = ['', '#9AAEC1', '#FCD34D', '#86D69E', '#7DD3DB'];
+// 5-tier maturity scale (CMM-style, matching the Collision Leaders attainment worksheet)
+// Tier values: 1 Initial · 2 Repeatable · 3 Defined · 4 Managed · 5 Optimizing
+// Index 0 is intentionally empty so TIER_LABELS[1] returns 'Initial', etc.
+export const TIER_LABELS = ['', 'Initial', 'Repeatable', 'Defined', 'Managed', 'Optimizing'];
+export const TIER_COLORS = ['', '#9AAEC1', '#FCD34D', '#FBBF24', '#86D69E', '#7DD3DB'];
+export const TIER_MAX = 5;
 export const PRIORITY_LABELS = ['', 'Low', 'Medium', 'High', 'Critical'];
 export const STATUS_OPTIONS = ['', 'Not Started', 'In Progress', 'Blocked', 'Complete'];
 

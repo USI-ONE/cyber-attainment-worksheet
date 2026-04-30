@@ -25,10 +25,11 @@
   --text-dim:#6A8499;
   --text-muted:#4D6478;
 
-  --tier1:#9AAEC1;
-  --tier2:#FCD34D;
-  --tier3:#86D69E;
-  --tier4:#7DD3DB;
+  --tier1:#9AAEC1;  /* Initial */
+  --tier2:#FCD34D;  /* Repeatable */
+  --tier3:#FBBF24;  /* Defined */
+  --tier4:#86D69E;  /* Managed */
+  --tier5:#7DD3DB;  /* Optimizing */
 
   --gap-pos:#FCA5A5;
   --gap-zero:#86D69E;
@@ -288,6 +289,7 @@ body{
 .maturity-cell[data-tier="2"]{ background:var(--tier2); }
 .maturity-cell[data-tier="3"]{ background:var(--tier3); }
 .maturity-cell[data-tier="4"]{ background:var(--tier4); }
+.maturity-cell[data-tier="5"]{ background:var(--tier5); }
 .maturity-cell:hover{ outline:1px solid var(--gold); }
 .maturity-cell-tooltip{
   display:none;

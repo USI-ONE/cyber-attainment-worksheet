@@ -24,22 +24,11 @@
                                        }
                                    ],
                     "tiers":  [
-                                  {
-                                      "value":  1,
-                                      "label":  "Partial"
-                                  },
-                                  {
-                                      "value":  2,
-                                      "label":  "Risk Informed"
-                                  },
-                                  {
-                                      "value":  3,
-                                      "label":  "Repeatable"
-                                  },
-                                  {
-                                      "value":  4,
-                                      "label":  "Adaptive"
-                                  }
+                                  { "value": 1, "label": "Initial" },
+                                  { "value": 2, "label": "Repeatable" },
+                                  { "value": 3, "label": "Defined" },
+                                  { "value": 4, "label": "Managed" },
+                                  { "value": 5, "label": "Optimizing" }
                               ]
                 },
     "groups":  [

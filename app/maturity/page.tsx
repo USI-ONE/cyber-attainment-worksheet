@@ -34,7 +34,7 @@ export default async function MaturityPage() {
           <div>
             <div className="scorecard-title">Maturity Levels</div>
             <div className="scorecard-tag" style={{ marginTop: 4 }}>
-              Practice tier per control · 1=Partial · 2=Risk Informed · 3=Repeatable · 4=Adaptive
+              Practice tier per control · 1=Initial · 2=Repeatable · 3=Defined · 4=Managed · 5=Optimizing
             </div>
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
@@ -42,6 +42,7 @@ export default async function MaturityPage() {
             <LegendChip tier={2} />
             <LegendChip tier={3} />
             <LegendChip tier={4} />
+            <LegendChip tier={5} />
           </div>
         </div>
         <div className="maturity-grid">
