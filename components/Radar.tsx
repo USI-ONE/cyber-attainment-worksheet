@@ -9,8 +9,11 @@ const RADAR = {
 };
 
 export default function Radar({ avgs }: { avgs: GroupAverage[] }) {
-  const cx = 180, cy = 180, maxR = 130;
+  // Slightly larger viewbox when there are many axes (categories = 22) so labels don't crowd.
   const N = avgs.length;
+  const dense = N >= 12;
+  const cx = 220, cy = 220, viewSize = 440;
+  const maxR = dense ? 150 : 130;
   const pt = (i: number, value: number, max = TIER_MAX): [number, number] => {
     const angle = ((i * (360 / N)) - 90) * Math.PI / 180;
     const r = (value / max) * maxR;
@@ -21,8 +24,13 @@ export default function Radar({ avgs }: { avgs: GroupAverage[] }) {
   const ringPts = (level: number) =>
     avgs.map((_, i) => pt(i, level)).map((p) => p.join(',')).join(' ');
 
+  // For dense radars (categories), shrink labels and skip per-axis value labels (would overlap).
+  const labelFontSize = dense ? 10 : 13;
+  const valueFontSize = dense ? 8 : 10;
+  const showAxisValues = !dense;
+
   return (
-    <svg className="radar-svg" viewBox="0 0 360 360" xmlns="http://www.w3.org/2000/svg">
+    <svg className="radar-svg" viewBox={`0 0 ${viewSize} ${viewSize}`} xmlns="http://www.w3.org/2000/svg">
       {[1, 2, 3, 4, 5].map((level) => {
         const isTarget = level === 3;
         return (
@@ -49,11 +57,13 @@ export default function Radar({ avgs }: { avgs: GroupAverage[] }) {
         );
       })}
       {avgs.map((a, i) => {
-        const [x, y] = pt(i, TIER_MAX + 0.7);
-        const c = GROUP_COLORS[a.group_id] ?? { accent: '#C9A961' };
+        const [x, y] = pt(i, TIER_MAX + (dense ? 0.45 : 0.7));
+        const accent = (a.parent_id && GROUP_COLORS[a.parent_id]?.accent)
+          ?? GROUP_COLORS[a.group_id]?.accent
+          ?? '#C9A961';
         return (
           <text key={a.group_id} x={x} y={y} textAnchor="middle" dominantBaseline="middle"
-            fill={c.accent} fontSize={13} fontWeight={600} fontFamily="Oswald" letterSpacing="0.06em">
+            fill={accent} fontSize={labelFontSize} fontWeight={600} fontFamily="Oswald" letterSpacing="0.06em">
             {a.group_id}
           </text>
         );
@@ -63,11 +73,9 @@ export default function Radar({ avgs }: { avgs: GroupAverage[] }) {
       <polygon points={polyPts('pra')} fill={RADAR.pra.fill} stroke={RADAR.pra.stroke} strokeWidth={2} strokeLinejoin="round" />
       {avgs.map((a, i) => {
         const [x, y] = pt(i, a.pra);
-        return <circle key={a.group_id} cx={x} cy={y} r={3.5} fill={RADAR.pra.stroke} />;
+        return <circle key={a.group_id} cx={x} cy={y} r={dense ? 2.5 : 3.5} fill={RADAR.pra.stroke} />;
       })}
-      {/* Numeric score readout at each axis: stacked Policy / Practice values.
-          Skipped if both are unscored. Stroke halo keeps numbers legible over polygon fill. */}
-      {avgs.map((a, i) => {
+      {showAxisValues && avgs.map((a, i) => {
         const [x, y] = pt(i, TIER_MAX + 0.1);
         const showPol = a.pol > 0;
         const showPra = a.pra > 0;
@@ -77,14 +85,14 @@ export default function Radar({ avgs }: { avgs: GroupAverage[] }) {
           <g key={`val-${a.group_id}`}>
             {showPol && (
               <text x={x} y={y - (showPra ? 8 : 0)} textAnchor="middle" dominantBaseline="middle"
-                fill={RADAR.pol.stroke} fontSize={10} fontWeight={600} fontFamily="JetBrains Mono"
+                fill={RADAR.pol.stroke} fontSize={valueFontSize} fontWeight={600} fontFamily="JetBrains Mono"
                 style={haloStyle}>
                 {a.pol.toFixed(2)}
               </text>
             )}
             {showPra && (
               <text x={x} y={y + (showPol ? 8 : 0)} textAnchor="middle" dominantBaseline="middle"
-                fill={RADAR.pra.stroke} fontSize={10} fontWeight={600} fontFamily="JetBrains Mono"
+                fill={RADAR.pra.stroke} fontSize={valueFontSize} fontWeight={600} fontFamily="JetBrains Mono"
                 style={haloStyle}>
                 {a.pra.toFixed(2)}
               </text>

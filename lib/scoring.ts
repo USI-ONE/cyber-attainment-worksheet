@@ -10,6 +10,8 @@ export interface GroupAverage {
   pra_n: number;
   gol_n: number;
   total: number;
+  /** parent function id when this row represents a category (e.g., 'GV' for 'GV.OC') */
+  parent_id?: string;
 }
 
 /**
@@ -111,6 +113,46 @@ export function formatTier(v: number | null | undefined): string {
 
 export const PRIORITY_LABELS = ['', 'Low', 'Medium', 'High', 'Critical'];
 export const STATUS_OPTIONS = ['', 'Not Started', 'In Progress', 'Blocked', 'Complete'];
+
+/**
+ * Same shape as computeGroupAverages but one row per CATEGORY (e.g., GV.OC, GV.RM, ID.AM, ...).
+ * NIST CSF 2.0 has 22 categories — finer granularity than the 6 functions.
+ * Used by the radar and trend so the board can see where in a function the work concentrates.
+ */
+export function computeCategoryAverages(
+  definition: FrameworkDefinition,
+  scores: Record<string, Partial<CurrentScore>>,
+): GroupAverage[] {
+  const num = (v: unknown): number | null => {
+    if (v == null) return null;
+    const n = typeof v === 'number' ? v : parseFloat(String(v));
+    return Number.isFinite(n) ? n : null;
+  };
+  const out: GroupAverage[] = [];
+  for (const g of definition.groups) {
+    for (const cat of g.categories) {
+      let polSum = 0, polN = 0, praSum = 0, praN = 0, golSum = 0, golN = 0, total = 0;
+      for (const ctrl of cat.controls) {
+        total++;
+        const r = scores[ctrl.id];
+        const pol = num(r?.pol); const pra = num(r?.pra); const gol = num(r?.gol);
+        if (pol != null) { polSum += pol; polN++; }
+        if (pra != null) { praSum += pra; praN++; }
+        if (gol != null) { golSum += gol; golN++; }
+      }
+      out.push({
+        group_id: cat.id,        // e.g., 'GV.OC'
+        group_name: cat.name,    // e.g., 'Organizational Context'
+        parent_id: g.id,         // e.g., 'GV'
+        pol: polN ? polSum / polN : 0,
+        pra: praN ? praSum / praN : 0,
+        gol: golN ? golSum / golN : 0,
+        pol_n: polN, pra_n: praN, gol_n: golN, total,
+      });
+    }
+  }
+  return out;
+}
 
 export const GROUP_COLORS: Record<string, { accent: string; text: string; bg: string }> = {
   GV: { accent: '#B89B5E', bg: 'linear-gradient(90deg, #2A210E 0%, #161D30 60%)', text: '#E8D29B' },
