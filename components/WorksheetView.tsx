@@ -367,7 +367,7 @@ function Radar({ avgs }: { avgs: GroupAverage[] }) {
         );
       })}
       {axes.map((id, i) => {
-        const [x, y] = pt(i, TIER_MAX + 0.5);
+        const [x, y] = pt(i, TIER_MAX + 0.7);
         const c = GROUP_COLORS[id] ?? { accent: '#C9A961' };
         return (
           <text
@@ -392,6 +392,17 @@ function Radar({ avgs }: { avgs: GroupAverage[] }) {
       {avgs.map((a, i) => {
         const [x, y] = pt(i, a.pra);
         return <circle key={a.group_id} cx={x} cy={y} r={3.5} fill={RADAR.pra.stroke} />;
+      })}
+      {avgs.map((a, i) => {
+        const [x, y] = pt(i, TIER_MAX - 0.05);
+        if (!a.pra) return null;
+        return (
+          <text key={`val-${a.group_id}`} x={x} y={y} textAnchor="middle" dominantBaseline="middle"
+            fill={RADAR.pra.stroke} fontSize={11} fontWeight={600} fontFamily="JetBrains Mono"
+            style={{ paintOrder: 'stroke', stroke: 'var(--bg-mid)', strokeWidth: 3, strokeLinejoin: 'round' }}>
+            {a.pra.toFixed(2)}
+          </text>
+        );
       })}
     </svg>
   );
