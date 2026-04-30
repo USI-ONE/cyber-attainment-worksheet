@@ -394,14 +394,26 @@ function Radar({ avgs }: { avgs: GroupAverage[] }) {
         return <circle key={a.group_id} cx={x} cy={y} r={3.5} fill={RADAR.pra.stroke} />;
       })}
       {avgs.map((a, i) => {
-        const [x, y] = pt(i, TIER_MAX - 0.05);
-        if (!a.pra) return null;
+        const [x, y] = pt(i, TIER_MAX + 0.1);
+        const showPol = a.pol > 0;
+        const showPra = a.pra > 0;
+        if (!showPol && !showPra) return null;
+        const haloStyle: React.CSSProperties = { paintOrder: 'stroke', stroke: 'var(--bg-mid)', strokeWidth: 3, strokeLinejoin: 'round' };
         return (
-          <text key={`val-${a.group_id}`} x={x} y={y} textAnchor="middle" dominantBaseline="middle"
-            fill={RADAR.pra.stroke} fontSize={11} fontWeight={600} fontFamily="JetBrains Mono"
-            style={{ paintOrder: 'stroke', stroke: 'var(--bg-mid)', strokeWidth: 3, strokeLinejoin: 'round' }}>
-            {a.pra.toFixed(2)}
-          </text>
+          <g key={`val-${a.group_id}`}>
+            {showPol && (
+              <text x={x} y={y - (showPra ? 8 : 0)} textAnchor="middle" dominantBaseline="middle"
+                fill={RADAR.pol.stroke} fontSize={10} fontWeight={600} fontFamily="JetBrains Mono" style={haloStyle}>
+                {a.pol.toFixed(2)}
+              </text>
+            )}
+            {showPra && (
+              <text x={x} y={y + (showPol ? 8 : 0)} textAnchor="middle" dominantBaseline="middle"
+                fill={RADAR.pra.stroke} fontSize={10} fontWeight={600} fontFamily="JetBrains Mono" style={haloStyle}>
+                {a.pra.toFixed(2)}
+              </text>
+            )}
+          </g>
         );
       })}
     </svg>

@@ -65,20 +65,27 @@ export default function Radar({ avgs }: { avgs: GroupAverage[] }) {
         const [x, y] = pt(i, a.pra);
         return <circle key={a.group_id} cx={x} cy={y} r={3.5} fill={RADAR.pra.stroke} />;
       })}
-      {/* Numeric score readout at each axis: practice avg (with policy/goal in smaller text below).
-          Positioned just inside the group label so the number sits in the white space at each spoke tip. */}
+      {/* Numeric score readout at each axis: stacked Policy / Practice values.
+          Skipped if both are unscored. Stroke halo keeps numbers legible over polygon fill. */}
       {avgs.map((a, i) => {
-        const [x, y] = pt(i, TIER_MAX - 0.05);
-        const showPra = a.pra > 0;
+        const [x, y] = pt(i, TIER_MAX + 0.1);
         const showPol = a.pol > 0;
-        const showGol = a.gol > 0;
-        if (!showPra && !showPol && !showGol) return null;
+        const showPra = a.pra > 0;
+        if (!showPol && !showPra) return null;
+        const haloStyle = { paintOrder: 'stroke', stroke: 'var(--bg-mid)', strokeWidth: 3, strokeLinejoin: 'round' } as React.CSSProperties;
         return (
           <g key={`val-${a.group_id}`}>
+            {showPol && (
+              <text x={x} y={y - (showPra ? 8 : 0)} textAnchor="middle" dominantBaseline="middle"
+                fill={RADAR.pol.stroke} fontSize={10} fontWeight={600} fontFamily="JetBrains Mono"
+                style={haloStyle}>
+                {a.pol.toFixed(2)}
+              </text>
+            )}
             {showPra && (
-              <text x={x} y={y} textAnchor="middle" dominantBaseline="middle"
-                fill={RADAR.pra.stroke} fontSize={11} fontWeight={600} fontFamily="JetBrains Mono"
-                style={{ paintOrder: 'stroke', stroke: 'var(--bg-mid)', strokeWidth: 3, strokeLinejoin: 'round' }}>
+              <text x={x} y={y + (showPol ? 8 : 0)} textAnchor="middle" dominantBaseline="middle"
+                fill={RADAR.pra.stroke} fontSize={10} fontWeight={600} fontFamily="JetBrains Mono"
+                style={haloStyle}>
                 {a.pra.toFixed(2)}
               </text>
             )}
