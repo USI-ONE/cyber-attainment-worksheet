@@ -10,7 +10,8 @@ export default function Header({
   frameworkLabel: string | null;
   userEmail?: string | null;
 }) {
-  const tagline = (tenant.brand_config?.tagline as string | undefined) ?? 'The Crown of Quality';
+  // Tagline is per-tenant. No platform default — empty if the tenant hasn't set one.
+  const tagline = ((tenant.brand_config?.tagline as string | undefined) ?? '').trim();
 
   return (
     <header className="app-header">
@@ -19,7 +20,7 @@ export default function Header({
           <div className="crown-mark" aria-label={`${tenant.display_name} logo`} />
           <div className="brand-text">
             <div className="wordmark">{tenant.display_name}</div>
-            <div className="tagline">{tagline}</div>
+            {tagline && <div className="tagline">{tagline}</div>}
           </div>
         </div>
         <div className="doc-meta">
