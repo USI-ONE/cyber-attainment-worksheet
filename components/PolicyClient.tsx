@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import PolicyDocumentsTab from '@/components/PolicyDocumentsTab';
+import type { PolicyDocument } from '@/lib/supabase/types';
 
 interface Section {
   id: string;
@@ -10,6 +12,8 @@ interface Section {
   version: number;
   control_refs: string[] | null;
 }
+
+type Tab = 'sections' | 'documents';
 
 const DEFAULT_SECTIONS = [
   { title: 'Purpose & Scope', body_md: '## Purpose\n\nDescribe why this policy exists and what it covers.\n\n## Scope\n\nList who and what is covered by this policy.' },
@@ -22,10 +26,37 @@ const DEFAULT_SECTIONS = [
   { title: 'Policy Review & Exceptions', body_md: 'Review cadence, approval authority, and exception process.' },
 ];
 
-export default function PolicyClient({ initialSections }: { initialSections: Section[] }) {
+export default function PolicyClient({
+  initialSections,
+  initialDocuments = [],
+}: {
+  initialSections: Section[];
+  initialDocuments?: PolicyDocument[];
+}) {
   const [sections, setSections] = useState<Section[]>(initialSections);
   const [editing, setEditing] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, { title: string; body_md: string }>>({});
+  const [tab, setTab] = useState<Tab>(initialDocuments.length > 0 ? 'documents' : 'sections');
+
+  const tabBar = (
+    <div className="scorecard" style={{ padding: '6px 8px', display: 'flex', gap: 4 }}>
+      <TabButton active={tab === 'documents'} onClick={() => setTab('documents')}>
+        Documents <span style={{ color: 'var(--text-muted)', marginLeft: 4 }}>{initialDocuments.length}</span>
+      </TabButton>
+      <TabButton active={tab === 'sections'} onClick={() => setTab('sections')}>
+        Sections <span style={{ color: 'var(--text-muted)', marginLeft: 4 }}>{sections.length}</span>
+      </TabButton>
+    </div>
+  );
+
+  if (tab === 'documents') {
+    return (
+      <>
+        {tabBar}
+        <PolicyDocumentsTab initialDocuments={initialDocuments} />
+      </>
+    );
+  }
 
   async function add(title: string, body_md = '') {
     const res = await fetch('/api/policy-sections', {
@@ -86,28 +117,32 @@ export default function PolicyClient({ initialSections }: { initialSections: Sec
 
   if (sections.length === 0) {
     return (
-      <section className="scorecard">
-        <div className="scorecard-header">
-          <div>
-            <div className="scorecard-title">Security Policy</div>
-            <div className="scorecard-tag" style={{ marginTop: 4 }}>Editor-of-record for the tenant&apos;s written policy</div>
+      <>
+        {tabBar}
+        <section className="scorecard">
+          <div className="scorecard-header">
+            <div>
+              <div className="scorecard-title">Security Policy</div>
+              <div className="scorecard-tag" style={{ marginTop: 4 }}>Editor-of-record for the tenant&apos;s written policy</div>
+            </div>
           </div>
-        </div>
-        <div style={{ padding: '24px 0', textAlign: 'center' }}>
-          <p style={{ color: 'var(--text-mid)', marginBottom: 16 }}>
-            No sections yet. Seed the standard 8-section template (Purpose, Roles, Acceptable Use, Access Control, Data Protection, Incident Response, Third-Party Risk, Review) or add sections one at a time.
-          </p>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-            <button className="action-btn primary" onClick={seedDefaults}>Seed standard sections</button>
-            <button className="action-btn" onClick={() => add('New Section')}>+ Empty section</button>
+          <div style={{ padding: '24px 0', textAlign: 'center' }}>
+            <p style={{ color: 'var(--text-mid)', marginBottom: 16 }}>
+              No sections yet. Seed the standard 8-section template (Purpose, Roles, Acceptable Use, Access Control, Data Protection, Incident Response, Third-Party Risk, Review) or add sections one at a time.
+            </p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+              <button className="action-btn primary" onClick={seedDefaults}>Seed standard sections</button>
+              <button className="action-btn" onClick={() => add('New Section')}>+ Empty section</button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </>
     );
   }
 
   return (
     <>
+      {tabBar}
       <section className="scorecard">
         <div className="scorecard-header">
           <div>
@@ -179,5 +214,19 @@ export default function PolicyClient({ initialSections }: { initialSections: Sec
         );
       })}
     </>
+  );
+}
+
+function TabButton({
+  active, onClick, children,
+}: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`nav-tab ${active ? 'active' : ''}`}
+      style={{ fontSize: 12, padding: '8px 14px' }}
+    >
+      {children}
+    </button>
   );
 }

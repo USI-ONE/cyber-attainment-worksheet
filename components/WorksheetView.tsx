@@ -29,6 +29,14 @@ const RADAR = {
   gol: { stroke: '#22C55E', fill: 'rgba(34,197,94,0.18)', label: 'Goal' },
 };
 
+/** Lightweight policy reference used for the per-control badge — full
+ * PolicyDocument metadata isn't needed at the row level, just a hover summary. */
+export interface ControlPolicyRef {
+  id: string;
+  title: string;
+  version: string | null;
+}
+
 export default function WorksheetView({
   tenantId: _tenantId,
   frameworkVersionId,
@@ -36,6 +44,7 @@ export default function WorksheetView({
   initialScores,
   saveEndpoint,
   extraSaveFields,
+  policyByControl,
 }: {
   tenantId: string;
   frameworkVersionId: string;
@@ -43,7 +52,10 @@ export default function WorksheetView({
   initialScores: Record<string, CurrentScore>;
   saveEndpoint?: string;
   extraSaveFields?: Record<string, unknown>;
+  /** control_id → list of policy documents that back this control */
+  policyByControl?: Record<string, ControlPolicyRef[]>;
 }) {
+  const policyMap = policyByControl ?? {};
   const [scores, setScores] = useState<Scores>(initialScores);
   const [filter, setFilter] = useState<Filter>('ALL');
   const [search, setSearch] = useState('');
@@ -205,6 +217,7 @@ export default function WorksheetView({
         filter={filter}
         search={search.toLowerCase().trim()}
         updateField={updateField}
+        policyMap={policyMap}
       />
     </>
   );
@@ -460,7 +473,7 @@ function Dashboard({ groups, scores }: { groups: FrameworkGroup[]; scores: Score
 }
 
 function CsfTable({
-  groups, scores, collapsed, toggleCollapse, filter, search, updateField,
+  groups, scores, collapsed, toggleCollapse, filter, search, updateField, policyMap,
 }: {
   groups: FrameworkGroup[];
   scores: Scores;
@@ -469,6 +482,7 @@ function CsfTable({
   filter: Filter;
   search: string;
   updateField: (controlId: string, field: ScoreField, value: string) => void;
+  policyMap: Record<string, ControlPolicyRef[]>;
 }) {
   return (
     <table className="csf-table">
@@ -514,6 +528,7 @@ function CsfTable({
               updateField={updateField}
               scored={scored}
               total={total}
+              policyMap={policyMap}
             />
           );
         })}
@@ -523,7 +538,7 @@ function CsfTable({
 }
 
 function FunctionBlock({
-  group, scores, colorAccent, colorText, colorBg, collapsed, onToggle, search, updateField, scored, total,
+  group, scores, colorAccent, colorText, colorBg, collapsed, onToggle, search, updateField, scored, total, policyMap,
 }: {
   group: FrameworkGroup;
   scores: Scores;
@@ -536,6 +551,7 @@ function FunctionBlock({
   updateField: (controlId: string, field: ScoreField, value: string) => void;
   scored: number;
   total: number;
+  policyMap: Record<string, ControlPolicyRef[]>;
 }) {
   return (
     <>
@@ -577,6 +593,7 @@ function FunctionBlock({
             scores={scores}
             colorAccent={colorAccent}
             colorText={colorText}
+            policyMap={policyMap}
             updateField={updateField}
           />
         );
@@ -586,7 +603,7 @@ function FunctionBlock({
 }
 
 function FrameworkCategorySection({
-  categoryId, categoryName, controls, scores, colorAccent, colorText, updateField,
+  categoryId, categoryName, controls, scores, colorAccent, colorText, updateField, policyMap,
 }: {
   categoryId: string;
   categoryName: string;
@@ -595,6 +612,7 @@ function FrameworkCategorySection({
   colorAccent: string;
   colorText: string;
   updateField: (controlId: string, field: ScoreField, value: string) => void;
+  policyMap: Record<string, ControlPolicyRef[]>;
 }) {
   return (
     <>
@@ -611,6 +629,7 @@ function FrameworkCategorySection({
           control={ctrl}
           row={scores[ctrl.id] ?? {}}
           updateField={updateField}
+          policies={policyMap[ctrl.id]}
         />
       ))}
     </>
@@ -621,10 +640,12 @@ function SubcategoryRow({
   control,
   row,
   updateField,
+  policies,
 }: {
   control: { id: string; outcome: string };
   row: Partial<CurrentScore>;
   updateField: (controlId: string, field: ScoreField, value: string) => void;
+  policies?: ControlPolicyRef[];
 }) {
   const gap = row.pra && row.gol ? row.gol - row.pra : null;
   const gapCls =
@@ -633,10 +654,31 @@ function SubcategoryRow({
 
   const prio = row.prio ?? 0;
   const status = (row.status ?? '') as string;
+  const polCount = policies?.length ?? 0;
+  // Tooltip lists each backing policy + its version, so a hover answers
+  // "what's the policy?" without leaving the worksheet.
+  const polTitle = polCount > 0
+    ? policies!.map((p) => p.version ? `${p.title} (v${p.version})` : p.title).join('\n')
+    : undefined;
 
   return (
     <tr className="sub-row">
-      <td className="col-id">{control.id}</td>
+      <td className="col-id">
+        {control.id}
+        {polCount > 0 && (
+          <a href="/policy" title={polTitle}
+            style={{
+              marginLeft: 6, fontSize: 10, padding: '1px 6px',
+              background: 'rgba(201,169,97,0.14)',
+              border: '1px solid rgba(201,169,97,0.42)',
+              color: 'var(--gold-light)', borderRadius: 999,
+              textDecoration: 'none', verticalAlign: 'middle',
+              fontFamily: 'JetBrains Mono, monospace', fontWeight: 600,
+            }}>
+            📄 {polCount}
+          </a>
+        )}
+      </td>
       <td className="col-outcome">{control.outcome}</td>
       <td><ScoreSelect value={row.pol} onChange={(v) => updateField(control.id, 'pol', v)} /></td>
       <td><ScoreSelect value={row.pra} onChange={(v) => updateField(control.id, 'pra', v)} /></td>

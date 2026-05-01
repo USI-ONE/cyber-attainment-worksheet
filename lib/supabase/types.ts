@@ -139,3 +139,28 @@ export interface IncidentDocument {
   uploaded_by: string | null;
   created_at: string;
 }
+
+// ---------------------------------------------------------------------------
+// Policy documents — see db/migrations/0010_policy_documents.sql
+// ---------------------------------------------------------------------------
+
+export type PolicyDocumentStatus = 'draft' | 'published' | 'archived';
+
+export interface PolicyDocument {
+  id: string;
+  tenant_id: string;
+  title: string;
+  version: string | null;
+  effective_date: string | null;       // ISO date (yyyy-mm-dd) from Postgres date
+  owner: string | null;
+  status: PolicyDocumentStatus;
+  description: string | null;
+  storage_path: string;
+  filename: string;
+  content_type: string | null;
+  size_bytes: number | null;
+  uploaded_by: string | null;
+  linked_control_ids: string[];
+  created_at: string;
+  updated_at: string;
+}
