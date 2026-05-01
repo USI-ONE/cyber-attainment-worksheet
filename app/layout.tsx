@@ -65,7 +65,7 @@ export default async function RootLayout({
       </head>
       <body style={rootStyle}>
         {tenant && <Header tenant={tenant} frameworkLabel={null} userEmail={null} />}
-        {tenant && <Nav />}
+        {tenant && <Nav isOperator={tenant.slug === 'universal-systems'} />}
         {children}
         {tenant && <Footer tenant={tenant} />}
       </body>

@@ -3,7 +3,10 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-const TABS: { href: string; label: string; group: 'core' | 'planning' | 'governance' | 'reporting' }[] = [
+type TabGroup = 'core' | 'planning' | 'governance' | 'reporting' | 'operator';
+
+const TABS: { href: string; label: string; group: TabGroup }[] = [
+  { href: '/hub',         label: 'Portfolio Hub',     group: 'operator' }, // operator-only — filtered out for customer tenants
   { href: '/',            label: 'Summary Dashboard', group: 'core' },
   { href: '/standards',   label: 'Security Standards', group: 'governance' },
   { href: '/priorities',  label: '30-Day Priorities',  group: 'planning' },
@@ -18,15 +21,20 @@ const TABS: { href: string; label: string; group: 'core' | 'planning' | 'governa
   { href: '/trend',       label: 'Trend',              group: 'reporting' },
 ];
 
-export default function Nav() {
+export default function Nav({ isOperator = false }: { isOperator?: boolean }) {
   const pathname = usePathname();
   // Hide nav on the sign-in page (not currently used while auth is off, but harmless)
   if (pathname?.startsWith('/auth/')) return null;
 
+  // The Portfolio Hub link is only useful on the operator deploy; on customer
+  // tenants the page itself returns a placeholder, but we hide the link too so
+  // the nav doesn't dangle a non-functional entry.
+  const visibleTabs = TABS.filter((t) => t.group !== 'operator' || isOperator);
+
   return (
     <nav className="app-nav">
       <div className="app-nav-inner">
-        {TABS.map((t) => {
+        {visibleTabs.map((t) => {
           const active = t.href === '/' ? pathname === '/' : pathname?.startsWith(t.href);
           return (
             <Link
