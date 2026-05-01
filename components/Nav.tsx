@@ -9,6 +9,7 @@ const TABS: { href: string; label: string; group: 'core' | 'planning' | 'governa
   { href: '/priorities',  label: '30-Day Priorities',  group: 'planning' },
   { href: '/work-plans',  label: 'Work Plans',         group: 'planning' },
   { href: '/registers',   label: 'Registers',          group: 'governance' },
+  { href: '/incidents',   label: 'Incidents',          group: 'governance' },
   { href: '/kpis',        label: 'Board KPIs',         group: 'reporting' },
   { href: '/policy',      label: 'Security Policy',    group: 'governance' },
   { href: '/maturity',    label: 'Maturity Levels',    group: 'reporting' },

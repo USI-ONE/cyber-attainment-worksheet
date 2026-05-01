@@ -91,3 +91,51 @@ export interface CurrentScore {
 }
 
 export type ScoreField = 'pol' | 'pra' | 'gol' | 'prio' | 'owner' | 'status' | 'notes';
+
+// ---------------------------------------------------------------------------
+// Incidents — see db/migrations/0009_incidents.sql
+// ---------------------------------------------------------------------------
+
+export type IncidentStatus = 'open' | 'contained' | 'closed';
+export type IncidentSeverity = 'low' | 'medium' | 'high' | 'critical';
+
+/** A single timeline entry. `at` is freeform so users can log ranges
+ * ("April 22–30, 2026") or full timestamps. The UI orders them as written. */
+export interface IncidentTimelineEntry {
+  at: string;
+  event: string;
+}
+
+export interface Incident {
+  id: string;
+  tenant_id: string;
+  title: string;
+  status: IncidentStatus;
+  severity: IncidentSeverity;
+  category: string | null;
+  detected_at: string | null;
+  contained_at: string | null;
+  closed_at: string | null;
+  reported_by: string | null;
+  affected_users: string[];
+  description: string | null;
+  timeline: IncidentTimelineEntry[];
+  findings: string[];
+  actions: string[];
+  recommendations: string[];
+  linked_control_ids: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IncidentDocument {
+  id: string;
+  incident_id: string;
+  tenant_id: string;
+  storage_path: string;
+  filename: string;
+  content_type: string | null;
+  size_bytes: number | null;
+  uploaded_by: string | null;
+  created_at: string;
+}
