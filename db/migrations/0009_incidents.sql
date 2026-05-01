@@ -62,8 +62,19 @@ create table if not exists public.incident_documents (
 create index if not exists incident_documents_incident_idx
   on public.incident_documents (incident_id, created_at desc);
 
--- updated_at trigger for incidents (uses the same set_updated_at function
--- defined in 0004_triggers.sql; safe to re-attach)
+-- Generic updated_at trigger function. Defined here (not assumed from a
+-- prior migration) so 0009 is self-contained — future tables that want
+-- the same behavior can reuse it.
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
 drop trigger if exists incidents_set_updated_at on public.incidents;
 create trigger incidents_set_updated_at
   before update on public.incidents
