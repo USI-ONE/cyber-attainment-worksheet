@@ -401,11 +401,17 @@ body{
   text-transform:uppercase; padding:8px 10px;
   border-bottom:1px solid var(--bg-border);
 }
-.score-table th.num{text-align:right}
+.score-table th.num,
+.score-table td.num{text-align:right}
 .score-table td{
   padding:9px 10px; border-bottom:1px solid rgba(255,255,255,0.04);
   vertical-align:middle;
 }
+/* Lock numeric columns to a fixed-width tabular figure so a 3.10 and a
+   2.55 sit on the same digit boundary across rows. Without this, the
+   variable widths of the JetBrains Mono "0/1/2/.../-/+" glyphs make
+   the eye think the columns are misaligned. */
+.score-table .score-num{ font-variant-numeric: tabular-nums; }
 .score-table tr:last-child td{border-bottom:none}
 .score-table tr.totals td{
   border-top:1px solid var(--bg-border); border-bottom:none;

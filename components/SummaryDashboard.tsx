@@ -121,29 +121,29 @@ function FunctionTable({ avgs, totals }: { avgs: GroupAverage[]; totals: ReturnT
                   <span className="score-fn-name">{a.group_name}</span>
                 </div>
               </td>
-              <td>{cell(a.pol, 'policy')}</td>
-              <td>{cell(a.pra, 'practice')}</td>
-              <td>{cell(a.gol, 'goal')}</td>
-              <td>
+              <td className="num">{cell(a.pol, 'policy')}</td>
+              <td className="num">{cell(a.pra, 'practice')}</td>
+              <td className="num">{cell(a.gol, 'goal')}</td>
+              <td className="num">
                 <span className={`score-num gap ${gapCls}`}>
                   {gap == null ? '—' : (gap > 0 ? '+' : '') + gap.toFixed(2)}
                 </span>
               </td>
-              <td className="score-num">{a.pra_n}/{a.total}</td>
+              <td className="num score-num">{a.pra_n}/{a.total}</td>
             </tr>
           );
         })}
         <tr className="totals">
           <td><strong>Overall</strong></td>
-          <td>{cell(totals.pol_avg ?? 0, 'policy')}</td>
-          <td>{cell(totals.pra_avg ?? 0, 'practice')}</td>
-          <td>{cell(totals.gol_avg ?? 0, 'goal')}</td>
-          <td>
+          <td className="num">{cell(totals.pol_avg ?? 0, 'policy')}</td>
+          <td className="num">{cell(totals.pra_avg ?? 0, 'practice')}</td>
+          <td className="num">{cell(totals.gol_avg ?? 0, 'goal')}</td>
+          <td className="num">
             <span className={`score-num gap ${totals.gap == null ? 'empty' : totals.gap > 0 ? 'positive' : 'zero'}`}>
               {totals.gap == null ? '—' : (totals.gap > 0 ? '+' : '') + totals.gap.toFixed(2)}
             </span>
           </td>
-          <td className="score-num">{totals.scored_pra}/{totals.total}</td>
+          <td className="num score-num">{totals.scored_pra}/{totals.total}</td>
         </tr>
       </tbody>
     </table>
