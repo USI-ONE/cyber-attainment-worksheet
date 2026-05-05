@@ -2,6 +2,7 @@
 import React from 'react';
 import { Document, Page, View, Text } from '@react-pdf/renderer';
 import { baseStyles, paletteFor, fmtDate, fmtDateTime, registerFonts } from './styles';
+import { normalizeTimeline } from '@/lib/incidents/timeline';
 import type { Incident, IncidentDocument, Tenant } from '@/lib/supabase/types';
 
 /**
@@ -27,6 +28,10 @@ export function IncidentReport({
 }) {
   const palette = paletteFor(tenant);
   const generated = new Date();
+  // Normalize timeline so legacy entries with date prefixes baked into the
+  // event text still display correctly — extracts "5/4/2026, 5:12 PM (MT)"
+  // out of "…— Spoofed email…" into the When column.
+  const timeline = normalizeTimeline(incident.timeline);
 
   return (
     <Document
@@ -86,7 +91,7 @@ export function IncidentReport({
         )}
 
         {/* Timeline */}
-        {incident.timeline.length > 0 && (
+        {timeline.length > 0 && (
           <View style={baseStyles.sectionBody}>
             <Text style={baseStyles.sectionH}>2. Timeline of Events</Text>
             <View style={baseStyles.table}>
@@ -94,7 +99,7 @@ export function IncidentReport({
                 <Text style={[baseStyles.th, { width: '32%' }]}>When</Text>
                 <Text style={[baseStyles.th, { width: '68%' }]}>Event</Text>
               </View>
-              {incident.timeline.map((entry, i) => (
+              {timeline.map((entry, i) => (
                 <View key={i} style={baseStyles.tr} wrap={false}>
                   <Text style={[baseStyles.tdMono, { width: '32%' }]}>{entry.at || '—'}</Text>
                   <Text style={[baseStyles.td, { width: '68%' }]}>{entry.event}</Text>

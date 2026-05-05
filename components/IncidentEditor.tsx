@@ -7,8 +7,8 @@ import type {
   IncidentDocument,
   IncidentSeverity,
   IncidentStatus,
-  IncidentTimelineEntry,
 } from '@/lib/supabase/types';
+import { textToTimeline, timelineToText } from '@/lib/incidents/timeline';
 
 const STATUSES: IncidentStatus[] = ['open', 'contained', 'closed'];
 const SEVERITIES: IncidentSeverity[] = ['low', 'medium', 'high', 'critical'];
@@ -35,18 +35,9 @@ function arrayToLines(a: string[]): string {
   return a.join('\n');
 }
 
-/** Timeline editor uses "<at> | <event>" per line so users don't have to fiddle
- *  with two textareas. Lines without a pipe are treated as event-only. */
-function timelineToText(t: IncidentTimelineEntry[]): string {
-  return t.map((e) => (e.at ? `${e.at} | ${e.event}` : e.event)).join('\n');
-}
-function textToTimeline(s: string): IncidentTimelineEntry[] {
-  return s.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((line) => {
-    const idx = line.indexOf('|');
-    if (idx < 0) return { at: '', event: line };
-    return { at: line.slice(0, idx).trim(), event: line.slice(idx + 1).trim() };
-  });
-}
+// timelineToText / textToTimeline live in lib/incidents/timeline so the
+// PDF report and the editor agree on parsing — the smart split also picks
+// up "5/4/2026, 5:12 PM (MT) — Spoofed email…" without an explicit pipe.
 
 export default function IncidentEditor({
   initialIncident,
@@ -238,7 +229,7 @@ export default function IncidentEditor({
               rows={5} style={{ ...fieldStyle, resize: 'vertical', minHeight: 100 }} />
           </FieldRow>
 
-          <FieldRow label="Timeline" hint="One per line. Format: 'when | what'. Example: 2026-04-07 | Sign-in from Denver, CO.">
+          <FieldRow label="Timeline" hint="One per line. Either 'when | what' or 'when — what' works (— is em-dash). Example: 2026-04-07 — Sign-in from Denver, CO.">
             <textarea value={timelineText} onChange={(e) => setTimelineText(e.target.value)}
               rows={5} style={{ ...fieldStyle, resize: 'vertical', minHeight: 100, fontFamily: 'JetBrains Mono, monospace' }} />
           </FieldRow>
