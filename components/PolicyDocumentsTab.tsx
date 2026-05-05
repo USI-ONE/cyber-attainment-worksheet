@@ -89,11 +89,17 @@ export default function PolicyDocumentsTab({ initialDocuments }: { initialDocume
               Uploaded artifacts that back NIST CSF 2.0 scoring · {docs.length} document{docs.length === 1 ? '' : 's'}
             </div>
           </div>
-          <div>
+          <div style={{ display: 'flex', gap: 8 }}>
             <input ref={fileInput} type="file"
               accept=".pdf,.docx,.doc,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
               onChange={(e) => { const f = e.target.files?.[0]; if (f) pickFile(f); }}
               style={{ display: 'none' }} />
+            <a className="action-btn"
+               href="/api/report/policy"
+               title="Generate a board-ready PDF coverage briefing of all policy documents"
+               download>
+              Generate Executive Report
+            </a>
             <button className="action-btn primary" onClick={() => fileInput.current?.click()} disabled={busy}>
               {busy ? 'Uploading…' : 'Upload policy'}
             </button>

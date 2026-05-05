@@ -169,6 +169,14 @@ export default function IncidentEditor({
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="action-btn" onClick={deleteIncident}>Delete</button>
+            <a className="action-btn"
+               href={`/api/incidents/${inc.id}/report`}
+               title="Generate a board-ready PDF executive briefing for this incident"
+               // download attr nudges the browser to save instead of preview;
+               // Content-Disposition on the route is the real instruction.
+               download>
+              Generate Executive Report
+            </a>
             <button className="action-btn primary" onClick={save} disabled={saving}>
               {saving ? 'Saving…' : 'Save'}
             </button>

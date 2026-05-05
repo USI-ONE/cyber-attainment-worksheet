@@ -36,6 +36,12 @@ export default function SummaryDashboard({
               Policy · Practice · Goal — radar plots {catAvgs.length} categories grouped under the 6 functions
             </div>
           </div>
+          <a className="action-btn primary"
+             href="/api/report/dashboard"
+             title="Generate a board-ready PDF executive briefing of the current posture"
+             download>
+            Generate Executive Report
+          </a>
         </div>
         <div className="scorecard-grid">
           <div className="radar-wrap">
