@@ -146,6 +146,26 @@ export interface IncidentDocument {
 
 export type PolicyDocumentStatus = 'draft' | 'published' | 'archived';
 
+// ---------------------------------------------------------------------------
+// Assessment responses — see db/migrations/0011_assessment_responses.sql
+// ---------------------------------------------------------------------------
+
+export type AssessmentAnswer = 'no' | 'partial' | 'yes';
+
+export interface AssessmentResponse {
+  tenant_id: string;
+  framework_version_id: string;
+  control_id: string;
+  q1_documented: AssessmentAnswer | null;
+  q2_followed:   AssessmentAnswer | null;
+  q3_measured:   AssessmentAnswer | null;
+  q4_improvement: string | null;
+  notes: string | null;
+  computed_score: number | null;
+  responded_by: string | null;
+  responded_at: string;
+}
+
 export interface PolicyDocument {
   id: string;
   tenant_id: string;

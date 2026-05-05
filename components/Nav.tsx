@@ -8,6 +8,7 @@ type TabGroup = 'core' | 'planning' | 'governance' | 'reporting' | 'operator';
 const TABS: { href: string; label: string; group: TabGroup }[] = [
   { href: '/hub',         label: 'Portfolio Hub',     group: 'operator' }, // operator-only — filtered out for customer tenants
   { href: '/',            label: 'Summary Dashboard', group: 'core' },
+  { href: '/assessment',  label: 'Assessment',        group: 'core' },
   { href: '/standards',   label: 'Security Standards', group: 'governance' },
   { href: '/priorities',  label: '30-Day Priorities',  group: 'planning' },
   { href: '/work-plans',  label: 'Work Plans',         group: 'planning' },
