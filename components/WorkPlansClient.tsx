@@ -95,6 +95,12 @@ export default function WorkPlansClient({
               Tactical tasks per control · {openTasks} open · {totalTasks} total
             </div>
           </div>
+          <a className="action-btn"
+             href="/api/report/work-plan"
+             title="Generate a board-ready PDF Work Plan & 30-Day Priorities briefing"
+             download>
+            Generate Executive Report
+          </a>
           <div className="fn-filters">
             <button className={`fn-btn ${filter === 'ALL' ? 'active' : ''}`} onClick={() => setFilter('ALL')}>All</button>
             {definition.groups.map((g) => (

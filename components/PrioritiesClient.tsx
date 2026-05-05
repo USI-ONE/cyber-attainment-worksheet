@@ -87,9 +87,17 @@ export default function PrioritiesClient({
               Short-list of items to focus on this cycle · {open.length} open · {done.length} complete
             </div>
           </div>
-          <button className="action-btn primary" onClick={() => setAdding((v) => !v)}>
-            {adding ? 'Cancel' : '+ Add priority'}
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <a className="action-btn"
+               href="/api/report/work-plan"
+               title="Generate a board-ready PDF Work Plan & 30-Day Priorities briefing"
+               download>
+              Generate Executive Report
+            </a>
+            <button className="action-btn primary" onClick={() => setAdding((v) => !v)}>
+              {adding ? 'Cancel' : '+ Add priority'}
+            </button>
+          </div>
         </div>
 
         {adding && (

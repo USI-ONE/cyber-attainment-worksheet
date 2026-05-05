@@ -56,9 +56,17 @@ export default function SnapshotsClient({ initialSnapshots }: { initialSnapshots
               Frozen point-in-time copies of the worksheet · Drives trend &amp; board reporting
             </div>
           </div>
-          <button className="action-btn primary" onClick={() => setOpen((v) => !v)}>
-            {open ? 'Cancel' : 'Lock & Label'}
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <a className="action-btn"
+               href="/api/report/snapshot-compare"
+               title="Compare the two most recent snapshots (or last snapshot vs current)"
+               download>
+              Generate Executive Report
+            </a>
+            <button className="action-btn primary" onClick={() => setOpen((v) => !v)}>
+              {open ? 'Cancel' : 'Lock & Label'}
+            </button>
+          </div>
         </div>
 
         {open && (
@@ -132,7 +140,15 @@ export default function SnapshotsClient({ initialSnapshots }: { initialSnapshots
                 <td style={{ color: 'var(--text-mid)', fontSize: 11, maxWidth: 360, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {s.notes_md ?? '—'}
                 </td>
-                <td><Link href={`/snapshots/${s.id}`} className="action-btn">Edit scores</Link></td>
+                <td style={{ display: 'flex', gap: 6 }}>
+                  <Link href={`/snapshots/${s.id}`} className="action-btn">Edit scores</Link>
+                  <a className="action-btn"
+                     href={`/api/report/snapshot-compare?from=${encodeURIComponent(s.id)}&to=current`}
+                     title="Compare this snapshot against the current state"
+                     download>
+                    Compare → current
+                  </a>
+                </td>
               </tr>
             ))}
           </tbody>

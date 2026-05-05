@@ -102,6 +102,12 @@ export default async function TrendPage() {
               {fw.definition.framework.display_name} · {snaps.length} snapshots
             </div>
           </div>
+          <a className="action-btn primary"
+             href="/api/report/trend"
+             title="Generate a board-ready PDF trend briefing"
+             download>
+            Generate Executive Report
+          </a>
         </div>
         {snaps.length < 2 ? (
           <div className="banner">
