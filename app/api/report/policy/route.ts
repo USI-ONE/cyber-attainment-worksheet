@@ -1,6 +1,6 @@
 import React from 'react';
 import { type NextRequest } from 'next/server';
-import { renderToStream } from '@react-pdf/renderer';
+import { renderToBuffer } from '@react-pdf/renderer';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { resolveTenant } from '@/lib/tenant';
 import { loadActiveFramework } from '@/lib/framework';
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     .order('effective_date', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false });
 
-  const stream = await renderToStream(
+  const buffer = await renderToBuffer(
     React.createElement(PolicyReport, {
       tenant,
       documents: (docs ?? []) as PolicyDocument[],
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
 
   const filename = `${slugify(tenant.slug)}-policy-coverage-${new Date().toISOString().slice(0, 10)}.pdf`;
 
-  return new Response(stream as unknown as ReadableStream, {
+  return new Response(new Uint8Array(buffer), {
     headers: {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="${filename}"`,

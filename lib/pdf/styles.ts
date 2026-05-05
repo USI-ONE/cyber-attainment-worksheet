@@ -11,28 +11,23 @@ import type { Tenant } from '@/lib/supabase/types';
  * numerals so columns line up at any zoom.
  */
 
-// Register the same fonts the live UI uses so the PDF feels like the portal.
-// @react-pdf needs explicit URLs; we use the Google Fonts static endpoints.
+// Font strategy: @react-pdf ships with Helvetica / Times-Roman / Courier as
+// PDF core fonts (no network fetch needed). For brand-feel parity we'd love to
+// use Inter + Oswald like the live UI does, but registering remote fonts means
+// every cold-start function fetches them from Google Fonts and any blip in
+// outbound network kills the whole render. So we stay on the bullet-proof
+// core-font path by default. The base styles below use the @react-pdf
+// "Helvetica" alias which always resolves without a network round-trip.
+//
+// If you ever want to upgrade visual fidelity, drop a TTF file under
+// public/fonts/ and pass src: '<absolute-url-to-self-hosted-ttf>' here —
+// keeping registration self-hosted is far more reliable than gstatic.
 let _fontsRegistered = false;
 export function registerFonts() {
   if (_fontsRegistered) return;
-  Font.register({
-    family: 'Inter',
-    fonts: [
-      { src: 'https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50ojIa1ZL7W0Q5nw.ttf', fontWeight: 400 },
-      { src: 'https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50ojIa0ZL7W0Q5nw.ttf', fontWeight: 500 },
-      { src: 'https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50ojIaz5L7W0Q5nw.ttf', fontWeight: 600 },
-      { src: 'https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50ojIay5L7W0Q5nw.ttf', fontWeight: 700 },
-    ],
-  });
-  Font.register({
-    family: 'Oswald',
-    fonts: [
-      { src: 'https://fonts.gstatic.com/s/oswald/v53/TK3iWkUHHAIjg752GT8Gl-1PKw.ttf', fontWeight: 500 },
-      { src: 'https://fonts.gstatic.com/s/oswald/v53/TK3iWkUHHAIjg752Hj8Gl-1PKw.ttf', fontWeight: 600 },
-      { src: 'https://fonts.gstatic.com/s/oswald/v53/TK3iWkUHHAIjg752IT8Gl-1PKw.ttf', fontWeight: 700 },
-    ],
-  });
+  // No-op for now (see comment above). Kept as a function so callers can
+  // continue to reference it idempotently as we grow the report set.
+  void Font; // suppress "unused import" without removing the symbol
   _fontsRegistered = true;
 }
 
@@ -71,7 +66,7 @@ export const baseStyles = StyleSheet.create({
     paddingBottom: 72,    // 1in bottom — leaves room for the page-number footer
     paddingLeft:   54,    // 0.75in
     paddingRight:  54,
-    fontFamily: 'Inter',
+    fontFamily: 'Helvetica',
     fontSize: 10,
     color: '#333333',
     lineHeight: 1.5,
@@ -86,7 +81,7 @@ export const baseStyles = StyleSheet.create({
     borderBottomColor: '#D9D9D9',
   },
   pageHeaderTenant: {
-    fontFamily: 'Oswald', fontSize: 9, fontWeight: 600,
+    fontFamily: 'Helvetica-Bold', fontSize: 9, fontWeight: 600,
     letterSpacing: 1.2, textTransform: 'uppercase', color: '#111111',
   },
   pageHeaderType: {
@@ -107,7 +102,7 @@ export const baseStyles = StyleSheet.create({
     borderBottomWidth: 2,
   },
   coverEyebrow: {
-    fontFamily: 'Oswald', fontSize: 10, fontWeight: 600,
+    fontFamily: 'Helvetica-Bold', fontSize: 10, fontWeight: 600,
     letterSpacing: 2, textTransform: 'uppercase',
     marginBottom: 10,
   },
@@ -121,7 +116,7 @@ export const baseStyles = StyleSheet.create({
 
   // Section blocks
   sectionH: {
-    fontFamily: 'Oswald', fontSize: 11, fontWeight: 600,
+    fontFamily: 'Helvetica-Bold', fontSize: 11, fontWeight: 600,
     letterSpacing: 1.5, textTransform: 'uppercase',
     color: '#111111',
     marginTop: 18, marginBottom: 8,
@@ -143,7 +138,7 @@ export const baseStyles = StyleSheet.create({
   },
   metaItem: { width: '50%', marginBottom: 10 },
   metaLabel: {
-    fontFamily: 'Oswald', fontSize: 8, fontWeight: 600,
+    fontFamily: 'Helvetica-Bold', fontSize: 8, fontWeight: 600,
     letterSpacing: 1, textTransform: 'uppercase', color: '#6B6B6B',
     marginBottom: 2,
   },
@@ -165,13 +160,13 @@ export const baseStyles = StyleSheet.create({
     paddingTop: 5, paddingBottom: 5,
   },
   th: {
-    fontFamily: 'Oswald', fontSize: 8, fontWeight: 600,
+    fontFamily: 'Helvetica-Bold', fontSize: 8, fontWeight: 600,
     letterSpacing: 1, textTransform: 'uppercase', color: '#6B6B6B',
   },
   td: { fontSize: 10, color: '#333333' },
   tdMono: {
     fontSize: 9, color: '#333333',
-    fontFamily: 'Inter',
+    fontFamily: 'Helvetica',
   },
   tdNum: { fontSize: 10, color: '#111111', textAlign: 'right' },
 

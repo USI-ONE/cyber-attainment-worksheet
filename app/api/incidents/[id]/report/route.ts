@@ -1,6 +1,6 @@
 import React from 'react';
 import { type NextRequest } from 'next/server';
-import { renderToStream } from '@react-pdf/renderer';
+import { renderToBuffer } from '@react-pdf/renderer';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { resolveTenant } from '@/lib/tenant';
 import { IncidentReport } from '@/lib/pdf/IncidentReport';
@@ -54,7 +54,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     .order('created_at', { ascending: false });
 
   const preparedBy = incident.reported_by || tenant.display_name;
-  const stream = await renderToStream(
+  // renderToBuffer is the simpler pairing for Next.js fetch-style Response —
+  // returning the whole Buffer avoids the Node-Readable-vs-Web-ReadableStream
+  // interop problem that bites @react-pdf in serverless. Reports run small
+  // (≤ a few hundred KB) so buffering in memory is fine.
+  const buffer = await renderToBuffer(
     React.createElement(IncidentReport, {
       tenant,
       incident: incident as Incident,
@@ -65,9 +69,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
   const filename = `${slugify(tenant.slug)}-${slugify(incident.title)}-${new Date().toISOString().slice(0, 10)}.pdf`;
 
-  // @react-pdf returns a Node Readable; wrap as a Web ReadableStream for the
-  // Response. The Next.js fetch API expects a web stream when running on Node.
-  return new Response(stream as unknown as ReadableStream, {
+  // Wrap as Uint8Array — Node Buffer doesn't satisfy BodyInit in Next.js's
+  // Web-Fetch types but a plain typed array does, and it's a zero-copy view
+  // over the same underlying ArrayBuffer.
+  return new Response(new Uint8Array(buffer), {
     headers: {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="${filename}"`,
