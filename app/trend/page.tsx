@@ -12,7 +12,8 @@ interface SnapAgg {
   taken_at: string;
   label: string;
   period: string | null;
-  by_group: Record<string, { pra_avg: number | null; gol_avg: number | null; n: number }>;
+  by_group: Record<string, { pol_avg: number | null; pra_avg: number | null; gol_avg: number | null; pol_n: number; pra_n: number; gol_n: number }>;
+  overall_pol: number | null;
   overall_pra: number | null;
   overall_gol: number | null;
 }
@@ -35,25 +36,40 @@ export default async function TrendPage() {
 
   const snaps = (snapshots ?? []) as { id: string; label: string; period: string | null; taken_at: string }[];
 
+  // Accumulate per-snapshot averages for all three score columns. Numeric
+  // values come back from the DB as strings (numeric column), so coerce.
+  const num = (v: unknown): number | null => {
+    if (v == null) return null;
+    const n = typeof v === 'number' ? v : parseFloat(String(v));
+    return Number.isFinite(n) ? n : null;
+  };
   const aggregated: SnapAgg[] = [];
   for (const s of snaps) {
     const { data: rows } = await supabase
       .from('snapshot_scores')
-      .select('control_id, pra, gol')
+      .select('control_id, pol, pra, gol')
       .eq('snapshot_id', s.id);
     const by_group: SnapAgg['by_group'] = {};
-    let praSum = 0, praN = 0, golSum = 0, golN = 0;
-    for (const r of (rows ?? []) as { control_id: string; pra: number | null; gol: number | null }[]) {
+    let polSum = 0, polN = 0, praSum = 0, praN = 0, golSum = 0, golN = 0;
+    for (const r of (rows ?? []) as { control_id: string; pol: unknown; pra: unknown; gol: unknown }[]) {
       const g = r.control_id.split('.')[0];
-      if (!by_group[g]) by_group[g] = { pra_avg: null, gol_avg: null, n: 0 };
-      if (r.pra != null) {
-        const cur = by_group[g];
-        cur.pra_avg = ((cur.pra_avg ?? 0) * cur.n + r.pra) / (cur.n + 1);
-        cur.n++;
-        praSum += r.pra; praN++;
+      if (!by_group[g]) by_group[g] = { pol_avg: null, pra_avg: null, gol_avg: null, pol_n: 0, pra_n: 0, gol_n: 0 };
+      const cur = by_group[g];
+      const pol = num(r.pol); const pra = num(r.pra); const gol = num(r.gol);
+      if (pol != null) {
+        cur.pol_avg = ((cur.pol_avg ?? 0) * cur.pol_n + pol) / (cur.pol_n + 1);
+        cur.pol_n++;
+        polSum += pol; polN++;
       }
-      if (r.gol != null) {
-        golSum += r.gol; golN++;
+      if (pra != null) {
+        cur.pra_avg = ((cur.pra_avg ?? 0) * cur.pra_n + pra) / (cur.pra_n + 1);
+        cur.pra_n++;
+        praSum += pra; praN++;
+      }
+      if (gol != null) {
+        cur.gol_avg = ((cur.gol_avg ?? 0) * cur.gol_n + gol) / (cur.gol_n + 1);
+        cur.gol_n++;
+        golSum += gol; golN++;
       }
     }
     aggregated.push({
@@ -62,44 +78,62 @@ export default async function TrendPage() {
       label: s.label,
       period: s.period,
       by_group,
+      overall_pol: polN ? polSum / polN : null,
       overall_pra: praN ? praSum / praN : null,
       overall_gol: golN ? golSum / golN : null,
     });
   }
 
-  const series: TrendSeries[] = fw.definition.groups.map((g) => {
-    const c = GROUP_COLORS[g.id] ?? { accent: '#C9A961' };
-    return {
+  // Three thick "overall" series (Policy / Practice / Goal) — these are the
+  // headline trend lines the board reads. Per-function lines are kept as thin
+  // background series so a click-through reveals where the movement is.
+  // Colors match the radar / executive report convention.
+  const series: TrendSeries[] = [];
+  series.push({
+    key: 'OVERALL_POL', label: 'Policy (overall)', color: '#A6873B',
+    points: aggregated.map((a) => ({
+      x: new Date(a.taken_at).getTime(), xLabel: a.period ?? a.label, y: a.overall_pol,
+    })),
+    thick: true,
+  });
+  series.push({
+    key: 'OVERALL_PRA', label: 'Practice (overall)', color: '#B45309',
+    points: aggregated.map((a) => ({
+      x: new Date(a.taken_at).getTime(), xLabel: a.period ?? a.label, y: a.overall_pra,
+    })),
+    thick: true,
+  });
+  series.push({
+    key: 'OVERALL_GOL', label: 'Goal (overall)', color: '#15803D',
+    points: aggregated.map((a) => ({
+      x: new Date(a.taken_at).getTime(), xLabel: a.period ?? a.label, y: a.overall_gol,
+    })),
+    thick: true,
+  });
+  // Per-function Practice trend (faded background lines so the headline
+  // overall lines stand out).
+  for (const g of fw.definition.groups) {
+    const c = GROUP_COLORS[g.id] ?? { accent: '#A6873B' };
+    series.push({
       key: g.id,
-      label: g.name,
+      label: g.name + ' (Practice)',
       color: c.accent,
       points: aggregated.map((a) => ({
         x: new Date(a.taken_at).getTime(),
         xLabel: a.period ?? a.label,
         y: a.by_group[g.id]?.pra_avg ?? null,
       })),
-    };
-  });
-  series.unshift({
-    key: 'OVERALL',
-    label: 'Overall',
-    color: '#C9A961',
-    points: aggregated.map((a) => ({
-      x: new Date(a.taken_at).getTime(),
-      xLabel: a.period ?? a.label,
-      y: a.overall_pra,
-    })),
-    thick: true,
-  });
+    });
+  }
 
   return (
     <main className="app-main">
       <section className="scorecard">
         <div className="scorecard-header">
           <div>
-            <div className="scorecard-title">Practice Maturity Trend</div>
+            <div className="scorecard-title">Maturity Trend</div>
             <div className="scorecard-tag" style={{ marginTop: 4 }}>
-              {fw.definition.framework.display_name} · {snaps.length} snapshots
+              {fw.definition.framework.display_name} · {snaps.length} snapshots · Policy · Practice · Goal
             </div>
           </div>
           <a className="action-btn primary"
