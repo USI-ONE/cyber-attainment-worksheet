@@ -1,20 +1,20 @@
-import { headers } from 'next/headers';
-import { resolveTenant } from '@/lib/tenant';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 
 /**
- * MSP operator hub — landing page that lists every tenant portal with
- * at-a-glance signals (open incidents, last scoring update, last snapshot).
- * Server-side gated to only render real content when the current deploy is
- * serving the USI tenant; customer deploys see an empty placeholder so the
- * URL never leaks portfolio data.
+ * Portfolio Hub — operator-only landing page that lists every tenant portal
+ * with at-a-glance signals (open incidents, last scoring update, last
+ * snapshot, active policy docs).
  *
- * When real auth lands, the gate becomes "logged-in MSP user" — the URL stays
- * the same, so any bookmark survives.
+ * The hub lives on its own Vercel deployment with the env var
+ * `OPERATOR_MODE=true` set. That deploy has no `TENANT_SLUG`, so it is not a
+ * tenant itself — every customer (including USI, the MSP) shows up here as
+ * one of the cards. Tenant deploys leave this route as an empty placeholder
+ * so the URL never leaks portfolio data even if guessed.
+ *
+ * When real auth lands, the gate becomes "logged-in MSP user" — the URL
+ * stays the same, so any bookmark survives.
  */
 export const dynamic = 'force-dynamic';
-
-const OPERATOR_SLUG = 'universal-systems';
 
 type TenantRow = {
   id: string;
@@ -38,18 +38,15 @@ interface TenantCard {
 }
 
 export default async function HubPage() {
-  const host = headers().get('host') ?? undefined;
-  const tenant = await resolveTenant(host);
-  if (!tenant) return <main className="app-main"><div className="banner error">No tenant.</div></main>;
-
-  // Gate: hub only renders on the operator deploy.
-  if (tenant.slug !== OPERATOR_SLUG) {
+  // Gate: hub only renders on the operator deploy. Customer-tenant deploys
+  // get a minimal placeholder so the URL never reveals portfolio data.
+  if (process.env.OPERATOR_MODE !== 'true') {
     return (
       <main className="app-main">
         <section className="scorecard">
-          <div className="scorecard-title">Operator hub</div>
+          <div className="scorecard-title">Portfolio Hub</div>
           <div className="scorecard-tag" style={{ marginTop: 4 }}>
-            This page is only available on the operator deployment.
+            The portfolio hub is hosted on the operator deployment, not on this tenant portal.
           </div>
         </section>
       </main>
@@ -107,12 +104,10 @@ export default async function HubPage() {
     }),
   );
 
-  // Operator first, others alphabetical (already alphabetical from query, just hoist USI).
-  cards.sort((a, b) => {
-    if (a.slug === OPERATOR_SLUG) return -1;
-    if (b.slug === OPERATOR_SLUG) return 1;
-    return a.display_name.localeCompare(b.display_name);
-  });
+  // Alphabetical by display_name. USI shows up as a peer of every other
+  // portfolio company — the hub itself is operator-level, separate from
+  // any tenant identity.
+  cards.sort((a, b) => a.display_name.localeCompare(b.display_name));
 
   return (
     <main className="app-main">

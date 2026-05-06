@@ -7,6 +7,14 @@ import { resolveTenant } from '@/lib/tenant';
 import { headers } from 'next/headers';
 
 export async function generateMetadata(): Promise<Metadata> {
+  // Operator deploy gets a generic Portfolio Hub title; tenant deploys
+  // pull their display_name from the resolved tenant.
+  if (process.env.OPERATOR_MODE === 'true') {
+    return {
+      title: 'Portfolio Hub — Cyber Attainment Worksheet',
+      description: 'Operator-level overview of every tenant portal.',
+    };
+  }
   const tenant = await resolveTenant();
   const name = tenant?.display_name ?? 'Cyber Attainment Worksheet';
   return {
@@ -64,10 +72,33 @@ export default async function RootLayout({
         />
       </head>
       <body style={rootStyle}>
-        {tenant && <Header tenant={tenant} frameworkLabel={null} userEmail={null} />}
-        {tenant && <Nav isOperator={tenant.slug === 'universal-systems'} />}
+        {/*
+          Operator-mode (the Portfolio Hub deploy) skips all tenant chrome —
+          it's not a tenant. Customer tenant deploys render the normal
+          Header / Nav / Footer with their brand pulled from brand_config.
+        */}
+        {process.env.OPERATOR_MODE === 'true' ? (
+          <header style={{
+            padding: '14px 20px',
+            borderBottom: '1px solid var(--bg-border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <span style={{
+              fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: 14,
+              letterSpacing: '0.2em', textTransform: 'uppercase',
+            }}>Portfolio Hub</span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+              Cyber Attainment Worksheet · Operator
+            </span>
+          </header>
+        ) : (
+          <>
+            {tenant && <Header tenant={tenant} frameworkLabel={null} userEmail={null} />}
+            {tenant && <Nav />}
+          </>
+        )}
         {children}
-        {tenant && <Footer tenant={tenant} />}
+        {tenant && process.env.OPERATOR_MODE !== 'true' && <Footer tenant={tenant} />}
       </body>
     </html>
   );

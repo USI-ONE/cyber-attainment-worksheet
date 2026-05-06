@@ -1,4 +1,5 @@
 import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { resolveTenant } from '@/lib/tenant';
 import { loadActiveFramework } from '@/lib/framework';
 import { createServiceRoleClient } from '@/lib/supabase/server';
@@ -8,6 +9,12 @@ import SummaryDashboard from '@/components/SummaryDashboard';
 export const dynamic = 'force-dynamic';
 
 export default async function Page() {
+  // Operator deploy: there is no tenant scoring to show; route the user to
+  // the Portfolio Hub which is the actual landing page for that deployment.
+  if (process.env.OPERATOR_MODE === 'true') {
+    redirect('/hub');
+  }
+
   const host = headers().get('host') ?? undefined;
   const tenant = await resolveTenant(host);
   if (!tenant) {
