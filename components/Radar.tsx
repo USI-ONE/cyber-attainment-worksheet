@@ -2,10 +2,12 @@
 
 import { GROUP_COLORS, TIER_MAX, type GroupAverage } from '@/lib/scoring';
 
+// Stroke colors are darkened from the dark-theme variants so the polygons
+// stay visible on white. Fills stay semi-transparent and tinted.
 const RADAR = {
-  pol: { stroke: '#C9A961', fill: 'rgba(201,169,97,0.18)' },
-  pra: { stroke: '#F59E0B', fill: 'rgba(245,158,11,0.18)' },
-  gol: { stroke: '#22C55E', fill: 'rgba(34,197,94,0.18)' },
+  pol: { stroke: '#A6873B', fill: 'rgba(166,135,59,0.16)' },
+  pra: { stroke: '#B45309', fill: 'rgba(180,83,9,0.18)'   },
+  gol: { stroke: '#15803D', fill: 'rgba(21,128,61,0.16)'  },
 };
 
 export default function Radar({ avgs }: { avgs: GroupAverage[] }) {
@@ -87,7 +89,7 @@ export default function Radar({ avgs }: { avgs: GroupAverage[] }) {
             key={level}
             points={ringPts(level)}
             fill="none"
-            stroke={isTarget ? 'rgba(201,169,97,0.25)' : 'rgba(255,255,255,0.07)'}
+            stroke={isTarget ? 'rgba(166,135,59,0.55)' : 'rgba(0,0,0,0.10)'}
             strokeWidth={1}
             strokeDasharray={isTarget ? '3,3' : 'none'}
           />
@@ -95,12 +97,12 @@ export default function Radar({ avgs }: { avgs: GroupAverage[] }) {
       })}
       {avgs.map((_, i) => {
         const [x, y] = pt(i, TIER_MAX);
-        return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="rgba(255,255,255,0.1)" strokeWidth={1} />;
+        return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="rgba(0,0,0,0.10)" strokeWidth={1} />;
       })}
       {[1, 2, 3, 4, 5].map((level) => {
         const [x, y] = pt(0, level);
         return (
-          <text key={level} x={x + 4} y={y + 3} fill="rgba(255,255,255,0.35)" fontSize={9} fontFamily="JetBrains Mono">
+          <text key={level} x={x + 4} y={y + 3} fill="rgba(0,0,0,0.35)" fontSize={9} fontFamily="JetBrains Mono">
             {level}
           </text>
         );

@@ -39,10 +39,10 @@ export default function TrendChart({ series }: { series: TrendSeries[] }) {
         <g key={y}>
           <line
             x1={PAD_L} y1={yScale(y)} x2={W - PAD_R} y2={yScale(y)}
-            stroke={y === 3 ? 'rgba(201,169,97,0.25)' : 'rgba(255,255,255,0.07)'}
+            stroke={y === 3 ? 'rgba(166,135,59,0.55)' : 'rgba(0,0,0,0.10)'}
             strokeDasharray={y === 3 ? '3,3' : 'none'}
           />
-          <text x={PAD_L - 8} y={yScale(y) + 4} textAnchor="end" fontSize={10} fontFamily="JetBrains Mono" fill="rgba(255,255,255,0.5)">
+          <text x={PAD_L - 8} y={yScale(y) + 4} textAnchor="end" fontSize={10} fontFamily="JetBrains Mono" fill="rgba(0,0,0,0.55)">
             {y}
           </text>
         </g>
@@ -53,11 +53,11 @@ export default function TrendChart({ series }: { series: TrendSeries[] }) {
         const x = xScale(p.x);
         return (
           <g key={i}>
-            <line x1={x} y1={PAD_T + innerH} x2={x} y2={PAD_T + innerH + 4} stroke="rgba(255,255,255,0.2)" />
+            <line x1={x} y1={PAD_T + innerH} x2={x} y2={PAD_T + innerH + 4} stroke="rgba(0,0,0,0.30)" />
             <text
               x={x} y={PAD_T + innerH + 18}
               textAnchor="end"
-              fontSize={10} fontFamily="Inter" fill="rgba(255,255,255,0.55)"
+              fontSize={10} fontFamily="Inter" fill="rgba(0,0,0,0.60)"
               transform={`rotate(-30, ${x}, ${PAD_T + innerH + 18})`}
             >
               {p.xLabel}
@@ -88,7 +88,7 @@ export default function TrendChart({ series }: { series: TrendSeries[] }) {
         {series.map((s, i) => (
           <g key={s.key} transform={`translate(${i * 110}, 0)`}>
             <line x1={0} y1={6} x2={20} y2={6} stroke={s.color} strokeWidth={s.thick ? 3 : 1.6} />
-            <text x={26} y={9} fontSize={10} fontFamily="Oswald" fill="rgba(255,255,255,0.7)" letterSpacing="0.06em">
+            <text x={26} y={9} fontSize={10} fontFamily="Oswald" fill="rgba(0,0,0,0.70)" letterSpacing="0.06em">
               {s.key}
             </text>
           </g>

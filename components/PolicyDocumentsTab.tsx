@@ -5,9 +5,9 @@ import type { PolicyDocument, PolicyDocumentStatus } from '@/lib/supabase/types'
 
 const STATUSES: PolicyDocumentStatus[] = ['draft', 'published', 'archived'];
 const STATUS_COLORS: Record<PolicyDocumentStatus, string> = {
-  draft: '#9AAEC1',
-  published: '#86D69E',
-  archived: '#FCA5A5',
+  draft: '#475569',
+  published: '#15803D',
+  archived: '#B91C1C',
 };
 
 export default function PolicyDocumentsTab({ initialDocuments }: { initialDocuments: PolicyDocument[] }) {

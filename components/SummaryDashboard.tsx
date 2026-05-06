@@ -47,9 +47,9 @@ export default function SummaryDashboard({
           <div className="radar-wrap">
             <Radar avgs={catAvgs} />
             <div className="radar-legend">
-              <Legend swatch="#C9A961" label="Policy" />
-              <Legend swatch="#F59E0B" label="Practice" />
-              <Legend swatch="#22C55E" label="Goal" />
+              <Legend swatch="#A6873B" label="Policy" />
+              <Legend swatch="#B45309" label="Practice" />
+              <Legend swatch="#15803D" label="Goal" />
             </div>
           </div>
           <div>

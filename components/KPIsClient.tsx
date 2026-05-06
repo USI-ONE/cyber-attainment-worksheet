@@ -244,9 +244,9 @@ function Sparkline({ obs, target, direction }: { obs: KpiObs[]; target: number |
     .join(' ');
 
   const lastVal = vals[vals.length - 1];
-  const accent = target == null ? '#C9A961' :
-    direction === 'up' ? (lastVal >= target ? '#86D69E' : '#FCA5A5') :
-    (lastVal <= target ? '#86D69E' : '#FCA5A5');
+  const accent = target == null ? '#A6873B' :
+    direction === 'up' ? (lastVal >= target ? '#15803D' : '#B91C1C') :
+    (lastVal <= target ? '#15803D' : '#B91C1C');
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block', maxWidth: '100%' }}>

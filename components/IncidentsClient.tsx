@@ -4,16 +4,18 @@ import Link from 'next/link';
 import { useState } from 'react';
 import type { Incident, IncidentSeverity, IncidentStatus } from '@/lib/supabase/types';
 
+// Darkened from the dark-theme palette so these read on white bg. Pills
+// also paint a tinted background using `${color}22`, which stays soft.
 const SEVERITY_COLORS: Record<IncidentSeverity, string> = {
-  low:      '#9AAEC1',
-  medium:   '#FCD34D',
-  high:     '#F59E0B',
-  critical: '#FCA5A5',
+  low:      '#475569',
+  medium:   '#A16207',
+  high:     '#B45309',
+  critical: '#B91C1C',
 };
 const STATUS_COLORS: Record<IncidentStatus, string> = {
-  open:      '#FCA5A5',
-  contained: '#FCD34D',
-  closed:    '#86D69E',
+  open:      '#B91C1C',
+  contained: '#A16207',
+  closed:    '#15803D',
 };
 
 export default function IncidentsClient({ initialIncidents }: { initialIncidents: Incident[] }) {

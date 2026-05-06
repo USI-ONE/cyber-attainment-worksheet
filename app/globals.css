@@ -6,49 +6,61 @@
 *{box-sizing:border-box;margin:0;padding:0}
 
 :root{
-  --bg-deep:#0A0F1E;
-  --bg:#0F1423;
-  --bg-mid:#161D30;
-  --bg-card:#1F273D;
-  --bg-border:#2A3550;
-  --bg-line:#3A4660;
+  /*
+    Light theme. Surface layers go from page (slightly tinted off-white) to
+    pure white for cards. Text is dark gray-blue, not pure black, so the eye
+    has somewhere softer to land. Brand accents (--gold-*) are darkened from
+    their dark-theme values so they remain legible on white — tenants whose
+    brand_config.theme.primary is naturally light should add a darker
+    primary_light variant for the "light/text on white" use cases.
+  */
 
-  /* Default brand accents; tenants can override via brand_config.theme on <body> */
-  --gold:#C9A961;
-  --gold-light:#E8D29B;
-  --gold-bright:#D9B97A;
-  --gold-pale:rgba(201,169,97,0.14);
-  --gold-border:rgba(201,169,97,0.42);
-  --brand-secondary:#5B7FA8;  /* fallback secondary accent */
-  --brand-accent:#A89060;     /* fallback warm tertiary accent */
+  /* Surface layers — page → card → inner */
+  --bg-deep:#FFFFFF;            /* deepest surface (used by some inputs / inner panels) */
+  --bg:#F6F4EE;                 /* page background — warm off-white */
+  --bg-mid:#FFFFFF;             /* card background */
+  --bg-card:#FBFAF5;            /* secondary card variant */
+  --bg-border:#E2DCC8;           /* warm light border */
+  --bg-line:#CFC6AF;             /* ruled line, slightly darker than border */
+
+  /* Default brand accents; tenants override via brand_config.theme on <body>.
+     --gold-light is intentionally DARKER than --gold so text-on-white reads. */
+  --gold:#A6873B;               /* darker variant of #C9A961 */
+  --gold-light:#7C6428;          /* darker still — for text emphasis */
+  --gold-bright:#C9A961;         /* original gold — for filled badges */
+  --gold-pale:rgba(166,135,59,0.10);
+  --gold-border:rgba(166,135,59,0.40);
+  --brand-secondary:#3B5C7F;
+  --brand-accent:#7A6328;
 
   --white:#FFFFFF;
-  --text:#E8EDF2;
-  --text-mid:#9AAEC1;
-  --text-dim:#6A8499;
-  --text-muted:#4D6478;
+  --text:#1F2937;                /* primary text — dark slate */
+  --text-mid:#4B5563;            /* secondary text */
+  --text-dim:#6B7280;            /* tertiary / hints */
+  --text-muted:#9CA3AF;          /* placeholder / faded */
 
-  --tier1:#9AAEC1;  /* Initial */
-  --tier2:#FCD34D;  /* Repeatable */
-  --tier3:#FBBF24;  /* Defined */
-  --tier4:#86D69E;  /* Managed */
-  --tier5:#7DD3DB;  /* Optimizing */
+  /* CMM tiers — darkened so all five sit on white legibly */
+  --tier1:#94A3B8;               /* Initial — slate */
+  --tier2:#A16207;               /* Repeatable — dark amber */
+  --tier3:#B45309;               /* Defined — burnt amber */
+  --tier4:#15803D;               /* Managed — forest green */
+  --tier5:#0E7490;               /* Optimizing — teal */
 
-  --gap-pos:#FCA5A5;
-  --gap-zero:#86D69E;
-  --gap-neg:#9AAEC1;
+  --gap-pos:#B91C1C;             /* below-target practice — dark red */
+  --gap-zero:#15803D;            /* meeting target — green */
+  --gap-neg:#475569;             /* above target — slate */
 
-  --amber:#F59E0B;
-  --amber-text:#FCD34D;
-  --green:#22C55E;
-  --green-text:#86D69E;
-  --red:#EF4444;
-  --red-text:#FCA5A5;
+  --amber:#B45309;
+  --amber-text:#92400E;
+  --green:#16A34A;
+  --green-text:#15803D;
+  --red:#B91C1C;
+  --red-text:#991B1B;
 }
 
 html,body{
   font-family:'Inter',-apple-system,sans-serif;
-  background:var(--bg-deep);
+  background:var(--bg);
   color:var(--text);
   font-size:13px;
   line-height:1.5;
@@ -57,10 +69,11 @@ html,body{
 }
 
 body{
+  /* Subtle warm and cool tints so the page doesn't read as flat-paper white. */
   background:
-    radial-gradient(ellipse 80% 50% at top, rgba(201,169,97,0.05), transparent 70%),
-    radial-gradient(ellipse 60% 40% at bottom right, rgba(91,127,168,0.04), transparent 70%),
-    var(--bg-deep);
+    radial-gradient(ellipse 80% 50% at top, rgba(166,135,59,0.05), transparent 70%),
+    radial-gradient(ellipse 60% 40% at bottom right, rgba(59,92,127,0.04), transparent 70%),
+    var(--bg);
 }
 
 /* HEADER */
@@ -103,7 +116,7 @@ body{
   font-family:'Oswald',sans-serif;
   font-weight:600;
   font-size:24px;
-  color:var(--white);
+  color:var(--text);
   letter-spacing:.14em;
   text-transform:uppercase;
   line-height:1;
@@ -326,7 +339,7 @@ body{
   font-family:'Oswald',sans-serif;
   font-weight:600;
   font-size:18px;
-  color:var(--white);
+  color:var(--text);
   letter-spacing:.14em;
   text-transform:uppercase;
   margin-bottom:10px;
@@ -358,7 +371,7 @@ body{
   font-family:'Oswald',sans-serif;
   font-weight:600;
   font-size:14px;
-  color:var(--white);
+  color:var(--text);
   letter-spacing:.16em;
   text-transform:uppercase;
 }
@@ -404,7 +417,7 @@ body{
 .score-table th.num,
 .score-table td.num{text-align:right}
 .score-table td{
-  padding:9px 10px; border-bottom:1px solid rgba(255,255,255,0.04);
+  padding:9px 10px; border-bottom:1px solid rgba(0,0,0,0.06);
   vertical-align:middle;
 }
 /* Lock numeric columns to a fixed-width tabular figure so a 3.10 and a
@@ -537,20 +550,20 @@ body{
   content:''; position:absolute; left:0; top:0; bottom:0; width:4px;
   background:var(--fn-accent);
 }
-.fn-toggle{ font-size:11px; color:var(--white); transition:transform .2s ease; width:14px; }
+.fn-toggle{ font-size:11px; color:var(--text); transition:transform .2s ease; width:14px; }
 .fn-row.collapsed .fn-toggle{transform:rotate(-90deg)}
 .fn-code{
   font-family:'Oswald',sans-serif; font-weight:700; font-size:18px;
-  color:var(--white); letter-spacing:.06em;
+  color:var(--text); letter-spacing:.06em;
 }
 .fn-name{
   font-family:'Oswald',sans-serif; font-weight:600; font-size:14px;
-  color:var(--white); letter-spacing:.1em; text-transform:uppercase;
+  color:var(--text); letter-spacing:.1em; text-transform:uppercase;
 }
-.fn-desc{ font-size:11.5px; color:rgba(255,255,255,0.8); font-style:italic; flex:1; }
+.fn-desc{ font-size:11.5px; color:var(--text-mid); font-style:italic; flex:1; }
 .fn-summary{
   font-family:'JetBrains Mono',monospace; font-size:10px;
-  color:rgba(255,255,255,0.85); font-weight:600; white-space:nowrap; letter-spacing:.05em;
+  color:var(--text-mid); font-weight:600; white-space:nowrap; letter-spacing:.05em;
 }
 
 .cat-row td{
@@ -667,7 +680,7 @@ body{
 }
 .signin-title{
   font-family:'Oswald',sans-serif; font-weight:600; font-size:18px;
-  color:var(--white); letter-spacing:.14em; text-transform:uppercase;
+  color:var(--text); letter-spacing:.14em; text-transform:uppercase;
   margin-bottom:8px;
 }
 .signin-sub{ color:var(--text-mid); font-size:12px; margin-bottom:24px; }

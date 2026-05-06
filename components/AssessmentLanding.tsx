@@ -166,7 +166,7 @@ export default function AssessmentLanding({
                         </td>
                         <td style={{ fontSize: 11 }}>
                           {complete ? (
-                            <span style={{ color: '#86D69E' }}>✓ {tierForScore(score)}</span>
+                            <span style={{ color: '#15803D' }}>✓ {tierForScore(score)}</span>
                           ) : r ? (
                             <span style={{ color: 'var(--gold-light)' }}>● In progress</span>
                           ) : (

@@ -303,7 +303,7 @@ function Question({
       <div style={{ display: 'flex', gap: 6 }}>
         {(['no', 'partial', 'yes'] as AssessmentAnswer[]).map((opt) => {
           const sel = value === opt;
-          const color = opt === 'yes' ? '#86D69E' : opt === 'partial' ? '#FCD34D' : '#FCA5A5';
+          const color = opt === 'yes' ? '#15803D' : opt === 'partial' ? '#A16207' : '#B91C1C';
           return (
             <button
               key={opt}

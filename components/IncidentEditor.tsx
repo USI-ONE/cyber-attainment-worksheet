@@ -155,7 +155,7 @@ export default function IncidentEditor({
             <div className="scorecard-title">{inc.title || 'Incident'}</div>
             <div className="scorecard-tag" style={{ marginTop: 4 }}>
               Created {new Date(inc.created_at).toLocaleString()} · Last updated {new Date(inc.updated_at).toLocaleString()}
-              {savedAt && <span style={{ color: '#86D69E', marginLeft: 12 }}>Saved {savedAt.toLocaleTimeString()}</span>}
+              {savedAt && <span style={{ color: '#15803D', marginLeft: 12 }}>Saved {savedAt.toLocaleTimeString()}</span>}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
