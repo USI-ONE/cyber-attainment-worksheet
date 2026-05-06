@@ -202,20 +202,54 @@ export function DashboardReport({
           </View>
         )}
 
-        {/* Footer narrative */}
+        {/* Footer narrative — explains the three columns and exactly what
+            "Goal" means so a board member can read the scoring without
+            misinterpreting gap math. */}
         <View style={{ marginTop: 18 }}>
-          <Text style={baseStyles.sectionH}>3. Reading This Report</Text>
+          <Text style={baseStyles.sectionH}>3. How to Read the Scores</Text>
           <Text style={baseStyles.para}>
-            <Text style={{ fontWeight: 600 }}>Policy</Text> reflects what is written down
-            and approved. <Text style={{ fontWeight: 600 }}>Practice</Text> reflects what
-            actually happens day-to-day. <Text style={{ fontWeight: 600 }}>Goal</Text> is
-            the maturity tier this organization is working toward. The CMM scale: 1
-            Initial · 2 Repeatable · 3 Defined · 4 Managed · 5 Optimizing.
+            Each control is scored on three axes against the same 1–5 CMM
+            maturity scale: <Text style={{ fontWeight: 700 }}>1 Initial</Text>
+            {' · '}<Text style={{ fontWeight: 700 }}>2 Repeatable</Text>
+            {' · '}<Text style={{ fontWeight: 700 }}>3 Defined</Text>
+            {' · '}<Text style={{ fontWeight: 700 }}>4 Managed</Text>
+            {' · '}<Text style={{ fontWeight: 700 }}>5 Optimizing</Text>.
+            Half-step increments (e.g., 3.5) are allowed when a control is
+            partially at the next tier.
+          </Text>
+
+          <Text style={[baseStyles.para, { marginTop: 6 }]}>
+            <Text style={{ fontWeight: 700 }}>Policy</Text> reflects what is
+            written down and approved — the auditable evidence layer. Each
+            control&apos;s Policy score is computed from the policy
+            documents linked to that control (see the Policy Coverage
+            briefing for the document-to-control mapping).
           </Text>
           <Text style={baseStyles.para}>
-            A {`>0`} gap means Practice is below Goal — work to do. A negative gap
-            means Practice already meets or exceeds Goal — those controls are
-            performing as intended.
+            <Text style={{ fontWeight: 700 }}>Practice</Text> reflects what
+            actually happens day-to-day — the lived control posture. Practice
+            scores are set through a guided assessment that asks, per control:
+            is the process documented, consistently followed, and measured
+            and improved?
+          </Text>
+          <Text style={baseStyles.para}>
+            <Text style={{ fontWeight: 700 }}>Goal</Text> is the maturity
+            tier this organization is working toward. <Text style={{ fontWeight: 700 }}>
+            Goal is set as a Practice target</Text> — Practice is what the
+            board ultimately cares about (&quot;are we doing it?&quot;), so the
+            target lives on that axis. Policy is shown alongside as
+            evidence rather than as a separate target.
+          </Text>
+
+          <Text style={[baseStyles.para, { marginTop: 6 }]}>
+            <Text style={{ fontWeight: 700 }}>Gap = Goal − Practice.</Text>
+            {' '}A positive gap (shown in red) means Practice is below the
+            target — remediation work to do. A negative gap (shown in
+            green) means Practice already meets or exceeds the target.
+            Policy is intentionally not part of the gap math: a Policy
+            score above Practice is normal (documentation almost always
+            leads adoption), and a Policy below Practice means the
+            documentation is stale and should be revised.
           </Text>
         </View>
       </Page>

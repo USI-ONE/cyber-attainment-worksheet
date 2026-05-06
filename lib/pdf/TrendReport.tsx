@@ -126,9 +126,14 @@ export function TrendReport({
           <View>
             <Text style={baseStyles.sectionH}>Per-Function Practice Trend</Text>
             <Text style={[baseStyles.para, { fontSize: 9, color: palette.muted }]}>
-              Each cell is the mean Practice score for that function at the
-              named snapshot, on the 1–5 CMM scale. The Δ column shows the
-              direction since the prior snapshot.
+              Each cell is the mean <Text style={{ fontWeight: 700 }}>Practice</Text> score
+              for that function at the named snapshot, on the 1–5 CMM scale
+              (1 Initial · 2 Repeatable · 3 Defined · 4 Managed · 5 Optimizing).
+              The Δ column shows the direction since the prior snapshot.
+              {' '}This view tracks Practice — the lived control posture — because
+              that&apos;s the axis the Goal target measures against and the one the
+              board reads as &quot;are we doing it?&quot; Policy and Goal are
+              comparatively static and shown elsewhere.
               {snapshots.length > 8 && ' Showing the most recent 8 of ' + snapshots.length + ' snapshots.'}
             </Text>
 

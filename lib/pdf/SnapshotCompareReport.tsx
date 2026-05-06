@@ -178,6 +178,14 @@ export function SnapshotCompareReport({
 
         {/* Per-function delta */}
         <Text style={baseStyles.sectionH}>1. Per-Function Practice &amp; Goal Movement</Text>
+        <Text style={[baseStyles.para, { fontSize: 9, color: palette.muted }]}>
+          Both columns are shown for completeness. The
+          {' '}<Text style={{ fontWeight: 700 }}>Δ Pra</Text> column is what
+          usually matters most — Practice is the lived control posture the
+          Goal target measures against. <Text style={{ fontWeight: 700 }}>Δ Goal</Text>
+          {' '}only changes when the organization formally raises or lowers the
+          target, and is normally near zero between consecutive snapshots.
+        </Text>
         <View style={baseStyles.table}>
           <View style={[baseStyles.tr, { borderBottomWidth: 1, borderBottomColor: palette.ink }]}>
             <Text style={[baseStyles.th, { width: '32%' }]}>Function</Text>
