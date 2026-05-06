@@ -1,6 +1,12 @@
 import SignOutButton from '@/components/SignOutButton';
 import type { Tenant } from '@/lib/supabase/types';
 
+// Hard-coded for now — small enough that an env var is overkill and we want
+// the link to render even if env vars aren't surfaced to the layout. Will
+// move to a config when client-side user auth ships and per-user hub access
+// becomes a thing.
+const PORTFOLIO_HUB_URL = 'https://caw-portfolio-hub.vercel.app/hub';
+
 export default function Header({
   tenant,
   frameworkLabel,
@@ -31,6 +37,19 @@ export default function Header({
             <div className="doc-sub">{frameworkLabel.split(' · ').slice(1).join(' · ')}</div>
           )}
         </div>
+        {/*
+          Operator-side back-link to the Portfolio Hub. Visible to anyone
+          loading a tenant portal today because there's no per-user auth yet
+          — the only person reaching these URLs is the MSP. When client-tenant
+          users land here we'll gate this on role.
+        */}
+        <a
+          href={PORTFOLIO_HUB_URL}
+          className="hub-back-link"
+          title="Back to the operator Portfolio Hub"
+        >
+          ← Portfolio Hub
+        </a>
         {userEmail && (
           <div className="user-chip">
             <span>{userEmail}</span>

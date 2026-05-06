@@ -127,8 +127,6 @@ export default async function HubPage() {
           <a
             key={c.id}
             href={c.url}
-            target="_blank"
-            rel="noreferrer"
             className="dash-card"
             style={{
               ['--fn-color' as never]: c.accent,
