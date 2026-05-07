@@ -32,29 +32,29 @@ export function registerFonts() {
 }
 
 /** Color palette pulled from a tenant's brand_config so each PDF carries
- *  the right accent. Falls back to platform gold so an unbranded tenant
- *  still gets a polished cover. */
+ *  the right accent. Defaults are cyber-modern (slate + blue) so an
+ *  unbranded tenant gets a clean modern cover, not warm/antique. */
 export function paletteFor(tenant: Tenant) {
   const brand = (tenant.brand_config ?? {}) as { theme?: { primary?: string; secondary?: string; accent?: string } };
   return {
-    primary:   brand.theme?.primary   ?? '#C9A961',
-    secondary: brand.theme?.secondary ?? '#5B7FA8',
-    accent:    brand.theme?.accent    ?? '#E8E4DA',
-    ink:       '#111111',
-    body:      '#333333',
-    muted:     '#6B6B6B',
-    rule:      '#D9D9D9',
-    bgMute:    '#F4F4F4',
+    primary:   brand.theme?.primary   ?? '#2563EB', // blue-600
+    secondary: brand.theme?.secondary ?? '#0EA5E9', // sky-500
+    accent:    brand.theme?.accent    ?? '#E2E8F0', // slate-200
+    ink:       '#0F172A',  // slate-900
+    body:      '#334155',  // slate-700
+    muted:     '#64748B',  // slate-500
+    rule:      '#E2E8F0',  // slate-200
+    bgMute:    '#F1F5F9',  // slate-100
     severity: {
-      low:      '#6B7280',
-      medium:   '#B89B5E',
-      high:     '#C2410C',
-      critical: '#991B1B',
+      low:      '#64748B', // slate-500
+      medium:   '#F59E0B', // amber-500
+      high:     '#DC2626', // red-600
+      critical: '#991B1B', // red-800
     },
     status: {
-      open:      '#991B1B',
-      contained: '#B89B5E',
-      closed:    '#15803D',
+      open:      '#DC2626', // red-600
+      contained: '#F59E0B', // amber-500
+      closed:    '#10B981', // emerald-500
     },
   };
 }

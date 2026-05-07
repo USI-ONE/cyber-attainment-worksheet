@@ -154,13 +154,18 @@ export function computeCategoryAverages(
   return out;
 }
 
+// Cyber-modern function colors — vibrant, modern, all distinct on the radar.
+// .accent is used for text, dots, and headings throughout the UI.
+// .bg is a subtle tinted background (light theme).
+// .text echoes accent for places that mix the two (kept as same value for
+// simplicity; light-theme readability is unchanged because both sit on white).
 export const GROUP_COLORS: Record<string, { accent: string; text: string; bg: string }> = {
-  GV: { accent: '#B89B5E', bg: 'linear-gradient(90deg, #2A210E 0%, #161D30 60%)', text: '#E8D29B' },
-  ID: { accent: '#5B7FA8', bg: 'linear-gradient(90deg, #0E1828 0%, #161D30 60%)', text: '#A6BFDD' },
-  PR: { accent: '#6F9DA8', bg: 'linear-gradient(90deg, #0E2024 0%, #161D30 60%)', text: '#B0CFD6' },
-  DE: { accent: '#A89060', bg: 'linear-gradient(90deg, #221E10 0%, #161D30 60%)', text: '#D8C490' },
-  RS: { accent: '#B85A5A', bg: 'linear-gradient(90deg, #281414 0%, #161D30 60%)', text: '#E69E9E' },
-  RC: { accent: '#7AA088', bg: 'linear-gradient(90deg, #142420 0%, #161D30 60%)', text: '#B6D2BF' },
+  GV: { accent: '#6366F1', bg: 'linear-gradient(90deg, rgba(99,102,241,0.10) 0%, transparent 60%)',  text: '#4338CA' },  // indigo
+  ID: { accent: '#0EA5E9', bg: 'linear-gradient(90deg, rgba(14,165,233,0.10) 0%, transparent 60%)',  text: '#0369A1' },  // sky
+  PR: { accent: '#10B981', bg: 'linear-gradient(90deg, rgba(16,185,129,0.10) 0%, transparent 60%)',  text: '#047857' },  // emerald
+  DE: { accent: '#F59E0B', bg: 'linear-gradient(90deg, rgba(245,158,11,0.10) 0%, transparent 60%)',  text: '#B45309' },  // amber
+  RS: { accent: '#F43F5E', bg: 'linear-gradient(90deg, rgba(244,63,94,0.10) 0%, transparent 60%)',   text: '#BE123C' },  // rose
+  RC: { accent: '#8B5CF6', bg: 'linear-gradient(90deg, rgba(139,92,246,0.10) 0%, transparent 60%)',  text: '#6D28D9' },  // violet
 };
 
 export function controlsOf(group: FrameworkGroup): { id: string; outcome: string; categoryName: string }[] {

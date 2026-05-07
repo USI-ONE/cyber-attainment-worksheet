@@ -47,9 +47,9 @@ export default function SummaryDashboard({
           <div className="radar-wrap">
             <Radar avgs={catAvgs} />
             <div className="radar-legend">
-              <Legend swatch="#A6873B" label="Policy" />
-              <Legend swatch="#B45309" label="Practice" />
-              <Legend swatch="#15803D" label="Goal" />
+              <Legend swatch="#2563EB" label="Policy" />
+              <Legend swatch="#F59E0B" label="Practice" />
+              <Legend swatch="#10B981" label="Goal" />
             </div>
           </div>
           <div>
@@ -67,12 +67,14 @@ function KpiTiles({ totals }: { totals: ReturnType<typeof computeOverallTotals> 
   const fmt = (n: number | null) => (n == null ? '—' : n.toFixed(2));
   const gap = totals.gap;
   const gapStr = gap == null ? '—' : (gap > 0 ? '+' : '') + gap.toFixed(2);
-  const gapAccent = gap == null ? '#9AAEC1' : gap > 0 ? '#FCA5A5' : '#86D69E';
+  // Cyber-modern palette for the four KPI tiles. Gap below-target uses red,
+  // on/above-target uses emerald, awaiting-scores uses neutral slate.
+  const gapAccent = gap == null ? '#94A3B8' : gap > 0 ? '#DC2626' : '#10B981';
   return (
     <div className="kpi-row">
-      <Tile label="Avg Policy"   value={fmt(totals.pol_avg)} sub={`${totals.scored_pol}/${totals.total} scored`} accent="#C9A961" />
+      <Tile label="Avg Policy"   value={fmt(totals.pol_avg)} sub={`${totals.scored_pol}/${totals.total} scored`} accent="#2563EB" />
       <Tile label="Avg Practice" value={fmt(totals.pra_avg)} sub={`${totals.scored_pra}/${totals.total} scored`} accent="#F59E0B" />
-      <Tile label="Avg Goal"     value={fmt(totals.gol_avg)} sub={`${totals.scored_gol}/${totals.total} scored`} accent="#22C55E" />
+      <Tile label="Avg Goal"     value={fmt(totals.gol_avg)} sub={`${totals.scored_gol}/${totals.total} scored`} accent="#10B981" />
       <Tile label="Gap to Goal"  value={gapStr} sub={gap == null ? 'awaiting scores' : gap > 0 ? 'below target' : 'meeting target'} accent={gapAccent} />
     </div>
   );
@@ -115,7 +117,7 @@ function FunctionTable({ avgs, totals }: { avgs: GroupAverage[]; totals: ReturnT
       </thead>
       <tbody>
         {avgs.map((a) => {
-          const c = GROUP_COLORS[a.group_id] ?? { accent: '#C9A961', text: '#E8D29B', bg: '' };
+          const c = GROUP_COLORS[a.group_id] ?? { accent: '#475569', text: '#475569', bg: '' };
           const gap = a.pra && a.gol ? a.gol - a.pra : null;
           const gapCls = gap == null ? 'empty' : gap > 0 ? 'positive' : 'zero';
           return (
@@ -160,7 +162,7 @@ function DashboardCards({ definition, scores }: { definition: FrameworkDefinitio
   return (
     <section className="dash">
       {definition.groups.map((g) => {
-        const c = GROUP_COLORS[g.id] ?? { accent: '#C9A961', text: '#E8D29B', bg: '' };
+        const c = GROUP_COLORS[g.id] ?? { accent: '#475569', text: '#475569', bg: '' };
         let scored = 0, totalPra = 0, total = 0;
         for (const cat of g.categories) {
           for (const ctrl of cat.controls) {

@@ -90,21 +90,21 @@ export default async function TrendPage() {
   // Colors match the radar / executive report convention.
   const series: TrendSeries[] = [];
   series.push({
-    key: 'OVERALL_POL', label: 'Policy (overall)', color: '#A6873B',
+    key: 'OVERALL_POL', label: 'Policy (overall)', color: '#2563EB',
     points: aggregated.map((a) => ({
       x: new Date(a.taken_at).getTime(), xLabel: a.period ?? a.label, y: a.overall_pol,
     })),
     thick: true,
   });
   series.push({
-    key: 'OVERALL_PRA', label: 'Practice (overall)', color: '#B45309',
+    key: 'OVERALL_PRA', label: 'Practice (overall)', color: '#F59E0B',
     points: aggregated.map((a) => ({
       x: new Date(a.taken_at).getTime(), xLabel: a.period ?? a.label, y: a.overall_pra,
     })),
     thick: true,
   });
   series.push({
-    key: 'OVERALL_GOL', label: 'Goal (overall)', color: '#15803D',
+    key: 'OVERALL_GOL', label: 'Goal (overall)', color: '#10B981',
     points: aggregated.map((a) => ({
       x: new Date(a.taken_at).getTime(), xLabel: a.period ?? a.label, y: a.overall_gol,
     })),
@@ -113,7 +113,7 @@ export default async function TrendPage() {
   // Per-function Practice trend (faded background lines so the headline
   // overall lines stand out).
   for (const g of fw.definition.groups) {
-    const c = GROUP_COLORS[g.id] ?? { accent: '#A6873B' };
+    const c = GROUP_COLORS[g.id] ?? { accent: '#475569' };
     series.push({
       key: g.id,
       label: g.name + ' (Practice)',

@@ -24,9 +24,9 @@ type Scores = Record<string, Partial<CurrentScore>>;
 type Filter = 'ALL' | string;
 
 const RADAR = {
-  pol: { stroke: '#A6873B', fill: 'rgba(166,135,59,0.16)', label: 'Policy'   },
-  pra: { stroke: '#B45309', fill: 'rgba(180,83,9,0.18)',   label: 'Practice' },
-  gol: { stroke: '#15803D', fill: 'rgba(21,128,61,0.16)',  label: 'Goal'     },
+  pol: { stroke: '#2563EB', fill: 'rgba(37,99,235,0.14)',  label: 'Policy'   },
+  pra: { stroke: '#F59E0B', fill: 'rgba(245,158,11,0.18)', label: 'Practice' },
+  gol: { stroke: '#10B981', fill: 'rgba(16,185,129,0.14)', label: 'Goal'     },
 };
 
 /** Lightweight policy reference used for the per-control badge — full
@@ -272,7 +272,7 @@ function Scorecard({ avgs, totals }: { avgs: GroupAverage[]; totals: ReturnType<
             </thead>
             <tbody>
               {avgs.map((a) => {
-                const c = GROUP_COLORS[a.group_id] ?? { accent: '#C9A961', text: '#E8D29B', bg: '' };
+                const c = GROUP_COLORS[a.group_id] ?? { accent: '#475569', text: '#475569', bg: '' };
                 const gap = a.pra && a.gol ? a.gol - a.pra : null;
                 return (
                   <tr key={a.group_id}>
@@ -359,7 +359,7 @@ function Radar({ avgs }: { avgs: GroupAverage[] }) {
             key={level}
             points={ringPts(level)}
             fill="none"
-            stroke={isTarget ? 'rgba(166,135,59,0.55)' : 'rgba(0,0,0,0.10)'}
+            stroke={isTarget ? 'rgba(37,99,235,0.40)' : 'rgba(15,23,42,0.10)'}
             strokeWidth={1}
             strokeDasharray={isTarget ? '3,3' : 'none'}
           />
@@ -381,7 +381,7 @@ function Radar({ avgs }: { avgs: GroupAverage[] }) {
       })}
       {axes.map((id, i) => {
         const [x, y] = pt(i, TIER_MAX + 0.7);
-        const c = GROUP_COLORS[id] ?? { accent: '#C9A961' };
+        const c = GROUP_COLORS[id] ?? { accent: '#475569' };
         return (
           <text
             key={id}
@@ -437,7 +437,7 @@ function Dashboard({ groups, scores }: { groups: FrameworkGroup[]; scores: Score
   return (
     <section className="dash">
       {groups.map((g) => {
-        const c = GROUP_COLORS[g.id] ?? { accent: '#C9A961', text: '#E8D29B', bg: '' };
+        const c = GROUP_COLORS[g.id] ?? { accent: '#475569', text: '#475569', bg: '' };
         let scored = 0, totalPra = 0, total = 0;
         for (const cat of g.categories) {
           for (const ctrl of cat.controls) {
@@ -503,7 +503,7 @@ function CsfTable({
       <tbody>
         {groups.map((g) => {
           if (filter !== 'ALL' && filter !== g.id) return null;
-          const c = GROUP_COLORS[g.id] ?? { accent: '#C9A961', text: '#E8D29B', bg: '' };
+          const c = GROUP_COLORS[g.id] ?? { accent: '#475569', text: '#475569', bg: '' };
           const isCol = !!collapsed[g.id];
 
           let scored = 0, total = 0;

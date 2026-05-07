@@ -54,7 +54,7 @@ export default async function MaturityPage() {
 }
 
 function FunctionRow({ group, scores }: { group: FrameworkGroup; scores: Record<string, CurrentScore> }) {
-  const c = GROUP_COLORS[group.id] ?? { accent: '#C9A961', text: '#E8D29B', bg: '' };
+  const c = GROUP_COLORS[group.id] ?? { accent: '#475569', text: '#475569', bg: '' };
   return (
     <div className="maturity-fn-row" style={{ ['--fn-accent' as never]: c.accent }}>
       <div className="maturity-fn-label">{group.id} — {group.name}</div>

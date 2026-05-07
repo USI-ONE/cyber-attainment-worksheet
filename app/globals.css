@@ -7,55 +7,55 @@
 
 :root{
   /*
-    Light theme. Surface layers go from page (slightly tinted off-white) to
-    pure white for cards. Text is dark gray-blue, not pure black, so the eye
-    has somewhere softer to land. Brand accents (--gold-*) are darkened from
-    their dark-theme values so they remain legible on white — tenants whose
-    brand_config.theme.primary is naturally light should add a darker
-    primary_light variant for the "light/text on white" use cases.
+    Cyber-modern light theme. Cool slate surfaces, dark slate ink, and a
+    saturated blue as the platform default brand accent. Avoids warm tones
+    (gold/cream/burnt amber) that read as antique. Tenants whose
+    brand_config.theme.primary is set still override --gold-* with their
+    own brand colors (BSP navy, USI green) — this palette is the default
+    for tenants without a custom theme.
   */
 
-  /* Surface layers — page → card → inner */
-  --bg-deep:#FFFFFF;            /* deepest surface (used by some inputs / inner panels) */
-  --bg:#F6F4EE;                 /* page background — warm off-white */
+  /* Surface layers — page → card → inner. All cool, no warm undertone. */
+  --bg-deep:#FFFFFF;            /* innermost panel surface */
+  --bg:#F8FAFC;                 /* page background — slate-50 */
   --bg-mid:#FFFFFF;             /* card background */
-  --bg-card:#FBFAF5;            /* secondary card variant */
-  --bg-border:#E2DCC8;           /* warm light border */
-  --bg-line:#CFC6AF;             /* ruled line, slightly darker than border */
+  --bg-card:#F8FAFC;            /* secondary card variant */
+  --bg-border:#E2E8F0;          /* slate-200 — clean cool border */
+  --bg-line:#CBD5E1;            /* slate-300 — slightly heavier rule */
 
-  /* Default brand accents; tenants override via brand_config.theme on <body>.
-     --gold-light is intentionally DARKER than --gold so text-on-white reads. */
-  --gold:#A6873B;               /* darker variant of #C9A961 */
-  --gold-light:#7C6428;          /* darker still — for text emphasis */
-  --gold-bright:#C9A961;         /* original gold — for filled badges */
-  --gold-pale:rgba(166,135,59,0.10);
-  --gold-border:rgba(166,135,59,0.40);
-  --brand-secondary:#3B5C7F;
-  --brand-accent:#7A6328;
+  /* Default brand accents — modern cyber blue.
+     --gold-light is intentionally DARKER than --gold so text reads on white. */
+  --gold:#2563EB;               /* blue-600 — primary accent */
+  --gold-light:#1E40AF;         /* blue-800 — for emphasized text */
+  --gold-bright:#3B82F6;        /* blue-500 — for filled badges */
+  --gold-pale:rgba(37,99,235,0.08);
+  --gold-border:rgba(37,99,235,0.32);
+  --brand-secondary:#0EA5E9;    /* sky-500 — secondary accent */
+  --brand-accent:#475569;       /* slate-600 — tertiary / chrome */
 
   --white:#FFFFFF;
-  --text:#1F2937;                /* primary text — dark slate */
-  --text-mid:#4B5563;            /* secondary text */
-  --text-dim:#6B7280;            /* tertiary / hints */
-  --text-muted:#9CA3AF;          /* placeholder / faded */
+  --text:#0F172A;               /* slate-900 — primary text */
+  --text-mid:#475569;           /* slate-600 — secondary text */
+  --text-dim:#64748B;           /* slate-500 — tertiary */
+  --text-muted:#94A3B8;         /* slate-400 — placeholder / faded */
 
-  /* CMM tiers — darkened so all five sit on white legibly */
-  --tier1:#94A3B8;               /* Initial — slate */
-  --tier2:#A16207;               /* Repeatable — dark amber */
-  --tier3:#B45309;               /* Defined — burnt amber */
-  --tier4:#15803D;               /* Managed — forest green */
-  --tier5:#0E7490;               /* Optimizing — teal */
+  /* CMM tiers — vibrant, modern, all readable on white */
+  --tier1:#94A3B8;              /* Initial — slate */
+  --tier2:#F59E0B;              /* Repeatable — amber-500 (vibrant, not brown) */
+  --tier3:#B45309;              /* Defined — amber-700 for distinction */
+  --tier4:#10B981;              /* Managed — emerald-500 */
+  --tier5:#0EA5E9;              /* Optimizing — sky-500 */
 
-  --gap-pos:#B91C1C;             /* below-target practice — dark red */
-  --gap-zero:#15803D;            /* meeting target — green */
-  --gap-neg:#475569;             /* above target — slate */
+  --gap-pos:#DC2626;            /* below-target — red-600 */
+  --gap-zero:#10B981;           /* on target — emerald-500 */
+  --gap-neg:#475569;            /* above target — slate-600 */
 
-  --amber:#B45309;
-  --amber-text:#92400E;
-  --green:#16A34A;
-  --green-text:#15803D;
-  --red:#B91C1C;
-  --red-text:#991B1B;
+  --amber:#F59E0B;
+  --amber-text:#B45309;
+  --green:#10B981;
+  --green-text:#047857;
+  --red:#DC2626;
+  --red-text:#B91C1C;
 }
 
 html,body{
@@ -69,10 +69,11 @@ html,body{
 }
 
 body{
-  /* Subtle warm and cool tints so the page doesn't read as flat-paper white. */
+  /* Cool blue gradients only — no warm tints. Subtle so the page doesn't
+     read as flat-paper white. */
   background:
-    radial-gradient(ellipse 80% 50% at top, rgba(166,135,59,0.05), transparent 70%),
-    radial-gradient(ellipse 60% 40% at bottom right, rgba(59,92,127,0.04), transparent 70%),
+    radial-gradient(ellipse 80% 50% at top, rgba(37,99,235,0.04), transparent 70%),
+    radial-gradient(ellipse 60% 40% at bottom right, rgba(14,165,233,0.03), transparent 70%),
     var(--bg);
 }
 

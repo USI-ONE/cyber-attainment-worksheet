@@ -58,7 +58,7 @@ export default function AssessmentWizard({
   linkedPolicies: LinkedPolicy[];
 }) {
   const router = useRouter();
-  const accent = GROUP_COLORS[functionId]?.accent ?? '#C9A961';
+  const accent = GROUP_COLORS[functionId]?.accent ?? '#475569';
 
   const [q1, setQ1] = useState<AssessmentAnswer | null>(initialResponse?.q1_documented ?? null);
   const [q2, setQ2] = useState<AssessmentAnswer | null>(initialResponse?.q2_followed ?? null);
@@ -306,7 +306,7 @@ function Question({
       <div style={{ display: 'flex', gap: 6 }}>
         {(['no', 'partial', 'yes'] as AssessmentAnswer[]).map((opt) => {
           const sel = value === opt;
-          const color = opt === 'yes' ? '#15803D' : opt === 'partial' ? '#A16207' : '#B91C1C';
+          const color = opt === 'yes' ? '#10B981' : opt === 'partial' ? '#F59E0B' : '#DC2626';
           return (
             <button
               key={opt}

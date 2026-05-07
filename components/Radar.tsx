@@ -2,12 +2,14 @@
 
 import { GROUP_COLORS, TIER_MAX, type GroupAverage } from '@/lib/scoring';
 
-// Stroke colors are darkened from the dark-theme variants so the polygons
-// stay visible on white. Fills stay semi-transparent and tinted.
+// Stroke colors picked for cyber-modern light theme:
+// blue (Policy = documented), amber (Practice = lived/active), emerald
+// (Goal = target). Three distinct hues for fast visual separation on the
+// radar.
 const RADAR = {
-  pol: { stroke: '#A6873B', fill: 'rgba(166,135,59,0.16)' },
-  pra: { stroke: '#B45309', fill: 'rgba(180,83,9,0.18)'   },
-  gol: { stroke: '#15803D', fill: 'rgba(21,128,61,0.16)'  },
+  pol: { stroke: '#2563EB', fill: 'rgba(37,99,235,0.14)'  }, // blue-600
+  pra: { stroke: '#F59E0B', fill: 'rgba(245,158,11,0.18)' }, // amber-500
+  gol: { stroke: '#10B981', fill: 'rgba(16,185,129,0.14)' }, // emerald-500
 };
 
 export default function Radar({ avgs }: { avgs: GroupAverage[] }) {
@@ -66,7 +68,7 @@ export default function Radar({ avgs }: { avgs: GroupAverage[] }) {
   return (
     <svg className="radar-svg" viewBox={`0 0 ${viewSize} ${viewSize}`} xmlns="http://www.w3.org/2000/svg">
       {dense && segments.map((s) => {
-        const accent = GROUP_COLORS[s.parent_id]?.accent ?? '#C9A961';
+        const accent = GROUP_COLORS[s.parent_id]?.accent ?? '#475569';
         // Arc covers from the leading edge of the first category slice to the trailing edge of the last.
         const startDeg = s.startIdx * stepDeg - stepDeg / 2;
         const endDeg = s.endIdx * stepDeg + stepDeg / 2;
@@ -89,7 +91,7 @@ export default function Radar({ avgs }: { avgs: GroupAverage[] }) {
             key={level}
             points={ringPts(level)}
             fill="none"
-            stroke={isTarget ? 'rgba(166,135,59,0.55)' : 'rgba(0,0,0,0.10)'}
+            stroke={isTarget ? 'rgba(37,99,235,0.40)' : 'rgba(15,23,42,0.10)'}
             strokeWidth={1}
             strokeDasharray={isTarget ? '3,3' : 'none'}
           />
@@ -111,7 +113,7 @@ export default function Radar({ avgs }: { avgs: GroupAverage[] }) {
         const [x, y] = pt(i, TIER_MAX + (dense ? 0.45 : 0.7));
         const accent = (a.parent_id && GROUP_COLORS[a.parent_id]?.accent)
           ?? GROUP_COLORS[a.group_id]?.accent
-          ?? '#C9A961';
+          ?? '#475569';
         return (
           <text key={a.group_id} x={x} y={y} textAnchor="middle" dominantBaseline="middle"
             fill={accent} fontSize={labelFontSize} fontWeight={600} fontFamily="Oswald" letterSpacing="0.06em">

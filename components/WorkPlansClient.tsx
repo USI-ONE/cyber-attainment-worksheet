@@ -144,7 +144,7 @@ function ControlCard({
 }) {
   const [newTitle, setNewTitle] = useState('');
   const [draftNotes, setDraftNotes] = useState(notes);
-  const c = GROUP_COLORS[control.group] ?? { accent: '#C9A961', text: '#E8D29B', bg: '' };
+  const c = GROUP_COLORS[control.group] ?? { accent: '#475569', text: '#475569', bg: '' };
   const open = tasks.filter((t) => t.status !== 'Complete').length;
 
   return (

@@ -39,7 +39,7 @@ export default function TrendChart({ series }: { series: TrendSeries[] }) {
         <g key={y}>
           <line
             x1={PAD_L} y1={yScale(y)} x2={W - PAD_R} y2={yScale(y)}
-            stroke={y === 3 ? 'rgba(166,135,59,0.55)' : 'rgba(0,0,0,0.10)'}
+            stroke={y === 3 ? 'rgba(37,99,235,0.40)' : 'rgba(15,23,42,0.10)'}
             strokeDasharray={y === 3 ? '3,3' : 'none'}
           />
           <text x={PAD_L - 8} y={yScale(y) + 4} textAnchor="end" fontSize={10} fontFamily="JetBrains Mono" fill="rgba(0,0,0,0.55)">

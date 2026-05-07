@@ -81,7 +81,7 @@ export default function AssessmentLanding({
           display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12, marginTop: 12,
         }}>
           {perFunction.map((f) => {
-            const c = GROUP_COLORS[f.id] ?? { accent: '#C9A961' };
+            const c = GROUP_COLORS[f.id] ?? { accent: '#475569' };
             const pct = f.total ? Math.round((f.done / f.total) * 100) : 0;
             return (
               <div key={f.id} style={{
@@ -131,7 +131,7 @@ export default function AssessmentLanding({
 
       {/* Control list */}
       {visibleGroups.map((g) => {
-        const c = GROUP_COLORS[g.id] ?? { accent: '#C9A961' };
+        const c = GROUP_COLORS[g.id] ?? { accent: '#475569' };
         return (
           <section className="scorecard" key={g.id}>
             <div className="scorecard-header">
@@ -166,7 +166,7 @@ export default function AssessmentLanding({
                         </td>
                         <td style={{ fontSize: 11 }}>
                           {complete ? (
-                            <span style={{ color: '#15803D' }}>✓ {tierForScore(score)}</span>
+                            <span style={{ color: '#10B981' }}>✓ {tierForScore(score)}</span>
                           ) : r ? (
                             <span style={{ color: 'var(--gold-light)' }}>● In progress</span>
                           ) : (

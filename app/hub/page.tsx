@@ -95,7 +95,7 @@ export default async function HubPage() {
         display_name: t.display_name,
         url: 'https://' + (t.hostname ?? `caw-${t.slug}.vercel.app`),
         logo_url: brand.logo_url ?? null,
-        accent: brand.theme?.primary ?? '#C9A961',
+        accent: brand.theme?.primary ?? '#475569',
         open_incidents: incRes.count ?? 0,
         last_scored: scoreRes.data?.[0]?.updated_at ?? null,
         last_snapshot: snapRes.data?.[0]?.taken_at ?? null,
