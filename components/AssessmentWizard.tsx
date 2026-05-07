@@ -6,6 +6,21 @@ import Link from 'next/link';
 import type { AssessmentAnswer, AssessmentResponse, PolicyDocument } from '@/lib/supabase/types';
 import { GROUP_COLORS } from '@/lib/scoring';
 import { computePracticeScore, isComplete, tierForScore } from '@/lib/assessment';
+import { CONTROL_QUESTIONS } from '@/lib/assessment-questions';
+
+// Generic CMM-ladder fallback used when a control is missing from the
+// hand-authored CONTROL_QUESTIONS map. Identical to the original v1 wording
+// so existing reviewers see the same generic fallback for any uncovered
+// control rather than nothing.
+const GENERIC_QUESTIONS = {
+  q1: 'Is there a documented process or standard for this control?',
+  q1_hint: 'Look for: written policy, runbook, SOP, or other artifact that clearly defines what we do.',
+  q2: 'Is the process consistently followed across all relevant teams or systems?',
+  q2_hint: 'Look for: real-world adoption — not just on paper. Are exceptions rare and tracked?',
+  q3: 'Is the process measured, audited, and continuously improved?',
+  q3_hint: 'Look for: metrics, periodic review, evidence of changes over time.',
+  q4_prompt: 'Describe one specific improvement made in the last 12 months for this control.',
+};
 
 type LinkedPolicy = Pick<PolicyDocument, 'id' | 'title' | 'version' | 'owner' | 'filename' | 'linked_control_ids' | 'status'>;
 
@@ -56,6 +71,10 @@ export default function AssessmentWizard({
 
   const computedScore = computePracticeScore({ q1, q2, q3, q4_improvement: q4 });
   const complete = isComplete({ q1_documented: q1, q2_followed: q2, q3_measured: q3 });
+
+  // Pull the hand-authored questionnaire for this specific control. Falls
+  // back to the generic CMM-ladder questions if the control is missing.
+  const questions = CONTROL_QUESTIONS[controlId] ?? GENERIC_QUESTIONS;
 
   // Auto-save with a 300 ms debounce — user changes a radio button, the
   // request fires once they pause. Avoids the API getting hammered for every
@@ -160,29 +179,13 @@ export default function AssessmentWizard({
         </section>
       )}
 
-      {/* Questions */}
+      {/* Questions — pulled per-control from lib/assessment-questions.ts so
+          each NIST CSF 2.0 sub-control gets specific, evidence-grounded
+          wording rather than generic CMM-ladder text. */}
       <section className="scorecard">
-        <Question
-          number={1}
-          question="Is there a documented process or standard for this control?"
-          help="Look for: written policy, runbook, SOP, or other artifact that clearly defines what we do."
-          value={q1}
-          onChange={setQ1}
-        />
-        <Question
-          number={2}
-          question="Is the process consistently followed across all relevant teams or systems?"
-          help="Look for: real-world adoption — not just on paper. Are exceptions rare and tracked?"
-          value={q2}
-          onChange={setQ2}
-        />
-        <Question
-          number={3}
-          question="Is the process measured, audited, and continuously improved?"
-          help="Look for: metrics, periodic review, evidence of changes over time."
-          value={q3}
-          onChange={setQ3}
-        />
+        <Question number={1} question={questions.q1} help={questions.q1_hint} value={q1} onChange={setQ1} />
+        <Question number={2} question={questions.q2} help={questions.q2_hint} value={q2} onChange={setQ2} />
+        <Question number={3} question={questions.q3} help={questions.q3_hint} value={q3} onChange={setQ3} />
 
         <div style={{ marginTop: 12 }}>
           <label style={{
@@ -197,7 +200,7 @@ export default function AssessmentWizard({
           <textarea
             value={q4}
             onChange={(e) => setQ4(e.target.value)}
-            placeholder="Example: rolled out Conditional Access baseline in Q1; reduced exception count from 14 to 2."
+            placeholder={questions.q4_prompt}
             rows={3}
             style={{
               width: '100%', padding: '8px 10px',
