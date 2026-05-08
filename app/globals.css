@@ -242,6 +242,83 @@ body{
   font-weight:600;
 }
 
+/* Grouped nav dropdowns. The .nav-group sits inline next to plain .nav-tab
+   links and pops a positioned panel under the trigger. The panel is sized
+   to its content (min 220px) and uses the same elevation tokens as cards. */
+.nav-group{
+  position:relative;
+  display:inline-flex;
+}
+.nav-group-trigger{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:transparent;
+  border:none;
+  cursor:pointer;
+  font:inherit;
+}
+.nav-group-trigger .nav-chev{
+  transition:transform .18s ease;
+  opacity:.7;
+}
+.nav-group.open .nav-group-trigger .nav-chev{
+  transform:rotate(180deg);
+  opacity:1;
+}
+.nav-menu{
+  position:absolute;
+  top:calc(100% - 1px);
+  left:0;
+  min-width:260px;
+  max-width:340px;
+  padding:8px;
+  background:var(--bg-mid);
+  border:1px solid var(--bg-border);
+  border-radius:var(--r-lg);
+  box-shadow:var(--shadow-lg);
+  z-index:200;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  animation:nav-menu-in .12s ease;
+}
+@keyframes nav-menu-in{
+  from{opacity:0;transform:translateY(-4px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.nav-menu-item{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  padding:8px 12px;
+  border-radius:var(--r-md);
+  text-decoration:none;
+  transition:background .12s ease;
+  color:var(--text);
+}
+.nav-menu-item:hover{
+  background:var(--gold-pale);
+}
+.nav-menu-item.active{
+  background:var(--gold-pale);
+}
+.nav-menu-item.active .nav-menu-label{
+  color:var(--gold-light);
+  font-weight:600;
+}
+.nav-menu-label{
+  font-size:13px;
+  font-weight:500;
+  color:var(--text);
+  letter-spacing:0;
+}
+.nav-menu-tag{
+  font-size:11px;
+  color:var(--text-mid);
+  font-weight:400;
+}
+
 /* DASHBOARD KPI TILES */
 .kpi-row{
   display:grid;

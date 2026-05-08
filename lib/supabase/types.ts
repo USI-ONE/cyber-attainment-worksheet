@@ -184,3 +184,87 @@ export interface PolicyDocument {
   created_at: string;
   updated_at: string;
 }
+
+// ---------------------------------------------------------------------------
+// DR Plans + IR Playbooks — see db/migrations/0012_dr_ir_planning.sql
+// ---------------------------------------------------------------------------
+
+export type DrPlanStatus  = 'draft' | 'active' | 'archived';
+export type DrTestResult  = 'pass' | 'partial' | 'fail';
+export type DrTier        = 1 | 2 | 3;
+
+export interface DrPlan {
+  id: string;
+  tenant_id: string;
+  name: string;
+  system_name: string | null;
+  tier: DrTier;
+  rto_minutes: number | null;
+  rpo_minutes: number | null;
+  description: string | null;
+  backup_method: string | null;
+  backup_frequency: string | null;
+  backup_retention: string | null;
+  recovery_steps: string[];
+  recovery_owner: string | null;
+  recovery_team: string[];
+  dependencies: string[];
+  last_tested: string | null;       // yyyy-mm-dd
+  last_test_result: DrTestResult | null;
+  last_test_notes: string | null;
+  next_test_due: string | null;     // yyyy-mm-dd
+  linked_control_ids: string[];
+  status: DrPlanStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export type IrPlaybookStatus   = 'draft' | 'active' | 'archived';
+export type IrPlaybookSeverity = 'low' | 'medium' | 'high' | 'critical';
+
+export interface IrCommunicationsEntry {
+  audience: string;
+  when: string;
+  channel: string;
+  message_template: string;
+}
+
+export interface IrEscalationContact {
+  role: string;
+  name: string;
+  phone: string;
+  email: string;
+  when_to_contact: string;
+}
+
+export interface IrRegulatoryNotification {
+  regulation: string;
+  deadline_hours: number;
+  contact: string;
+  trigger: string;
+}
+
+export interface IrPlaybook {
+  id: string;
+  tenant_id: string;
+  name: string;
+  category: string;                          // 'bec' | 'ransomware' | 'phishing' | …
+  severity_default: IrPlaybookSeverity;
+  description: string | null;
+  trigger_conditions: string | null;
+  detection_sources: string[];
+  containment_steps: string[];
+  eradication_steps: string[];
+  recovery_steps: string[];
+  communications_plan: IrCommunicationsEntry[];
+  escalation_contacts: IrEscalationContact[];
+  evidence_to_preserve: string[];
+  regulatory_notifications: IrRegulatoryNotification[];
+  linked_control_ids: string[];
+  last_reviewed: string | null;              // yyyy-mm-dd
+  last_tabletop: string | null;              // yyyy-mm-dd
+  next_review_due: string | null;            // yyyy-mm-dd
+  status: IrPlaybookStatus;
+  created_at: string;
+  updated_at: string;
+}
