@@ -35,6 +35,7 @@ const GROUPS: NavGroup[] = [
     id: 'plan',
     label: 'Plan',
     items: [
+      { href: '/risks',      label: 'Risk Register',     tag: 'Heat map + treatments' },
       { href: '/priorities', label: '30-Day Priorities', tag: 'Sprint focus' },
       { href: '/work-plans', label: 'Work Plans',        tag: 'Tactical tasks per control' },
       { href: '/dr-plans',   label: 'Disaster Recovery', tag: 'RTO/RPO + recovery procedures' },

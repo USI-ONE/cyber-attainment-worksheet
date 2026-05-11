@@ -244,6 +244,62 @@ export interface IrRegulatoryNotification {
   trigger: string;
 }
 
+// ---------------------------------------------------------------------------
+// Risks + Risk Treatments — see db/migrations/0013_risk_register.sql
+// ---------------------------------------------------------------------------
+
+export type RiskCategory =
+  | 'cyber' | 'operational' | 'compliance' | 'people'
+  | 'supply_chain' | 'physical' | 'financial';
+export type RiskTreatmentStrategy = 'accept' | 'mitigate' | 'transfer' | 'avoid';
+export type RiskStatus = 'open' | 'in_treatment' | 'accepted' | 'closed' | 'transferred';
+/** 1 (rare/minor) … 5 (almost certain / catastrophic). */
+export type RiskLevel = 1 | 2 | 3 | 4 | 5;
+
+export interface Risk {
+  id: string;
+  tenant_id: string;
+  code: string;
+  title: string;
+  description: string | null;
+  category: RiskCategory;
+  rationale: string | null;
+  inherent_likelihood: RiskLevel;
+  inherent_impact: RiskLevel;
+  inherent_score: number;              // generated, 1..25
+  residual_likelihood: RiskLevel;
+  residual_impact: RiskLevel;
+  residual_score: number;              // generated, 1..25
+  treatment_strategy: RiskTreatmentStrategy;
+  owner: string | null;
+  status: RiskStatus;
+  linked_control_ids: string[];
+  linked_dr_plan_ids: string[];
+  linked_ir_playbook_ids: string[];
+  linked_incident_ids: string[];
+  last_reviewed: string | null;        // yyyy-mm-dd
+  next_review_due: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type RiskTreatmentStatus = 'Not Started' | 'In Progress' | 'Blocked' | 'Complete';
+
+export interface RiskTreatment {
+  id: string;
+  risk_id: string;
+  tenant_id: string;
+  action: string;
+  detail: string | null;
+  status: RiskTreatmentStatus;
+  owner: string | null;
+  due_date: string | null;             // yyyy-mm-dd
+  completed_at: string | null;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface IrPlaybook {
   id: string;
   tenant_id: string;
