@@ -198,7 +198,13 @@ body{
   padding:28px 28px 64px;
 }
 
-/* NAV TABS — modern segmented pills with subtle active highlight. */
+/* NAV TABS — modern segmented pills with subtle active highlight.
+   IMPORTANT: keep overflow:visible so the dropdown menus (.nav-menu) can
+   extend below the nav bar. CSS implicitly clips along BOTH axes if either
+   overflow-x or overflow-y is non-visible — so a one-line `overflow-x:auto`
+   here would silently hide every dropdown. With 5 top-level items (Dashboard
+   + 4 menus) the bar fits on any reasonable screen without scrolling, so we
+   accept that constraint in exchange for working dropdowns. */
 .app-nav{
   background:rgba(245,247,251,0.85);
   border-bottom:1px solid var(--bg-border);
@@ -206,7 +212,7 @@ body{
   position:sticky;
   top:78px;
   z-index:90;
-  overflow-x:auto;
+  overflow:visible;
   backdrop-filter:blur(12px) saturate(150%);
   -webkit-backdrop-filter:blur(12px) saturate(150%);
 }
