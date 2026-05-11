@@ -7,10 +7,10 @@ import { useEffect, useRef, useState } from 'react';
 /**
  * Grouped, dropdown-style navigation for the tenant portal.
  *
- * Top level: 5 menus (Dashboard / Assess / Plan / Operate / Govern). Each
- * menu opens a panel with its child pages. The current page's group becomes
- * "active" so the user always sees where they are. The dashboard is its
- * own top-level link (no submenu) since it's the landing page.
+ * Static groups: Assess / Plan / Operate / Govern. Conditional groups:
+ *   - Settings (any user who can administer THIS tenant — editors + platform
+ *     admins) — local tenant administration.
+ *   - Admin    (platform admins only) — platform-wide administration.
  *
  * The Portfolio Hub does not appear here — it lives on the operator-only
  * deployment (caw-portfolio-hub) with no tenant chrome.
@@ -19,7 +19,7 @@ import { useEffect, useRef, useState } from 'react';
 interface NavItem  { href: string; label: string; tag?: string }
 interface NavGroup { id: string; label: string; items: NavItem[] }
 
-const GROUPS: NavGroup[] = [
+const STATIC_GROUPS: NavGroup[] = [
   {
     id: 'assess',
     label: 'Assess',
@@ -62,20 +62,49 @@ const GROUPS: NavGroup[] = [
   },
 ];
 
-function findGroup(pathname: string | null): string | null {
-  if (!pathname) return null;
-  for (const g of GROUPS) {
-    for (const it of g.items) {
-      if (pathname === it.href || pathname.startsWith(it.href + '/')) return g.id;
-    }
-  }
-  return null;
-}
+const SETTINGS_GROUP: NavGroup = {
+  id: 'settings',
+  label: 'Settings',
+  items: [
+    { href: '/settings/users', label: 'Users', tag: 'Manage this tenant’s members + invites' },
+  ],
+};
 
-export default function Nav() {
+const ADMIN_GROUP: NavGroup = {
+  id: 'admin',
+  label: 'Admin',
+  items: [
+    { href: '/admin/users',   label: 'Users',   tag: 'Platform-wide user administration' },
+    { href: '/admin/tenants', label: 'Tenants', tag: 'Platform-wide tenant administration' },
+  ],
+};
+
+export default function Nav({
+  canAdminister = false,
+  isPlatformAdmin = false,
+}: {
+  canAdminister?: boolean;
+  isPlatformAdmin?: boolean;
+}) {
   const pathname = usePathname();
   const [openId, setOpenId] = useState<string | null>(null);
   const navRef = useRef<HTMLDivElement>(null);
+
+  // Build the visible groups list each render — cheap, and lets us
+  // conditionally insert Settings / Admin based on role props.
+  const groups: NavGroup[] = [...STATIC_GROUPS];
+  if (canAdminister) groups.push(SETTINGS_GROUP);
+  if (isPlatformAdmin) groups.push(ADMIN_GROUP);
+
+  function findGroup(pn: string | null): string | null {
+    if (!pn) return null;
+    for (const g of groups) {
+      for (const it of g.items) {
+        if (pn === it.href || pn.startsWith(it.href + '/')) return g.id;
+      }
+    }
+    return null;
+  }
 
   // Close any open menu when the route changes.
   useEffect(() => { setOpenId(null); }, [pathname]);
@@ -111,7 +140,7 @@ export default function Nav() {
           Dashboard
         </Link>
 
-        {GROUPS.map((g) => {
+        {groups.map((g) => {
           const isActiveGroup = activeGroup === g.id;
           const isOpen = openId === g.id;
           return (

@@ -35,6 +35,12 @@ export default async function RootLayout({
     resolveTenant(host),
     getCurrentUser(),
   ]);
+
+  // Determine whether the signed-in user can administer THIS tenant (editor
+  // OR platform admin). Drives the conditional Nav groups (Settings, Admin).
+  const isPlatformAdmin = !!currentUser?.user.is_platform_admin;
+  const canAdminister = isPlatformAdmin
+    || (!!tenant && !!currentUser?.memberships.some((m) => m.tenant_id === tenant.id && m.role === 'editor'));
   const brand = (tenant?.brand_config ?? {}) as {
     logo_url?: string;
     tagline?: string;
@@ -83,40 +89,56 @@ export default async function RootLayout({
           Header / Nav / Footer with their brand pulled from brand_config.
         */}
         {process.env.OPERATOR_MODE === 'true' ? (
-          <header style={{
-            padding: '14px 20px',
-            borderBottom: '1px solid var(--bg-border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            gap: 16,
-          }}>
-            <span style={{
-              fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: 14,
-              letterSpacing: '0.2em', textTransform: 'uppercase',
-            }}>Portfolio Hub</span>
-            <span style={{ flex: 1, fontSize: 11, color: 'var(--text-muted)' }}>
-              Cyber Attainment Worksheet · Operator
-            </span>
-            {currentUser ? (
-              <div className="user-chip">
-                <span>{currentUser.user.display_name?.trim() || currentUser.user.email}</span>
-                {currentUser.user.is_platform_admin && (
-                  <span style={{
-                    fontSize: 9, fontWeight: 700, padding: '1px 6px',
-                    borderRadius: 999, background: 'var(--gold-pale)',
-                    color: 'var(--gold-light)',
-                    textTransform: 'uppercase', letterSpacing: '.06em',
-                  }}>Admin</span>
-                )}
-                <SignOutButton />
-              </div>
-            ) : (
-              <a href="/auth/signin" className="hub-back-link">Sign in →</a>
+          <>
+            <header style={{
+              padding: '14px 20px',
+              borderBottom: '1px solid var(--bg-border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              gap: 16,
+            }}>
+              <span style={{
+                fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: 14,
+                letterSpacing: '0.2em', textTransform: 'uppercase',
+              }}>Portfolio Hub</span>
+              <span style={{ flex: 1, fontSize: 11, color: 'var(--text-muted)' }}>
+                Cyber Attainment Worksheet · Operator
+              </span>
+              {currentUser ? (
+                <div className="user-chip">
+                  <span>{currentUser.user.display_name?.trim() || currentUser.user.email}</span>
+                  {currentUser.user.is_platform_admin && (
+                    <span style={{
+                      fontSize: 9, fontWeight: 700, padding: '1px 6px',
+                      borderRadius: 999, background: 'var(--gold-pale)',
+                      color: 'var(--gold-light)',
+                      textTransform: 'uppercase', letterSpacing: '.06em',
+                    }}>Admin</span>
+                  )}
+                  <SignOutButton />
+                </div>
+              ) : (
+                <a href="/auth/signin" className="hub-back-link">Sign in →</a>
+              )}
+            </header>
+            {/* Operator-mode top-level nav. Hub is the home; Admin pages are
+                only visible to signed-in platform admins. */}
+            {isPlatformAdmin && (
+              <nav style={{
+                padding: '6px 20px',
+                borderBottom: '1px solid var(--bg-border)',
+                display: 'flex', gap: 4,
+                background: 'rgba(245,247,251,0.85)',
+              }}>
+                <a href="/hub" className="nav-tab" style={{ padding: '8px 14px' }}>Portfolio</a>
+                <a href="/admin/users" className="nav-tab" style={{ padding: '8px 14px' }}>Users</a>
+                <a href="/admin/tenants" className="nav-tab" style={{ padding: '8px 14px' }}>Tenants</a>
+              </nav>
             )}
-          </header>
+          </>
         ) : (
           <>
             {tenant && <Header tenant={tenant} frameworkLabel={null} currentUser={currentUser} />}
-            {tenant && <Nav />}
+            {tenant && <Nav canAdminister={canAdminister} isPlatformAdmin={isPlatformAdmin} />}
           </>
         )}
         {children}
