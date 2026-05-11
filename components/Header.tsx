@@ -1,22 +1,27 @@
 import SignOutButton from '@/components/SignOutButton';
 import type { Tenant } from '@/lib/supabase/types';
+import type { CurrentUser } from '@/lib/auth';
 
-// Hard-coded for now — small enough that an env var is overkill and we want
-// the link to render even if env vars aren't surfaced to the layout. Will
-// move to a config when client-side user auth ships and per-user hub access
-// becomes a thing.
+// Operator Portfolio Hub URL — hard-coded for now until per-user config
+// surfaces a preferred entry point.
 const PORTFOLIO_HUB_URL = 'https://caw-portfolio-hub.vercel.app/hub';
 
+/**
+ * Tenant header. Shows the tenant brand, the framework label, an optional
+ * Portfolio Hub back-link (for platform admins who landed here from the
+ * Hub), and the current-user chip with sign-out. If no current user is
+ * present, the chip becomes a "Sign in" link so unauthenticated visitors
+ * always have a clear path to the sign-in page.
+ */
 export default function Header({
   tenant,
   frameworkLabel,
-  userEmail,
+  currentUser,
 }: {
   tenant: Tenant;
   frameworkLabel: string | null;
-  userEmail?: string | null;
+  currentUser: CurrentUser | null;
 }) {
-  // Tagline is per-tenant. No platform default — empty if the tenant hasn't set one.
   const tagline = ((tenant.brand_config?.tagline as string | undefined) ?? '').trim();
 
   return (
@@ -37,26 +42,62 @@ export default function Header({
             <div className="doc-sub">{frameworkLabel.split(' · ').slice(1).join(' · ')}</div>
           )}
         </div>
-        {/*
-          Operator-side back-link to the Portfolio Hub. Visible to anyone
-          loading a tenant portal today because there's no per-user auth yet
-          — the only person reaching these URLs is the MSP. When client-tenant
-          users land here we'll gate this on role.
-        */}
-        <a
-          href={PORTFOLIO_HUB_URL}
-          className="hub-back-link"
-          title="Back to the operator Portfolio Hub"
-        >
-          ← Portfolio Hub
-        </a>
-        {userEmail && (
-          <div className="user-chip">
-            <span>{userEmail}</span>
-            <SignOutButton />
-          </div>
+
+        {/* Portfolio Hub back-link — only useful for platform admins. */}
+        {currentUser?.user.is_platform_admin && (
+          <a
+            href={PORTFOLIO_HUB_URL}
+            className="hub-back-link"
+            title="Back to the operator Portfolio Hub"
+          >
+            ← Portfolio Hub
+          </a>
+        )}
+
+        {currentUser ? (
+          <UserChip currentUser={currentUser} />
+        ) : (
+          <a href="/auth/signin" className="hub-back-link" title="Sign in">
+            Sign in →
+          </a>
         )}
       </div>
     </header>
+  );
+}
+
+function UserChip({ currentUser }: { currentUser: CurrentUser }) {
+  const label = currentUser.user.display_name?.trim() || currentUser.user.email;
+  return (
+    <div className="user-chip" title={currentUser.user.email}>
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6,
+      }}>
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          width: 24, height: 24, borderRadius: '50%',
+          background: currentUser.user.is_platform_admin ? 'var(--gold-pale)' : 'var(--bg-card)',
+          border: '1px solid ' + (currentUser.user.is_platform_admin ? 'var(--gold-border)' : 'var(--bg-border)'),
+          color: currentUser.user.is_platform_admin ? 'var(--gold-light)' : 'var(--text-mid)',
+          fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: 10,
+        }}>
+          {label.slice(0, 2).toUpperCase()}
+        </span>
+        <span>{label}</span>
+        {currentUser.user.is_platform_admin && (
+          <span style={{
+            fontSize: 9, fontWeight: 700,
+            padding: '1px 6px',
+            borderRadius: 999,
+            background: 'var(--gold-pale)',
+            color: 'var(--gold-light)',
+            textTransform: 'uppercase', letterSpacing: '.06em',
+          }}>
+            Admin
+          </span>
+        )}
+      </span>
+      <SignOutButton />
+    </div>
   );
 }

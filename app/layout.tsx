@@ -3,7 +3,9 @@ import './globals.css';
 import Nav from '@/components/Nav';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import SignOutButton from '@/components/SignOutButton';
 import { resolveTenant } from '@/lib/tenant';
+import { getCurrentUser } from '@/lib/auth';
 import { headers } from 'next/headers';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -29,7 +31,10 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const host = headers().get('host') ?? undefined;
-  const tenant = await resolveTenant(host);
+  const [tenant, currentUser] = await Promise.all([
+    resolveTenant(host),
+    getCurrentUser(),
+  ]);
   const brand = (tenant?.brand_config ?? {}) as {
     logo_url?: string;
     tagline?: string;
@@ -82,18 +87,35 @@ export default async function RootLayout({
             padding: '14px 20px',
             borderBottom: '1px solid var(--bg-border)',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: 16,
           }}>
             <span style={{
               fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: 14,
               letterSpacing: '0.2em', textTransform: 'uppercase',
             }}>Portfolio Hub</span>
-            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+            <span style={{ flex: 1, fontSize: 11, color: 'var(--text-muted)' }}>
               Cyber Attainment Worksheet · Operator
             </span>
+            {currentUser ? (
+              <div className="user-chip">
+                <span>{currentUser.user.display_name?.trim() || currentUser.user.email}</span>
+                {currentUser.user.is_platform_admin && (
+                  <span style={{
+                    fontSize: 9, fontWeight: 700, padding: '1px 6px',
+                    borderRadius: 999, background: 'var(--gold-pale)',
+                    color: 'var(--gold-light)',
+                    textTransform: 'uppercase', letterSpacing: '.06em',
+                  }}>Admin</span>
+                )}
+                <SignOutButton />
+              </div>
+            ) : (
+              <a href="/auth/signin" className="hub-back-link">Sign in →</a>
+            )}
           </header>
         ) : (
           <>
-            {tenant && <Header tenant={tenant} frameworkLabel={null} userEmail={null} />}
+            {tenant && <Header tenant={tenant} frameworkLabel={null} currentUser={currentUser} />}
             {tenant && <Nav />}
           </>
         )}

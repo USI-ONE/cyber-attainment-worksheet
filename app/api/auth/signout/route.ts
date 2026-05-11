@@ -1,8 +1,15 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { destroyCurrentSession } from '@/lib/auth';
+
+/**
+ * Legacy /api/auth/signout — kept for backwards compatibility with the old
+ * SignOutButton form action. Delegates to the standalone session destroy
+ * helper from lib/auth and redirects to /auth/signin. New code should call
+ * /api/auth/logout directly.
+ */
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
-  const supabase = createClient();
-  await supabase.auth.signOut();
+  await destroyCurrentSession();
   return NextResponse.redirect(new URL('/auth/signin', request.url), 303);
 }

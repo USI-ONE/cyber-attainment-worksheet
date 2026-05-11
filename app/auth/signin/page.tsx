@@ -1,118 +1,122 @@
 'use client';
 
 import { useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { useSearchParams, useRouter } from 'next/navigation';
 
+/**
+ * Standalone email + password sign-in. No Microsoft, no magic-link, no
+ * external service. Calls /api/auth/login which sets the session cookie
+ * via lib/auth#createSessionForUser.
+ *
+ * Future SSO additions (OIDC/SAML) drop in as additional buttons under the
+ * email form without disturbing this flow.
+ */
 export default function SignInPage() {
   const params = useSearchParams();
+  const router = useRouter();
   const redirectTo = params.get('redirect') || '/';
+
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [sent, setSent] = useState(false);
 
-  async function signInWithMagicLink(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!email) return;
+    if (!email || !password) return;
     setBusy(true);
     setError(null);
-
-    const supabase = createClient();
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
-      },
-    });
-    setBusy(false);
-    if (error) setError(error.message);
-    else setSent(true);
-  }
-
-  async function signInWithAzure() {
-    setBusy(true);
-    setError(null);
-    const supabase = createClient();
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'azure',
-      options: {
-        redirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
-        scopes: 'openid email profile offline_access',
-      },
-    });
-    if (error) {
-      setError(error.message);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, redirect: redirectTo }),
+      });
+      const j = await res.json();
+      if (!res.ok || !j.ok) {
+        setError(j.error ?? 'sign-in failed');
+        setBusy(false);
+        return;
+      }
+      // Use a hard navigation so server components re-read the session cookie.
+      window.location.href = j.redirect ?? redirectTo;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'network error');
       setBusy(false);
     }
-  }
-
-  if (sent) {
-    return (
-      <main className="signin-page">
-        <div className="signin-card">
-          <h1 className="signin-title">Check your email</h1>
-          <p className="signin-sub">
-            We sent a sign-in link to <strong>{email}</strong>. Click it to continue.
-          </p>
-          <button
-            type="button"
-            className="signin-btn"
-            style={{ background: 'transparent', border: '1px solid var(--bg-border)', color: 'var(--text-mid)' }}
-            onClick={() => { setSent(false); setEmail(''); }}
-          >
-            Use a different email
-          </button>
-        </div>
-      </main>
-    );
   }
 
   return (
     <main className="signin-page">
       <div className="signin-card">
         <h1 className="signin-title">Cyber Attainment Worksheet</h1>
-        <p className="signin-sub">Enter your work email to receive a sign-in link.</p>
-        <form onSubmit={signInWithMagicLink}>
-          <input
-            type="email"
-            required
-            autoFocus
-            placeholder="you@yourcompany.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '10px 12px',
-              marginBottom: 12,
-              background: 'var(--bg-deep)',
-              border: '1px solid var(--bg-border)',
-              color: 'var(--text)',
-              fontFamily: 'Inter, sans-serif',
-              fontSize: 13,
-              borderRadius: 2,
-            }}
-          />
-          <button type="submit" disabled={busy || !email} className="signin-btn">
-            {busy ? 'Sending…' : 'Send sign-in link'}
+        <p className="signin-sub">Sign in with your email and password.</p>
+
+        <form onSubmit={submit}>
+          <Field label="Email">
+            <input
+              type="email"
+              required
+              autoFocus
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@yourcompany.com"
+              style={inputStyle}
+            />
+          </Field>
+          <Field label="Password" style={{ marginTop: 12 }}>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder=""
+              autoComplete="current-password"
+              style={inputStyle}
+            />
+          </Field>
+          <button type="submit" disabled={busy || !email || !password} className="signin-btn" style={{ marginTop: 16 }}>
+            {busy ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
-        <button
-          type="button"
-          onClick={signInWithAzure}
-          disabled={busy}
-          className="signin-btn"
-          style={{ marginTop: 10, background: 'transparent', border: '1px solid var(--gold-border)', color: 'var(--gold-light)' }}
-        >
-          Sign in with Microsoft
-        </button>
-        <p style={{ marginTop: 10, fontSize: 10, color: 'var(--text-muted)', letterSpacing: '.05em' }}>
-          Microsoft sign-in requires Entra to be configured in Supabase. If it errors, use the email link.
-        </p>
+
         {error && <p className="signin-error">{error}</p>}
+
+        <p style={{
+          marginTop: 18, fontSize: 11, color: 'var(--text-muted)',
+          textAlign: 'center', lineHeight: 1.5,
+        }}>
+          New users receive a one-time invite link from their administrator.
+          Forgot your password? Ask an administrator to issue a new invite.
+        </p>
+
+        {/* SSO additions (Microsoft Entra, Google Workspace, generic OIDC)
+            will land here as additional buttons under this divider once
+            configured. The email+password flow above is the always-on
+            fallback. */}
       </div>
     </main>
   );
 }
+
+function Field({ label, children, style }: { label: string; children: React.ReactNode; style?: React.CSSProperties }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, ...style }}>
+      <label style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 11, color: 'var(--text-mid)', letterSpacing: '.02em' }}>
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '10px 12px',
+  background: 'var(--bg-deep)',
+  border: '1px solid var(--bg-border)',
+  color: 'var(--text)',
+  fontFamily: 'Inter, sans-serif',
+  fontSize: 13,
+  borderRadius: 6,
+};

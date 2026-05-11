@@ -1,25 +1,81 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { SESSION_COOKIE_NAME } from '@/lib/auth';
 
 /**
- * Auth is intentionally OFF for Phase 1.5.
+ * Auth gating middleware. Three classes of routes:
  *
- * Reason: Supabase's admin-issued magic links and email magic links use the
- * legacy implicit flow (#access_token=... in the URL fragment). Our
- * /auth/callback handler is server-side and cannot read URL fragments,
- * which means signed-in users get bounced back to the sign-in page.
+ *   PUBLIC               /auth/*, /api/auth/*, /_next/*, /favicon.ico, /api/health
+ *                        — always allowed, never redirected.
  *
- * The right fix is a client-side callback that reads the fragment and calls
- * supabase.auth.setSession(). That's queued for a follow-up. For now we ship
- * the worksheet with no auth gate so the platform delivers value while the
- * proper auth flow is rebuilt. Vercel URLs are unguessable enough for
- * short-term comfort, but treat this build as not-yet-public.
+ *   ALWAYS-PROTECTED     /admin/*, /api/admin/*, /settings/*, /api/settings/*
+ *                        — must have a session cookie; missing cookie =>
+ *                        redirect to /auth/signin. (Role enforcement runs
+ *                        inside the route — middleware only checks "has a
+ *                        cookie that *might* be valid.")
  *
- * This middleware is a no-op pass-through. RLS still applies for any
- * call that goes through the user (anon) Supabase client; reads/writes
- * that require privilege are routed through server-side API routes that
- * use the service role.
+ *   FLAGGED              everything else
+ *                        — controlled by the AUTH_REQUIRED env var. When
+ *                        AUTH_REQUIRED=true on the deploy, this category
+ *                        also requires a session cookie. When false (default
+ *                        during rollout), anonymous access is allowed and
+ *                        the page renders against the service-role client
+ *                        like it did before user management existed.
+ *
+ * The cookie's mere presence is not proof of validity — a stale or revoked
+ * token still passes this check. That's intentional: middleware runs at
+ * the edge with minimal DB access. Every server component and API route
+ * that needs a real identity calls lib/auth#getCurrentUser, which validates
+ * the session against the DB. The middleware is a cheap pre-filter.
  */
-export function middleware(_request: NextRequest) {
+
+const PUBLIC_PATHS = [
+  '/auth/',
+  '/api/auth/',
+  '/api/health',
+  '/favicon.ico',
+];
+
+const ALWAYS_PROTECTED_PREFIXES = [
+  '/admin/',
+  '/api/admin/',
+  '/settings/',
+  '/api/settings/',
+];
+
+function isPublic(pathname: string): boolean {
+  if (pathname === '/auth' || pathname === '/auth/') return true;
+  for (const p of PUBLIC_PATHS) if (pathname.startsWith(p)) return true;
+  // Next.js internals and static assets — _next is excluded via matcher
+  // already, but be defensive.
+  if (pathname.startsWith('/_next/')) return true;
+  return false;
+}
+
+function isAlwaysProtected(pathname: string): boolean {
+  for (const p of ALWAYS_PROTECTED_PREFIXES) {
+    if (pathname.startsWith(p)) return true;
+  }
+  // Also treat the literal /admin and /settings (no trailing slash) as
+  // protected — Next can serve either form depending on rewrite config.
+  if (pathname === '/admin' || pathname === '/settings') return true;
+  return false;
+}
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  if (isPublic(pathname)) return NextResponse.next();
+
+  const hasCookie = !!request.cookies.get(SESSION_COOKIE_NAME)?.value;
+  const authRequired = process.env.AUTH_REQUIRED === 'true';
+  const mustHaveSession = isAlwaysProtected(pathname) || authRequired;
+
+  if (mustHaveSession && !hasCookie) {
+    const signIn = new URL('/auth/signin', request.url);
+    signIn.searchParams.set('redirect', pathname + request.nextUrl.search);
+    return NextResponse.redirect(signIn);
+  }
+
   return NextResponse.next();
 }
 
