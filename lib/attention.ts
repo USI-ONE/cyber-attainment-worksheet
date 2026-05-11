@@ -22,7 +22,9 @@ export type AttentionKind =
   | 'playbook_review_overdue'
   | 'incident_open_critical'
   | 'priority_overdue'
-  | 'task_overdue';
+  | 'task_overdue'
+  | 'evidence_expired'
+  | 'evidence_expiring';
 
 export interface AttentionItem {
   kind: AttentionKind;
@@ -82,6 +84,7 @@ export async function computeAttention(
     incidentsRes,
     prioritiesRes,
     tasksRes,
+    evidenceRes,
   ] = await Promise.all([
     db.from('risks')
       .select('id, code, title, residual_score, status, next_review_due, treatment_strategy')
@@ -114,6 +117,11 @@ export async function computeAttention(
       .neq('status', 'Complete')
       .not('due_date', 'is', null)
       .lt('due_date', todayISO),
+    db.from('evidence_artifacts')
+      .select('id, title, category, retention_until, status')
+      .eq('tenant_id', tenantId)
+      .eq('status', 'current')
+      .not('retention_until', 'is', null),
   ]);
 
   const out: AttentionItem[] = [];
@@ -276,6 +284,37 @@ export async function computeAttention(
       age_days: days,
       refs: { control_id: t.control_id },
     });
+  }
+
+  // ---- Evidence — current artifacts past or near retention ------------
+  for (const e of (evidenceRes.data ?? []) as {
+    id: string; title: string; category: string;
+    retention_until: string | null; status: string;
+  }[]) {
+    if (!e.retention_until) continue;
+    const days = daysSince(e.retention_until);
+    if (days == null) continue;
+    if (days > 0) {
+      // Past retention while still status='current' = stale audit evidence.
+      out.push({
+        kind: 'evidence_expired',
+        severity: days > 90 ? 'medium' : 'low',
+        title: `Evidence expired: ${e.title}`,
+        detail: `Retention date passed ${fmtAge(days)} ago. Refresh, mark superseded, or archive.`,
+        href: '/evidence',
+        age_days: days,
+      });
+    } else if (days >= -30) {
+      // Within 30 days of expiry — soft warning so the operator can re-collect.
+      out.push({
+        kind: 'evidence_expiring',
+        severity: 'low',
+        title: `Evidence expiring soon: ${e.title}`,
+        detail: `Retention ends in ${Math.abs(days)} day${days === -1 ? '' : 's'}. Plan refresh.`,
+        href: '/evidence',
+        age_days: days,
+      });
+    }
   }
 
   // Sort by severity (worst first), then by age descending. Critical incidents

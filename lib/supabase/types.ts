@@ -285,6 +285,58 @@ export interface Risk {
 
 export type RiskTreatmentStatus = 'Not Started' | 'In Progress' | 'Blocked' | 'Complete';
 
+// ---------------------------------------------------------------------------
+// Evidence Library — see db/migrations/0014_evidence_library.sql
+// ---------------------------------------------------------------------------
+
+export type EvidenceStatus   = 'current' | 'superseded' | 'expired' | 'archived';
+
+/** Pre-baked category set the UI exposes as filter pills. The DB column is
+ *  free text so adding more categories later is a code-only change. */
+export const EVIDENCE_CATEGORIES = [
+  'access_review',
+  'config_screenshot',
+  'training_record',
+  'dr_test_result',
+  'ir_tabletop_record',
+  'vulnerability_scan',
+  'penetration_test',
+  'audit_evidence',
+  'policy_attestation',
+  'backup_verification',
+  'log_export',
+  'certification',
+  'incident_report',
+  'other',
+] as const;
+export type EvidenceCategory = typeof EVIDENCE_CATEGORIES[number];
+
+export interface EvidenceArtifact {
+  id: string;
+  tenant_id: string;
+  title: string;
+  description: string | null;
+  category: EvidenceCategory | string;       // any string accepted in DB
+  storage_path: string | null;
+  filename: string | null;
+  content_type: string | null;
+  size_bytes: number | null;
+  uploaded_by: string | null;
+  collected_date: string | null;             // yyyy-mm-dd
+  retention_until: string | null;            // yyyy-mm-dd
+  status: EvidenceStatus;
+  linked_control_ids: string[];
+  linked_risk_ids: string[];                 // uuid[]
+  linked_treatment_ids: string[];            // uuid[]
+  linked_dr_plan_ids: string[];              // uuid[]
+  linked_ir_playbook_ids: string[];          // uuid[]
+  linked_incident_ids: string[];             // uuid[]
+  linked_policy_doc_ids: string[];           // uuid[]
+  tags: string[];
+  created_at: string;
+  updated_at: string;
+}
+
 export interface RiskTreatment {
   id: string;
   risk_id: string;

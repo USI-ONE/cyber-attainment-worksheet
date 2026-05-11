@@ -55,8 +55,9 @@ const GROUPS: NavGroup[] = [
     id: 'govern',
     label: 'Govern',
     items: [
-      { href: '/policy', label: 'Policy Documents', tag: 'Versioned policy library' },
-      { href: '/kpis',   label: 'Board KPIs',       tag: 'Executive metrics' },
+      { href: '/policy',   label: 'Policy Documents',  tag: 'Versioned policy library' },
+      { href: '/evidence', label: 'Evidence Library',  tag: 'Audit-ready artifact store' },
+      { href: '/kpis',     label: 'Board KPIs',        tag: 'Executive metrics' },
     ],
   },
 ];
