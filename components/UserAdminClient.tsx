@@ -95,7 +95,12 @@ export default function UserAdminClient({
     });
     const j = await res.json();
     if (!res.ok || !j.ok) { alert(j.error ?? 'invite failed'); return; }
-    setAcceptUrl(window.location.origin + j.accept_url_path);
+    // Prefer the server-built URL — it knows the tenant's hostname so a
+    // tenant-scoped invite issued from the operator hub still produces a
+    // URL pointed at the tenant deploy (where the invitee's session needs
+    // to live). Fall back to origin+path for platform-admin invites where
+    // the server returns accept_url = null.
+    setAcceptUrl(j.accept_url ?? (window.location.origin + j.accept_url_path));
     setInvites((s) => [
       { id: j.invite.id, email: j.invite.email, tenant_id: j.invite.tenant_id,
         role: j.invite.role, grant_platform_admin: j.invite.grant_platform_admin,

@@ -108,10 +108,20 @@ export async function POST(request: NextRequest) {
     detail: { email, role: body.role, by_platform_admin: isPlatformAdmin(cu) },
   });
 
+  // Construct an explicit tenant-deploy URL. /settings/users is already
+  // executing on a tenant deploy, so window.location.origin would do the
+  // right thing — but if the tenant has a custom hostname configured
+  // (different from the Vercel default), prefer that. Falls back to the
+  // standard caw-<slug>.vercel.app if no custom hostname is set.
+  const tenantHost = tenant.hostname || `caw-${tenant.slug}.vercel.app`;
+  const accept_url_path = `/auth/accept-invite?token=${token}`;
+  const accept_url = `https://${tenantHost}${accept_url_path}`;
+
   return NextResponse.json({
     ok: true,
     invite: { id: invite.id, email, role: body.role, expires_at: invite.expires_at },
     invite_token: token,
-    accept_url_path: `/auth/accept-invite?token=${token}`,
+    accept_url_path,
+    accept_url,
   });
 }

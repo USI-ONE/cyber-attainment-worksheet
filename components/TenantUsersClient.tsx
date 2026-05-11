@@ -47,7 +47,9 @@ export default function TenantUsersClient({
     });
     const j = await res.json();
     if (!res.ok || !j.ok) { alert(j.error ?? 'invite failed'); return; }
-    setAcceptUrl(window.location.origin + j.accept_url_path);
+    // Server returns an explicit accept_url with the tenant's hostname
+    // baked in — use it if present, otherwise fall back to origin+path.
+    setAcceptUrl(j.accept_url ?? (window.location.origin + j.accept_url_path));
     setInvites((s) => [
       { id: j.invite.id, email: j.invite.email, role: j.invite.role,
         expires_at: j.invite.expires_at, created_at: new Date().toISOString() },

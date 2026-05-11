@@ -71,10 +71,20 @@ export async function POST(request: NextRequest) {
 
   const supabase = createServiceRoleClient();
 
-  // Sanity check the tenant exists.
+  // Sanity check the tenant exists, and capture its hostname so we can
+  // return an accept URL pointed at the tenant deploy (not the operator
+  // hub the platform admin is inviting from). The session cookie is
+  // deploy-scoped, so the invitee needs to land their session on the
+  // deploy they'll actually use.
+  let tenantHost: string | null = null;
   if (tenantId) {
-    const { data: t } = await supabase.from('tenants').select('id').eq('id', tenantId).maybeSingle();
+    const { data: t } = await supabase
+      .from('tenants')
+      .select('id, slug, hostname')
+      .eq('id', tenantId)
+      .maybeSingle();
     if (!t) return bad('tenant not found', 404);
+    tenantHost = t.hostname || `caw-${t.slug}.vercel.app`;
   }
 
   // Pre-create a profile row in 'invited' state (so memberships can FK to
@@ -113,10 +123,22 @@ export async function POST(request: NextRequest) {
     },
   });
 
+  // Compose the accept URL with the right host:
+  //   - tenant-scoped invite WITHOUT platform admin → tenant deploy host
+  //     (so the invitee's session lands where their role applies)
+  //   - platform-admin invite (with or without a tenant) → null, client
+  //     falls back to window.location.origin which is the operator hub
+  //     in practice — exactly where a platform admin wants their session
+  const accept_url_path = `/auth/accept-invite?token=${token}`;
+  const accept_url = (tenantHost && !grantPlatform)
+    ? `https://${tenantHost}${accept_url_path}`
+    : null;
+
   return NextResponse.json({
     ok: true,
     invite: { id: invite.id, email, tenant_id: tenantId, role, grant_platform_admin: grantPlatform, expires_at: invite.expires_at },
     invite_token: token,
-    accept_url_path: `/auth/accept-invite?token=${token}`,
+    accept_url_path,
+    accept_url,
   });
 }
