@@ -33,7 +33,14 @@
 import { cookies } from 'next/headers';
 import { createHash, randomBytes, scrypt as scryptCb, timingSafeEqual } from 'node:crypto';
 import { createServiceRoleClient } from '@/lib/supabase/server';
+import { SESSION_COOKIE_NAME, SESSION_TTL_DAYS } from '@/lib/auth-shared';
 import type { SupabaseClient } from '@supabase/supabase-js';
+
+// Re-export the Edge-safe constants so application code can keep importing
+// everything from '@/lib/auth' in one place. Middleware MUST import these
+// from '@/lib/auth-shared' directly to avoid pulling node:crypto into the
+// Edge runtime bundle.
+export { SESSION_COOKIE_NAME, SESSION_TTL_DAYS };
 
 // Direct Promise wrapper for scrypt. We avoid util.promisify here because its
 // generated types drop the optional `options` parameter, leaving us with a
@@ -54,12 +61,11 @@ function scrypt(
 }
 
 // =============================================================================
-// Constants
+// Constants (SESSION_COOKIE_NAME + SESSION_TTL_DAYS live in lib/auth-shared
+// so middleware can import them without dragging in node:crypto.)
 // =============================================================================
 
-export const SESSION_COOKIE_NAME = 'caw_session';
-export const SESSION_TTL_DAYS    = 14;
-const COOKIE_TTL_SECONDS         = SESSION_TTL_DAYS * 24 * 60 * 60;
+const COOKIE_TTL_SECONDS = SESSION_TTL_DAYS * 24 * 60 * 60;
 
 const SCRYPT_KEYLEN  = 64;
 const SCRYPT_OPTIONS = { N: 16384, r: 8, p: 1 };

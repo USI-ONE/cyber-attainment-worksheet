@@ -1,5 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { SESSION_COOKIE_NAME } from '@/lib/auth';
+import { SESSION_COOKIE_NAME } from '@/lib/auth-shared';
+// IMPORTANT: do NOT import from '@/lib/auth' here. That module pulls in
+// node:crypto (scrypt, randomBytes), which the Edge runtime middleware
+// runs under does not support. Constants live in lib/auth-shared so
+// middleware can pick them up without dragging Node-only APIs into the
+// Edge bundle.
 
 /**
  * Auth gating middleware. Three classes of routes:
