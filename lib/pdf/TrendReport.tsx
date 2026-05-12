@@ -87,7 +87,7 @@ export function TrendReport({
       title={`${tenant.display_name} — Maturity Trend`}
       author={tenant.display_name}
       subject="Three-Axis Maturity Trend"
-      creator="Cyber Attainment Worksheet"
+      creator="TrustOS"
     >
       <Page size="LETTER" orientation="landscape" style={baseStyles.page}>
         <View style={baseStyles.pageHeader} fixed>

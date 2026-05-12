@@ -112,7 +112,7 @@ export function RiskTreatmentPlanReport({
       title={`${tenant.display_name} — Risk Treatment Plan`}
       author={tenant.display_name}
       subject="Risk Treatment Plan"
-      creator="Cyber Attainment Worksheet"
+      creator="TrustOS"
     >
       {/* ===================================================================
           Page 1: Cover + heat map

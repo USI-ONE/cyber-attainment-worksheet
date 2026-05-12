@@ -48,7 +48,7 @@ export default function Header({
         </div>
         <div className="doc-meta">
           <div className="doc-title">
-            {frameworkLabel ? frameworkLabel.split(' · ')[0] : 'Cyber Attainment Worksheet'}
+            {frameworkLabel ? frameworkLabel.split(' · ')[0] : 'TrustOS'}
           </div>
           {frameworkLabel && (
             <div className="doc-sub">{frameworkLabel.split(' · ').slice(1).join(' · ')}</div>

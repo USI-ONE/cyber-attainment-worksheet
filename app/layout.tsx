@@ -15,15 +15,15 @@ export async function generateMetadata(): Promise<Metadata> {
   // pull their display_name from the resolved tenant.
   if (process.env.OPERATOR_MODE === 'true') {
     return {
-      title: 'Portfolio Hub — Cyber Attainment Worksheet',
-      description: 'Operator-level overview of every tenant portal.',
+      title: 'Portfolio Hub — TrustOS',
+      description: 'Operator-level overview of every TrustOS tenant portal.',
     };
   }
   const tenant = await resolveTenant();
-  const name = tenant?.display_name ?? 'Cyber Attainment Worksheet';
+  const name = tenant?.display_name ?? 'TrustOS';
   return {
-    title: `${name} — Cyber Attainment Worksheet`,
-    description: 'Multi-tenant cyber framework attainment platform.',
+    title: `${name} — TrustOS`,
+    description: 'Cybersecurity & compliance management. Part of the USI managed-services suite.',
   };
 }
 
@@ -112,7 +112,7 @@ export default async function RootLayout({
                 letterSpacing: '0.2em', textTransform: 'uppercase',
               }}>Portfolio Hub</span>
               <span style={{ flex: 1, fontSize: 11, color: 'var(--text-muted)' }}>
-                Cyber Attainment Worksheet · Operator
+                TrustOS · Operator
               </span>
               {currentUser ? (
                 <div className="user-chip">

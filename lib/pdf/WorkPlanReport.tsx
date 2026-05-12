@@ -94,7 +94,7 @@ export function WorkPlanReport({
       title={`${tenant.display_name} — Work Plan & Priorities`}
       author={tenant.display_name}
       subject="Executive Work Plan Briefing"
-      creator="Cyber Attainment Worksheet"
+      creator="TrustOS"
     >
       <Page size="LETTER" style={baseStyles.page}>
         <View style={baseStyles.pageHeader} fixed>

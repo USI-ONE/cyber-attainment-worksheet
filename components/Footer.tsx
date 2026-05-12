@@ -9,7 +9,9 @@ export default function Footer({ tenant }: { tenant: Tenant }) {
         {tenant.display_name} · NIST Cybersecurity Framework 2.0 · Practice Attainment Assessment
       </div>
       {tagline && <div className="app-footer-tag">{tagline}</div>}
-      <div className="app-footer-meta">Universal Systems Inc. · CIO Office</div>
+      <div className="app-footer-meta">
+        TrustOS · Universal Systems Inc.
+      </div>
     </footer>
   );
 }

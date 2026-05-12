@@ -1,5 +1,5 @@
 /**
- * Standalone user-management & authentication for Cyber Attainment Worksheet.
+ * Standalone user-management & authentication for TrustOS.
  *
  * Design goals:
  *   - Zero external auth dependency: no Supabase Auth, no Clerk, no Auth0, no

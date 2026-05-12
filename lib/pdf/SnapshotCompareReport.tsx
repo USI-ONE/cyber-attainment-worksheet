@@ -114,7 +114,7 @@ export function SnapshotCompareReport({
       title={`${tenant.display_name} — Snapshot Compare`}
       author={tenant.display_name}
       subject="Snapshot Compare Briefing"
-      creator="Cyber Attainment Worksheet"
+      creator="TrustOS"
     >
       <Page size="LETTER" style={baseStyles.page}>
         <View style={baseStyles.pageHeader} fixed>
