@@ -39,6 +39,7 @@ const READ_ONLY_SELECTORS = [
   '.app-main .input-cell textarea',
   '.app-main .priority-select',
   '.app-main .status-select',
+  '.app-main .answer-btn',           // Yes / Partial / No on /assessment
   '.app-main .action-btn.primary',
   '.app-main .action-btn.danger',
   '.app-main input[type="checkbox"]',

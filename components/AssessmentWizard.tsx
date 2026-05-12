@@ -312,6 +312,12 @@ function Question({
               key={opt}
               onClick={() => onChange(opt)}
               type="button"
+              // .answer-btn picks up the read-only enforcer + CSS in
+              // globals.css so a viewer's buttons are dimmed AND inert,
+              // not just visually styled-as-inert. .answer-selected on
+              // the currently-chosen option keeps it un-dimmed in
+              // read-only mode so the recorded answer stays obvious.
+              className={`answer-btn ${sel ? 'answer-selected' : ''}`}
               style={{
                 flex: 1, padding: '10px 12px',
                 background: sel ? `${color}22` : 'var(--bg-deep)',

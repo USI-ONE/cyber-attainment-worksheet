@@ -834,13 +834,25 @@ body[data-readonly="true"] .app-main .input-cell select,
 body[data-readonly="true"] .app-main .input-cell textarea,
 body[data-readonly="true"] .app-main .priority-select,
 body[data-readonly="true"] .app-main .status-select,
+body[data-readonly="true"] .app-main .answer-btn,
 body[data-readonly="true"] .app-main .action-btn.primary,
 body[data-readonly="true"] .app-main .action-btn.danger {
   pointer-events: none;
   opacity: 0.55;
   filter: saturate(0.6);
-  cursor: not-allowed;
+  cursor: not-allowed !important;
   user-select: none;
+}
+/* Selected answer button stays visually obvious in read-only so the viewer
+   can clearly see WHICH option is the recorded answer. Bring its opacity
+   back up so the chosen Yes/Partial/No reads as the current state, and
+   switch the cursor to `default` (label-like) rather than `not-allowed`
+   (suggests "you can't do this" — which is misleading for a static
+   indicator). */
+body[data-readonly="true"] .app-main .answer-btn.answer-selected {
+  opacity: 1;
+  filter: none;
+  cursor: default !important;
 }
 /* Specifically also block checkbox / radio toggles inside the app-main —
    used for cross-reference linking in risk / evidence editors. */
