@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { resolveTenant } from '@/lib/tenant';
+import { requireEditAccess } from '@/lib/auth-api';
 import { loadActiveFramework } from '@/lib/framework';
 import { computePracticeScore } from '@/lib/assessment';
 import type { AssessmentAnswer, AssessmentResponse } from '@/lib/supabase/types';
@@ -50,9 +51,9 @@ export async function GET(request: NextRequest, { params }: { params: { control_
 }
 
 export async function POST(request: NextRequest, { params }: { params: { control_id: string } }) {
-  const host = request.headers.get('host') ?? undefined;
-  const tenant = await resolveTenant(host);
-  if (!tenant) return bad('no tenant resolved');
+  const auth = await requireEditAccess(request);
+  if (auth instanceof NextResponse) return auth;
+  const { tenant } = auth;
 
   const fw = await loadActiveFramework(tenant);
   if (!fw) return bad('no active framework');

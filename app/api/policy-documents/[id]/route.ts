@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { resolveTenant } from '@/lib/tenant';
+import { requireEditAccess } from '@/lib/auth-api';
 import type { PolicyDocument, PolicyDocumentStatus } from '@/lib/supabase/types';
 
 /**
@@ -43,9 +44,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
-  const host = request.headers.get('host') ?? undefined;
-  const tenant = await resolveTenant(host);
-  if (!tenant) return bad('no tenant resolved');
+  const auth = await requireEditAccess(request);
+  if (auth instanceof NextResponse) return auth;
+  const { tenant } = auth;
 
   let body: Partial<PolicyDocument>;
   try { body = await request.json(); } catch { return bad('invalid JSON'); }
@@ -84,9 +85,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
-  const host = request.headers.get('host') ?? undefined;
-  const tenant = await resolveTenant(host);
-  if (!tenant) return bad('no tenant resolved');
+  const auth = await requireEditAccess(request);
+  if (auth instanceof NextResponse) return auth;
+  const { tenant } = auth;
 
   const supabase = createServiceRoleClient();
   const { data: doc } = await supabase

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { resolveTenant } from '@/lib/tenant';
+import { requireEditAccess } from '@/lib/auth-api';
 import type { PolicyDocument, PolicyDocumentStatus } from '@/lib/supabase/types';
 
 /**
@@ -50,9 +51,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const host = request.headers.get('host') ?? undefined;
-  const tenant = await resolveTenant(host);
-  if (!tenant) return bad('no tenant resolved');
+  const auth = await requireEditAccess(request);
+  if (auth instanceof NextResponse) return auth;
+  const { tenant } = auth;
 
   let form: FormData;
   try { form = await request.formData(); } catch { return bad('expected multipart/form-data'); }

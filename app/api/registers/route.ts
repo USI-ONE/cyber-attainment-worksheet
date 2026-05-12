@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { resolveTenant } from '@/lib/tenant';
+import { requireEditAccess } from '@/lib/auth-api';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,9 +30,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const host = request.headers.get('host') ?? undefined;
-  const tenant = await resolveTenant(host);
-  if (!tenant) return NextResponse.json({ error: 'no tenant' }, { status: 400 });
+  const auth = await requireEditAccess(request);
+  if (auth instanceof NextResponse) return auth;
+  const { tenant } = auth;
   let body: Record<string, unknown>;
   try { body = await request.json(); } catch { return NextResponse.json({ error: 'invalid JSON' }, { status: 400 }); }
   if (body.action === 'seed_defaults') return seedDefaults(tenant.id);
@@ -51,9 +52,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const host = request.headers.get('host') ?? undefined;
-  const tenant = await resolveTenant(host);
-  if (!tenant) return NextResponse.json({ error: 'no tenant' }, { status: 400 });
+  const auth = await requireEditAccess(request);
+  if (auth instanceof NextResponse) return auth;
+  const { tenant } = auth;
   let body: Record<string, unknown>;
   try { body = await request.json(); } catch { return NextResponse.json({ error: 'invalid JSON' }, { status: 400 }); }
   if (!body.id) return NextResponse.json({ error: 'id required' }, { status: 400 });
@@ -70,9 +71,9 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const host = request.headers.get('host') ?? undefined;
-  const tenant = await resolveTenant(host);
-  if (!tenant) return NextResponse.json({ error: 'no tenant' }, { status: 400 });
+  const auth = await requireEditAccess(request);
+  if (auth instanceof NextResponse) return auth;
+  const { tenant } = auth;
   const id = new URL(request.url).searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
   const supabase = createServiceRoleClient();

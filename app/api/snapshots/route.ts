@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { resolveTenant } from '@/lib/tenant';
+import { requireEditAccess } from '@/lib/auth-api';
 import { loadActiveFramework } from '@/lib/framework';
 
 /**
@@ -14,9 +15,9 @@ import { loadActiveFramework } from '@/lib/framework';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
-  const host = request.headers.get('host') ?? undefined;
-  const tenant = await resolveTenant(host);
-  if (!tenant) return NextResponse.json({ error: 'no tenant resolved' }, { status: 400 });
+  const auth = await requireEditAccess(request);
+  if (auth instanceof NextResponse) return auth;
+  const { tenant } = auth;
 
   const fw = await loadActiveFramework(tenant);
   if (!fw) return NextResponse.json({ error: 'no active framework' }, { status: 400 });

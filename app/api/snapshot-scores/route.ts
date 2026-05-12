@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { resolveTenant } from '@/lib/tenant';
+import { requireEditAccess } from '@/lib/auth-api';
 
 /**
  * POST /api/snapshot-scores  (used as the saveEndpoint for the snapshot editor)
@@ -15,9 +16,9 @@ const SCORE_FIELDS = new Set(['pol', 'pra', 'gol', 'prio', 'owner', 'status', 'n
 const TIER_FIELDS = new Set(['pol', 'pra', 'gol']);
 
 export async function POST(request: NextRequest) {
-  const host = request.headers.get('host') ?? undefined;
-  const tenant = await resolveTenant(host);
-  if (!tenant) return NextResponse.json({ error: 'no tenant' }, { status: 400 });
+  const auth = await requireEditAccess(request);
+  if (auth instanceof NextResponse) return auth;
+  const { tenant } = auth;
 
   let body: { snapshot_id?: string; control_id?: string; field?: string; value?: unknown };
   try { body = await request.json(); } catch { return NextResponse.json({ error: 'invalid JSON' }, { status: 400 }); }

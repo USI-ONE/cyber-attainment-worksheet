@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { resolveTenant } from '@/lib/tenant';
+import { requireEditAccess } from '@/lib/auth-api';
 
 interface LegacyRow {
   pol?: number | string;
@@ -25,29 +26,14 @@ function legacyKeyToControlId(legacyKey: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  // Replaced the old Supabase Auth + memberships check with our standalone
+  // requireEditAccess helper. Same effective gate (editor or platform admin
+  // on this tenant) but reads from our own session / profiles tables.
+  const auth = await requireEditAccess(request);
+  if (auth instanceof NextResponse) return auth;
+  const { tenant } = auth;
+
   const supabase = createClient();
-
-  const { data: userData, error: authError } = await supabase.auth.getUser();
-  const user = userData?.user;
-  if (authError || !user) {
-    return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
-  }
-
-  const host = request.headers.get('host') ?? undefined;
-  const tenant = await resolveTenant(host);
-  if (!tenant) {
-    return NextResponse.json({ error: 'no tenant resolved' }, { status: 400 });
-  }
-
-  const { data: membership } = await supabase
-    .from('memberships')
-    .select('role')
-    .eq('user_id', user.id)
-    .eq('tenant_id', tenant.id)
-    .maybeSingle();
-  if (membership?.role !== 'editor') {
-    return NextResponse.json({ error: 'editor role required for this tenant' }, { status: 403 });
-  }
 
   const { data: tf } = await supabase
     .from('tenant_frameworks')
@@ -88,7 +74,7 @@ export async function POST(request: NextRequest) {
       owner: r.own ?? null,
       status: r.sts ?? null,
       notes: r.nts ?? null,
-      updated_by: user.id,
+      updated_by: auth.currentUser?.user.id ?? null,
       updated_at: now,
     });
   }
@@ -114,7 +100,7 @@ export async function POST(request: NextRequest) {
       framework_version_id: frameworkVersionId,
       label: `Import baseline ${today}`,
       period: today,
-      taken_by: user.id,
+      taken_by: auth.currentUser?.user.id ?? null,
       notes_md: 'Created automatically during legacy localStorage import.',
     })
     .select('id, label')

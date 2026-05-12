@@ -808,6 +808,34 @@ body{
 
 .hidden{display:none !important}
 
+/* READ-ONLY MODE
+   Set by app/layout.tsx as body[data-readonly="true"] whenever the signed-in
+   user has no edit rights on the current tenant (viewer or no membership).
+   Visually disables the editable form-control class .score-select plus the
+   primary/danger action buttons. Plain .action-btn (Open, Close, Download,
+   Generate Report) stays enabled — those are read operations. Filter pills
+   (.fn-btn) and nav tabs stay live so the user can still navigate and
+   filter views.
+
+   This is the visual companion to lib/auth-api#requireEditAccess, which is
+   the actual security boundary. Server-side, viewers get 403 on every
+   write. The CSS just keeps them from clicking dead controls in the first
+   place. */
+body[data-readonly="true"] .app-main .score-select,
+body[data-readonly="true"] .app-main .action-btn.primary,
+body[data-readonly="true"] .app-main .action-btn.danger {
+  pointer-events: none;
+  opacity: 0.55;
+  filter: saturate(0.6);
+  cursor: not-allowed;
+}
+body[data-readonly="true"] .app-main .action-btn.primary,
+body[data-readonly="true"] .app-main .action-btn.danger {
+  /* Strip the lift / shadow hover effect that primary buttons have. */
+  box-shadow: none;
+  transform: none;
+}
+
 /* Footer */
 .app-footer{
   margin-top:40px; padding-top:24px;

@@ -4,6 +4,7 @@ import Nav from '@/components/Nav';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import SignOutButton from '@/components/SignOutButton';
+import ReadOnlyBanner from '@/components/ReadOnlyBanner';
 import { resolveTenant } from '@/lib/tenant';
 import { getCurrentUser } from '@/lib/auth';
 import { headers } from 'next/headers';
@@ -39,8 +40,17 @@ export default async function RootLayout({
   // Determine whether the signed-in user can administer THIS tenant (editor
   // OR platform admin). Drives the conditional Nav groups (Settings, Admin).
   const isPlatformAdmin = !!currentUser?.user.is_platform_admin;
-  const canAdminister = isPlatformAdmin
+  const canEdit = isPlatformAdmin
     || (!!tenant && !!currentUser?.memberships.some((m) => m.tenant_id === tenant.id && m.role === 'editor'));
+  const canAdminister = canEdit;
+
+  // Read-only mode: signed-in user who CAN'T edit this tenant. Drives the
+  // ReadOnlyBanner above main content and a body[data-readonly] attribute
+  // that disables editable inputs via CSS in globals.css. Anonymous browsing
+  // (no currentUser) is NOT read-only mode — the user simply hasn't signed
+  // in yet, and the legacy AUTH_REQUIRED=false rollout flag still permits
+  // unauthenticated edits at the API layer.
+  const readOnly = !!currentUser && !!tenant && !canEdit;
   const brand = (tenant?.brand_config ?? {}) as {
     logo_url?: string;
     tagline?: string;
@@ -82,7 +92,7 @@ export default async function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&family=JetBrains+Mono:wght@500;600&display=swap"
         />
       </head>
-      <body style={rootStyle}>
+      <body style={rootStyle} data-readonly={readOnly ? 'true' : undefined}>
         {/*
           Operator-mode (the Portfolio Hub deploy) skips all tenant chrome —
           it's not a tenant. Customer tenant deploys render the normal
@@ -139,6 +149,9 @@ export default async function RootLayout({
           <>
             {tenant && <Header tenant={tenant} frameworkLabel={null} currentUser={currentUser} />}
             {tenant && <Nav canAdminister={canAdminister} isPlatformAdmin={isPlatformAdmin} />}
+            {readOnly && currentUser && tenant && (
+              <ReadOnlyBanner tenant={tenant} currentUser={currentUser} />
+            )}
           </>
         )}
         {children}

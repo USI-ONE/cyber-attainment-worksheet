@@ -1,12 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
-import { resolveTenant } from '@/lib/tenant';
+import { requireEditAccess } from '@/lib/auth-api';
 
 /**
- * Score upsert endpoint. Phase 1.5: no auth.
- *
- * Phase 2: this route gets a `requireEditor()` guard that reads the session
- * cookie and rejects anyone who isn't editor on the resolved tenant.
+ * Score upsert endpoint. Gated by requireEditAccess — a signed-in viewer
+ * gets 403, an editor or platform admin proceeds, anonymous behavior is
+ * preserved while AUTH_REQUIRED is off (rollout mode).
  *
  * Body: { control_id, field, value }
  *   field    = 'pol' | 'pra' | 'gol' | 'prio' | 'owner' | 'status' | 'notes'
@@ -16,11 +15,9 @@ const SCORE_FIELDS = new Set(['pol', 'pra', 'gol', 'prio', 'owner', 'status', 'n
 const TIER_FIELDS = new Set(['pol', 'pra', 'gol', 'prio']);
 
 export async function POST(request: NextRequest) {
-  const host = request.headers.get('host') ?? undefined;
-  const tenant = await resolveTenant(host);
-  if (!tenant) {
-    return NextResponse.json({ error: 'no tenant resolved' }, { status: 400 });
-  }
+  const auth = await requireEditAccess(request);
+  if (auth instanceof NextResponse) return auth;
+  const { tenant } = auth;
 
   let body: { control_id?: string; field?: string; value?: unknown; framework_version_id?: string };
   try {

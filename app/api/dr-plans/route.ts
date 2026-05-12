@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { resolveTenant } from '@/lib/tenant';
+import { requireEditAccess } from '@/lib/auth-api';
 import type { DrPlan, DrPlanStatus, DrTestResult, DrTier } from '@/lib/supabase/types';
 
 /**
@@ -39,9 +40,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const host = request.headers.get('host') ?? undefined;
-  const tenant = await resolveTenant(host);
-  if (!tenant) return bad('no tenant');
+  const auth = await requireEditAccess(request);
+  if (auth instanceof NextResponse) return auth;
+  const { tenant } = auth;
   let body: Partial<DrPlan>;
   try { body = await request.json(); } catch { return bad('invalid JSON'); }
 
@@ -85,9 +86,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const host = request.headers.get('host') ?? undefined;
-  const tenant = await resolveTenant(host);
-  if (!tenant) return bad('no tenant');
+  const auth = await requireEditAccess(request);
+  if (auth instanceof NextResponse) return auth;
+  const { tenant } = auth;
   let body: Partial<DrPlan> & { id?: string };
   try { body = await request.json(); } catch { return bad('invalid JSON'); }
   if (!body.id) return bad('id required');
@@ -137,9 +138,9 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const host = request.headers.get('host') ?? undefined;
-  const tenant = await resolveTenant(host);
-  if (!tenant) return bad('no tenant');
+  const auth = await requireEditAccess(request);
+  if (auth instanceof NextResponse) return auth;
+  const { tenant } = auth;
   const id = new URL(request.url).searchParams.get('id');
   if (!id) return bad('id required');
   const supabase = createServiceRoleClient();
