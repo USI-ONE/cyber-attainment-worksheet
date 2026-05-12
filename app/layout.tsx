@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import SignOutButton from '@/components/SignOutButton';
 import ReadOnlyBanner from '@/components/ReadOnlyBanner';
+import ReadOnlyEnforcer from '@/components/ReadOnlyEnforcer';
 import { resolveTenant } from '@/lib/tenant';
 import { getCurrentUser } from '@/lib/auth';
 import { headers } from 'next/headers';
@@ -152,6 +153,7 @@ export default async function RootLayout({
             {readOnly && currentUser && tenant && (
               <ReadOnlyBanner tenant={tenant} currentUser={currentUser} />
             )}
+            {readOnly && <ReadOnlyEnforcer />}
           </>
         )}
         {children}

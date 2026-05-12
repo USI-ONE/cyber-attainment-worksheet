@@ -6,12 +6,24 @@ import type { CurrentUser } from '@/lib/auth';
 // surfaces a preferred entry point.
 const PORTFOLIO_HUB_URL = 'https://caw-portfolio-hub.vercel.app/hub';
 
+/** Pick the role label + color for the chip badge based on the user's
+ *  effective scope on the current tenant. Platform admin trumps tenant
+ *  role. A signed-in user with no membership for this tenant shows "no
+ *  access" so the chip itself communicates the read-only reason. */
+function roleBadge(currentUser: CurrentUser, tenant: Tenant): { label: string; color: string } {
+  if (currentUser.user.is_platform_admin) return { label: 'Admin',  color: '#1E40AF' };
+  const m = currentUser.memberships.find((m) => m.tenant_id === tenant.id);
+  if (m?.role === 'editor') return { label: 'Editor', color: '#10B981' };
+  if (m?.role === 'viewer') return { label: 'Viewer', color: '#F59E0B' };
+  return { label: 'No access', color: '#94A3B8' };
+}
+
 /**
  * Tenant header. Shows the tenant brand, the framework label, an optional
  * Portfolio Hub back-link (for platform admins who landed here from the
- * Hub), and the current-user chip with sign-out. If no current user is
- * present, the chip becomes a "Sign in" link so unauthenticated visitors
- * always have a clear path to the sign-in page.
+ * Hub), and the current-user chip with sign-out + a role pill that
+ * communicates read-only / editor / admin status at a glance. If no
+ * current user is present, the chip becomes a "Sign in" link.
  */
 export default function Header({
   tenant,
@@ -55,7 +67,7 @@ export default function Header({
         )}
 
         {currentUser ? (
-          <UserChip currentUser={currentUser} />
+          <UserChip currentUser={currentUser} tenant={tenant} />
         ) : (
           <a href="/auth/signin" className="hub-back-link" title="Sign in">
             Sign in →
@@ -66,36 +78,36 @@ export default function Header({
   );
 }
 
-function UserChip({ currentUser }: { currentUser: CurrentUser }) {
+function UserChip({ currentUser, tenant }: { currentUser: CurrentUser; tenant: Tenant }) {
   const label = currentUser.user.display_name?.trim() || currentUser.user.email;
+  const badge = roleBadge(currentUser, tenant);
   return (
-    <div className="user-chip" title={currentUser.user.email}>
+    <div className="user-chip" title={`${currentUser.user.email} · ${badge.label}`}>
       <span style={{
         display: 'inline-flex', alignItems: 'center', gap: 6,
       }}>
         <span style={{
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
           width: 24, height: 24, borderRadius: '50%',
-          background: currentUser.user.is_platform_admin ? 'var(--gold-pale)' : 'var(--bg-card)',
-          border: '1px solid ' + (currentUser.user.is_platform_admin ? 'var(--gold-border)' : 'var(--bg-border)'),
-          color: currentUser.user.is_platform_admin ? 'var(--gold-light)' : 'var(--text-mid)',
+          background: `${badge.color}1a`,
+          border: `1px solid ${badge.color}55`,
+          color: badge.color,
           fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: 10,
         }}>
           {label.slice(0, 2).toUpperCase()}
         </span>
         <span>{label}</span>
-        {currentUser.user.is_platform_admin && (
-          <span style={{
-            fontSize: 9, fontWeight: 700,
-            padding: '1px 6px',
-            borderRadius: 999,
-            background: 'var(--gold-pale)',
-            color: 'var(--gold-light)',
-            textTransform: 'uppercase', letterSpacing: '.06em',
-          }}>
-            Admin
-          </span>
-        )}
+        <span style={{
+          fontSize: 9, fontWeight: 700,
+          padding: '1px 6px',
+          borderRadius: 999,
+          background: `${badge.color}1a`,
+          color: badge.color,
+          border: `1px solid ${badge.color}55`,
+          textTransform: 'uppercase', letterSpacing: '.06em',
+        }}>
+          {badge.label}
+        </span>
       </span>
       <SignOutButton />
     </div>

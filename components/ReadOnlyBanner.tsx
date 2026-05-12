@@ -1,10 +1,9 @@
 /**
- * Read-only banner shown to signed-in users who do NOT have edit rights on
- * the current tenant (viewers + signed-in users with no membership). The
- * banner is a sibling of the API-level guards in lib/auth-api: the API
- * blocks writes server-side, this banner tells the user why their edit
- * controls don't work and the matching CSS rules in globals.css visually
- * dim the input fields so they don't even look interactive.
+ * Read-only banner — shown above main content for signed-in users who
+ * have no edit rights on the current tenant. Non-sticky on purpose: it
+ * scrolls away with the page rather than hovering over content the user
+ * is trying to read. The persistent indicator is the role pill in the
+ * Header user chip (always visible).
  */
 
 import type { Tenant } from '@/lib/supabase/types';
@@ -18,38 +17,30 @@ export default function ReadOnlyBanner({
 }) {
   const membership = currentUser.memberships.find((m) => m.tenant_id === tenant.id);
   const reason = membership
-    ? `You are signed in as a ${membership.role} for ${tenant.display_name}. Viewer access is read-only.`
+    ? `You have ${membership.role} access on ${tenant.display_name}. Editing is disabled.`
     : `You are signed in but have no role on ${tenant.display_name}. Editing is disabled.`;
 
   return (
     <div style={{
-      position: 'sticky',
-      top: 140,
-      zIndex: 50,
-      margin: '0 auto 12px',
       maxWidth: 1700,
-      padding: '10px 16px',
-      background: 'rgba(245,158,11,0.10)',
+      margin: '12px auto 0',
+      padding: '8px 14px 8px 12px',
+      background: 'rgba(245,158,11,0.08)',
       borderLeft: '3px solid #F59E0B',
       borderRadius: 'var(--r-md)',
       display: 'flex',
       alignItems: 'center',
-      gap: 12,
+      gap: 10,
       fontSize: 12,
+      color: 'var(--text-mid)',
     }}>
       <span style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        width: 22, height: 22, borderRadius: '50%',
-        background: '#F59E0B', color: '#fff', fontWeight: 700, fontSize: 13,
-        flexShrink: 0,
+        width: 18, height: 18, borderRadius: '50%',
+        background: '#F59E0B', color: '#fff', fontWeight: 700, fontSize: 11,
+        flexShrink: 0, lineHeight: 1,
       }}>i</span>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 600, color: 'var(--text)' }}>Read-only mode</div>
-        <div style={{ color: 'var(--text-mid)', marginTop: 2 }}>
-          {reason} Ask an editor or platform admin to grant you the editor role
-          if you need to make changes.
-        </div>
-      </div>
+      <span><strong style={{ color: 'var(--text)' }}>Read-only:</strong> {reason}</span>
     </div>
   );
 }
