@@ -16,9 +16,11 @@ import {
   TIER_VALUES,
   tierColor,
   computeGroupAverages,
+  computeCategoryAverages,
   computeOverallTotals,
   type GroupAverage,
 } from '@/lib/scoring';
+import SharedRadar from '@/components/Radar';
 type Scores = Record<string, Partial<CurrentScore>>;
 
 type Filter = 'ALL' | string;
@@ -64,6 +66,13 @@ export default function WorksheetView({
 
   const groupAverages = useMemo(
     () => computeGroupAverages(definition, scores),
+    [definition, scores],
+  );
+  // 22-axis radar driver. Same dense-mode source the Dashboard uses, so the
+  // Worksheet's Executive Scorecard now shows a per-category radar with the
+  // outer NIST CSF function ring instead of just six function-level points.
+  const categoryAverages = useMemo(
+    () => computeCategoryAverages(definition, scores),
     [definition, scores],
   );
   const totals = useMemo(() => computeOverallTotals(groupAverages), [groupAverages]);
@@ -175,7 +184,7 @@ export default function WorksheetView({
 
   return (
     <>
-      <Scorecard avgs={groupAverages} totals={totals} />
+      <Scorecard avgs={groupAverages} categoryAvgs={categoryAverages} totals={totals} />
 
       <Dashboard groups={definition.groups} scores={scores} />
 
@@ -223,7 +232,15 @@ export default function WorksheetView({
   );
 }
 
-function Scorecard({ avgs, totals }: { avgs: GroupAverage[]; totals: ReturnType<typeof computeOverallTotals> }) {
+function Scorecard({
+  avgs, categoryAvgs, totals,
+}: {
+  avgs: GroupAverage[];
+  /** 22-axis per-category averages with parent_id set — feeds the dense
+   *  radar so it draws the same NIST CSF function ring the Dashboard does. */
+  categoryAvgs: GroupAverage[];
+  totals: ReturnType<typeof computeOverallTotals>;
+}) {
   return (
     <section className="scorecard">
       <div className="scorecard-header">
@@ -248,7 +265,10 @@ function Scorecard({ avgs, totals }: { avgs: GroupAverage[]; totals: ReturnType<
       </div>
       <div className="scorecard-grid">
         <div className="radar-wrap">
-          <Radar avgs={avgs} />
+          {/* SharedRadar in dense mode: 22 category axes + outer ring with
+              the 6 NIST CSF function labels. Matches the Dashboard radar so
+              the visual story is consistent across the platform. */}
+          <SharedRadar avgs={categoryAvgs} />
           <div className="radar-legend">
             {(['pol', 'pra', 'gol'] as const).map((k) => (
               <div className="radar-legend-item" key={k}>
@@ -336,102 +356,11 @@ function Cell({ n, cls }: { n: number; cls: string }) {
   return <span className={`score-num ${cls}`}>{n.toFixed(2)}</span>;
 }
 
-function Radar({ avgs }: { avgs: GroupAverage[] }) {
-  const cx = 180, cy = 180, maxR = 130;
-  const axes = avgs.map((a) => a.group_id);
-  const N = axes.length;
-  const pt = (i: number, value: number, max = TIER_MAX) => {
-    const angle = ((i * (360 / N)) - 90) * Math.PI / 180;
-    const r = (value / max) * maxR;
-    return [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
-  };
-  const polyPts = (key: 'pol' | 'pra' | 'gol') =>
-    avgs.map((a, i) => pt(i, a[key])).map((p) => p.join(',')).join(' ');
-  const ringPts = (level: number) =>
-    avgs.map((_, i) => pt(i, level)).map((p) => p.join(',')).join(' ');
-
-  return (
-    <svg className="radar-svg" viewBox="0 0 360 360" xmlns="http://www.w3.org/2000/svg">
-      {[1, 2, 3, 4, 5].map((level) => {
-        const isTarget = level === 3;
-        return (
-          <polygon
-            key={level}
-            points={ringPts(level)}
-            fill="none"
-            stroke={isTarget ? 'rgba(37,99,235,0.40)' : 'rgba(15,23,42,0.10)'}
-            strokeWidth={1}
-            strokeDasharray={isTarget ? '3,3' : 'none'}
-          />
-        );
-      })}
-      {axes.map((_, i) => {
-        const [x, y] = pt(i, TIER_MAX);
-        return (
-          <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="rgba(0,0,0,0.10)" strokeWidth={1} />
-        );
-      })}
-      {[1, 2, 3, 4, 5].map((level) => {
-        const [x, y] = pt(0, level);
-        return (
-          <text key={level} x={x + 4} y={y + 3} fill="rgba(0,0,0,0.35)" fontSize={9} fontFamily="JetBrains Mono">
-            {level}
-          </text>
-        );
-      })}
-      {axes.map((id, i) => {
-        const [x, y] = pt(i, TIER_MAX + 0.7);
-        const c = GROUP_COLORS[id] ?? { accent: '#475569' };
-        return (
-          <text
-            key={id}
-            x={x}
-            y={y}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fill={c.accent}
-            fontSize={13}
-            fontWeight={600}
-            fontFamily="Oswald"
-            letterSpacing="0.06em"
-          >
-            {id}
-          </text>
-        );
-      })}
-      <polygon points={polyPts('gol')} fill={RADAR.gol.fill} stroke={RADAR.gol.stroke} strokeWidth={2} strokeLinejoin="round" />
-      <polygon points={polyPts('pol')} fill={RADAR.pol.fill} stroke={RADAR.pol.stroke} strokeWidth={2} strokeLinejoin="round" />
-      <polygon points={polyPts('pra')} fill={RADAR.pra.fill} stroke={RADAR.pra.stroke} strokeWidth={2} strokeLinejoin="round" />
-      {avgs.map((a, i) => {
-        const [x, y] = pt(i, a.pra);
-        return <circle key={a.group_id} cx={x} cy={y} r={3.5} fill={RADAR.pra.stroke} />;
-      })}
-      {avgs.map((a, i) => {
-        const [x, y] = pt(i, TIER_MAX + 0.1);
-        const showPol = a.pol > 0;
-        const showPra = a.pra > 0;
-        if (!showPol && !showPra) return null;
-        const haloStyle: React.CSSProperties = { paintOrder: 'stroke', stroke: 'var(--bg-mid)', strokeWidth: 3, strokeLinejoin: 'round' };
-        return (
-          <g key={`val-${a.group_id}`}>
-            {showPol && (
-              <text x={x} y={y - (showPra ? 8 : 0)} textAnchor="middle" dominantBaseline="middle"
-                fill={RADAR.pol.stroke} fontSize={10} fontWeight={600} fontFamily="JetBrains Mono" style={haloStyle}>
-                {a.pol.toFixed(2)}
-              </text>
-            )}
-            {showPra && (
-              <text x={x} y={y + (showPol ? 8 : 0)} textAnchor="middle" dominantBaseline="middle"
-                fill={RADAR.pra.stroke} fontSize={10} fontWeight={600} fontFamily="JetBrains Mono" style={haloStyle}>
-                {a.pra.toFixed(2)}
-              </text>
-            )}
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
+// Local Radar function deleted in favor of the shared `components/Radar`
+// component (imported as SharedRadar at the top of this file). The shared
+// component already handles both sparse (6-axis) and dense (22-axis) modes,
+// with an outer ring drawing the NIST CSF function letters above the
+// category axes — the same chart the Dashboard renders.
 
 function Dashboard({ groups, scores }: { groups: FrameworkGroup[]; scores: Scores }) {
   return (
