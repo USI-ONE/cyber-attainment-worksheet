@@ -811,29 +811,61 @@ body{
 /* READ-ONLY MODE
    Set by app/layout.tsx as body[data-readonly="true"] whenever the signed-in
    user has no edit rights on the current tenant (viewer or no membership).
-   Visually disables the editable form-control class .score-select plus the
-   primary/danger action buttons. Plain .action-btn (Open, Close, Download,
-   Generate Report) stays enabled — those are read operations. Filter pills
-   (.fn-btn) and nav tabs stay live so the user can still navigate and
-   filter views.
+   Visually disables every editable form control surface across the
+   platform plus primary/danger action buttons. Plain .action-btn (Open,
+   Close, Download, Generate Report) stays enabled — those are read
+   operations. Filter pills (.fn-btn), search boxes (.search-box input),
+   and nav tabs stay live so the user can still navigate and filter views.
 
-   This is the visual companion to lib/auth-api#requireEditAccess, which is
-   the actual security boundary. Server-side, viewers get 403 on every
-   write. The CSS just keeps them from clicking dead controls in the first
-   place. */
+   Each selector here covers a distinct edit surface we found in the
+   audit: .score-select is the generic edit input (risks, DR, IR,
+   evidence, settings); .input-cell wraps the worksheet's per-control
+   inputs/selects/textareas; .priority-select + .status-select are
+   the worksheet's per-control dropdowns. New components should prefer
+   .score-select so this list doesn't keep growing.
+
+   This is the visual companion to lib/auth-api#requireEditAccess, which
+   is the actual security boundary. Server-side, viewers get 403 on
+   every write. The CSS just keeps them from clicking dead controls in
+   the first place. */
 body[data-readonly="true"] .app-main .score-select,
+body[data-readonly="true"] .app-main .input-cell input,
+body[data-readonly="true"] .app-main .input-cell select,
+body[data-readonly="true"] .app-main .input-cell textarea,
+body[data-readonly="true"] .app-main .priority-select,
+body[data-readonly="true"] .app-main .status-select,
 body[data-readonly="true"] .app-main .action-btn.primary,
 body[data-readonly="true"] .app-main .action-btn.danger {
   pointer-events: none;
   opacity: 0.55;
   filter: saturate(0.6);
   cursor: not-allowed;
+  user-select: none;
+}
+/* Specifically also block checkbox / radio toggles inside the app-main —
+   used for cross-reference linking in risk / evidence editors. */
+body[data-readonly="true"] .app-main input[type="checkbox"],
+body[data-readonly="true"] .app-main input[type="radio"],
+body[data-readonly="true"] .app-main input[type="file"] {
+  pointer-events: none;
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 body[data-readonly="true"] .app-main .action-btn.primary,
 body[data-readonly="true"] .app-main .action-btn.danger {
-  /* Strip the lift / shadow hover effect that primary buttons have. */
+  /* Strip the lift / shadow hover effect primary buttons have. */
   box-shadow: none;
   transform: none;
+}
+/* Re-enable controls used purely for read-side filtering and navigation
+   so viewers can still scope what they're looking at. */
+body[data-readonly="true"] .app-main .search-box input,
+body[data-readonly="true"] .app-main .fn-btn {
+  pointer-events: auto;
+  opacity: 1;
+  filter: none;
+  cursor: pointer;
+  user-select: text;
 }
 
 /* Footer */
