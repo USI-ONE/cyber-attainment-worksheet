@@ -156,7 +156,7 @@ export default function EvidenceLibraryClient({
               Audit-ready proof for controls, risks, DR tests, IR tabletops, training, scans, and policies
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <input
               className="score-select"
               placeholder="Search title, tag, control…"
@@ -164,6 +164,16 @@ export default function EvidenceLibraryClient({
               onChange={(e) => setSearch(e.target.value)}
               style={{ minWidth: 220 }}
             />
+            {/* Plain .action-btn (not .primary) so a viewer's read-only mode
+                doesn't grey it out — report generation is a read operation. */}
+            <a
+              className="action-btn"
+              href="/api/report/audit-binder"
+              download
+              title="Generate an auditor-ready PDF that walks every NIST CSF control and lists the linked evidence, policies, risks, DR plans, and IR playbooks."
+            >
+              Generate Audit Binder
+            </a>
             <button className="action-btn primary" onClick={() => setUploading((v) => !v)}>
               {uploading ? 'Cancel' : '+ Upload Evidence'}
             </button>
