@@ -62,13 +62,21 @@ const STATIC_GROUPS: NavGroup[] = [
   },
 ];
 
-const SETTINGS_GROUP: NavGroup = {
-  id: 'settings',
-  label: 'Settings',
-  items: [
-    { href: '/settings/users', label: 'Users', tag: 'Manage this tenant’s members + invites' },
-  ],
-};
+/** Settings group is split: items that apply to ANY signed-in user
+ *  ("My Account") show whenever a session exists; tenant-administration
+ *  items ("Users") only show for editors / platform admins. The
+ *  buildSettingsGroup helper assembles the visible item list at render. */
+const SETTINGS_GROUP_ID = 'settings';
+function buildSettingsGroup({ signedIn, canAdminister }: { signedIn: boolean; canAdminister: boolean }): NavGroup | null {
+  if (!signedIn) return null;
+  const items: NavItem[] = [
+    { href: '/settings/me', label: 'My Account', tag: 'Change password, view your access' },
+  ];
+  if (canAdminister) {
+    items.push({ href: '/settings/users', label: 'Users', tag: 'Manage this tenant’s members + invites' });
+  }
+  return { id: SETTINGS_GROUP_ID, label: 'Settings', items };
+}
 
 const ADMIN_GROUP: NavGroup = {
   id: 'admin',
@@ -80,9 +88,11 @@ const ADMIN_GROUP: NavGroup = {
 };
 
 export default function Nav({
+  signedIn = false,
   canAdminister = false,
   isPlatformAdmin = false,
 }: {
+  signedIn?: boolean;
   canAdminister?: boolean;
   isPlatformAdmin?: boolean;
 }) {
@@ -91,9 +101,12 @@ export default function Nav({
   const navRef = useRef<HTMLDivElement>(null);
 
   // Build the visible groups list each render — cheap, and lets us
-  // conditionally insert Settings / Admin based on role props.
+  // conditionally insert Settings / Admin based on role props. Settings
+  // shows for any signed-in user (so viewers can reach My Account);
+  // Admin stays platform-admin-only.
   const groups: NavGroup[] = [...STATIC_GROUPS];
-  if (canAdminister) groups.push(SETTINGS_GROUP);
+  const settings = buildSettingsGroup({ signedIn, canAdminister });
+  if (settings) groups.push(settings);
   if (isPlatformAdmin) groups.push(ADMIN_GROUP);
 
   function findGroup(pn: string | null): string | null {

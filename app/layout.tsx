@@ -149,7 +149,13 @@ export default async function RootLayout({
         ) : (
           <>
             {tenant && <Header tenant={tenant} frameworkLabel={null} currentUser={currentUser} />}
-            {tenant && <Nav canAdminister={canAdminister} isPlatformAdmin={isPlatformAdmin} />}
+            {tenant && (
+              <Nav
+                signedIn={!!currentUser}
+                canAdminister={canAdminister}
+                isPlatformAdmin={isPlatformAdmin}
+              />
+            )}
             {readOnly && currentUser && tenant && (
               <ReadOnlyBanner tenant={tenant} currentUser={currentUser} />
             )}

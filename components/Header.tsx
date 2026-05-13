@@ -82,9 +82,14 @@ function UserChip({ currentUser, tenant }: { currentUser: CurrentUser; tenant: T
   const label = currentUser.user.display_name?.trim() || currentUser.user.email;
   const badge = roleBadge(currentUser, tenant);
   return (
-    <div className="user-chip" title={`${currentUser.user.email} · ${badge.label}`}>
-      <span style={{
+    <div className="user-chip" title={`${currentUser.user.email} · ${badge.label} — click to manage your account`}>
+      {/* The avatar + name is a link to /settings/me — the obvious place
+          users look for self-service (change password, etc.). The role
+          pill and sign-out button stay outside the link so a click on
+          either does the right thing. */}
+      <a href="/settings/me" style={{
         display: 'inline-flex', alignItems: 'center', gap: 6,
+        textDecoration: 'none', color: 'inherit',
       }}>
         <span style={{
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -97,17 +102,17 @@ function UserChip({ currentUser, tenant }: { currentUser: CurrentUser; tenant: T
           {label.slice(0, 2).toUpperCase()}
         </span>
         <span>{label}</span>
-        <span style={{
-          fontSize: 9, fontWeight: 700,
-          padding: '1px 6px',
-          borderRadius: 999,
-          background: `${badge.color}1a`,
-          color: badge.color,
-          border: `1px solid ${badge.color}55`,
-          textTransform: 'uppercase', letterSpacing: '.06em',
-        }}>
-          {badge.label}
-        </span>
+      </a>
+      <span style={{
+        fontSize: 9, fontWeight: 700,
+        padding: '1px 6px',
+        borderRadius: 999,
+        background: `${badge.color}1a`,
+        color: badge.color,
+        border: `1px solid ${badge.color}55`,
+        textTransform: 'uppercase', letterSpacing: '.06em',
+      }}>
+        {badge.label}
       </span>
       <SignOutButton />
     </div>
