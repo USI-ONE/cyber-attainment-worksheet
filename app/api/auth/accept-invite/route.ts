@@ -3,6 +3,8 @@ import { createServiceRoleClient } from '@/lib/supabase/server';
 import {
   audit, createSessionForUser, findValidInvite, hashPassword, hashToken,
 } from '@/lib/auth';
+import { sendEmail, isEmailConfigured } from '@/lib/email';
+import { renderWelcomeEmail } from '@/lib/email-templates';
 
 /**
  * POST /api/auth/accept-invite
@@ -126,6 +128,29 @@ export async function POST(request: NextRequest) {
     },
     ip, user_agent: ua,
   });
+
+  // 6. Welcome email. Best-effort; failure doesn't fail the request
+  //    (the user is already signed in). Skipped when Resend isn't
+  //    configured — see lib/email.ts module docblock.
+  if (isEmailConfigured()) {
+    let tenantName: string | null = null;
+    if (invite.tenant_id) {
+      const { data: t } = await supabase
+        .from('tenants').select('display_name').eq('id', invite.tenant_id).maybeSingle();
+      tenantName = (t as { display_name: string } | null)?.display_name ?? null;
+    }
+    const requestOrigin = `https://${request.headers.get('host') ?? ''}`;
+    const { subject, html, text } = renderWelcomeEmail({
+      displayName: body.display_name ?? null,
+      tenantName,
+      isPlatformAdmin: invite.grant_platform_admin,
+      signInUrl: `${requestOrigin}/`,
+    });
+    await sendEmail({
+      to: invite.email, subject, html, text,
+      tags: [{ name: 'kind', value: 'welcome' }],
+    });
+  }
 
   return NextResponse.json({ ok: true, redirect: '/' });
 }

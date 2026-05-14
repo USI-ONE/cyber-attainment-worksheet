@@ -82,12 +82,19 @@ export default function SignInPage() {
 
         {error && <p className="signin-error">{error}</p>}
 
+        <p style={{ marginTop: 14, textAlign: 'center' }}>
+          <a href="/auth/forgot-password" style={{
+            fontSize: 12, color: 'var(--gold-light)', textDecoration: 'none',
+          }}>
+            Forgot your password?
+          </a>
+        </p>
+
         <p style={{
-          marginTop: 18, fontSize: 11, color: 'var(--text-muted)',
+          marginTop: 14, fontSize: 11, color: 'var(--text-muted)',
           textAlign: 'center', lineHeight: 1.5,
         }}>
           New users receive a one-time invite link from their administrator.
-          Forgot your password? Ask an administrator to issue a new invite.
         </p>
 
         {/* SSO additions (Microsoft Entra, Google Workspace, generic OIDC)

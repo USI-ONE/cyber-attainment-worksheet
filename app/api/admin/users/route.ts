@@ -3,6 +3,8 @@ import { createServiceRoleClient } from '@/lib/supabase/server';
 import {
   audit, getCurrentUser, isPlatformAdmin, issueInvite,
 } from '@/lib/auth';
+import { sendEmail, isEmailConfigured } from '@/lib/email';
+import { renderInviteEmail } from '@/lib/email-templates';
 
 /**
  * GET    /api/admin/users          list every profile + their memberships
@@ -134,11 +136,47 @@ export async function POST(request: NextRequest) {
     ? `https://${tenantHost}${accept_url_path}`
     : null;
 
+  // Resolve the tenant display name once for the email body. We don't pull
+  // it inside the .insert chain above because we needed the FK validation
+  // result; reuse the existing supabase client.
+  let tenantName: string | null = null;
+  if (tenantId) {
+    const { data: t } = await supabase
+      .from('tenants').select('display_name').eq('id', tenantId).maybeSingle();
+    tenantName = (t as { display_name: string } | null)?.display_name ?? null;
+  }
+
+  // Build the URL we'll put in the email. Prefer the tenant-scoped URL
+  // when this is a tenant-only invite; for platform-admin invites fall
+  // back to the operator hub, which is where the inviter is acting from.
+  const requestOrigin = `https://${request.headers.get('host') ?? 'caw-portfolio-hub.vercel.app'}`;
+  const emailUrl = accept_url ?? `${requestOrigin}${accept_url_path}`;
+
+  // Send the invite email if the integration is configured. The DB write
+  // already succeeded; an email failure should NOT fail this request —
+  // the inviter can fall back to copy/pasting the URL from the response.
+  let email_sent = false;
+  if (isEmailConfigured()) {
+    const { subject, html, text } = renderInviteEmail({
+      inviteUrl: emailUrl,
+      tenantName,
+      role,
+      isPlatformAdmin: grantPlatform,
+      inviterName: cu!.user.display_name ?? cu!.user.email,
+    });
+    const res = await sendEmail({
+      to: email, subject, html, text,
+      tags: [{ name: 'kind', value: 'invite' }],
+    });
+    email_sent = res.sent;
+  }
+
   return NextResponse.json({
     ok: true,
     invite: { id: invite.id, email, tenant_id: tenantId, role, grant_platform_admin: grantPlatform, expires_at: invite.expires_at },
     invite_token: token,
     accept_url_path,
     accept_url,
+    email_sent,
   });
 }

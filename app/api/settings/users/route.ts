@@ -4,6 +4,8 @@ import { resolveTenant } from '@/lib/tenant';
 import {
   audit, canAdministerTenant, getCurrentUser, isPlatformAdmin, issueInvite,
 } from '@/lib/auth';
+import { sendEmail, isEmailConfigured } from '@/lib/email';
+import { renderInviteEmail } from '@/lib/email-templates';
 
 /**
  * Tenant-scoped user management — for tenant admins (= editors today) to
@@ -117,11 +119,31 @@ export async function POST(request: NextRequest) {
   const accept_url_path = `/auth/accept-invite?token=${token}`;
   const accept_url = `https://${tenantHost}${accept_url_path}`;
 
+  // Send the invite email if Resend is configured. Failure to send does
+  // NOT fail the request — the URL is still surfaced in the response so
+  // the inviter can fall back to copy/paste.
+  let email_sent = false;
+  if (isEmailConfigured()) {
+    const { subject, html, text } = renderInviteEmail({
+      inviteUrl: accept_url,
+      tenantName: tenant.display_name,
+      role: body.role,
+      isPlatformAdmin: false,
+      inviterName: cu!.user.display_name ?? cu!.user.email,
+    });
+    const res = await sendEmail({
+      to: email, subject, html, text,
+      tags: [{ name: 'kind', value: 'invite' }, { name: 'tenant', value: tenant.slug }],
+    });
+    email_sent = res.sent;
+  }
+
   return NextResponse.json({
     ok: true,
     invite: { id: invite.id, email, role: body.role, expires_at: invite.expires_at },
     invite_token: token,
     accept_url_path,
     accept_url,
+    email_sent,
   });
 }
