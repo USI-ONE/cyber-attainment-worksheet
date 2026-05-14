@@ -504,7 +504,7 @@ function VendorEditor({
       {/* Attestations */}
       <div style={{ marginTop: 22, paddingTop: 16, borderTop: '1px solid var(--bg-border)' }}>
         <div style={{
-          fontFamily: 'Oswald, sans-serif', fontWeight: 600, fontSize: 13,
+          fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 13,
           color: 'var(--text)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '.04em',
         }}>
           Attestations ({attestations.length})

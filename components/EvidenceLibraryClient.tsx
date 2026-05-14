@@ -226,7 +226,7 @@ export default function EvidenceLibraryClient({
                     <td>
                       <div style={{ fontWeight: 600 }}>{a.title}</div>
                       {a.filename && (
-                        <div style={{ fontSize: 11, color: 'var(--text-mid)', marginTop: 2, fontFamily: 'JetBrains Mono' }}>
+                        <div style={{ fontSize: 11, color: 'var(--text-mid)', marginTop: 2, fontFamily: 'Inter, sans-serif' }}>
                           {a.filename}
                           {a.size_bytes != null && <span style={{ marginLeft: 8, color: 'var(--text-muted)' }}>· {fmtBytes(a.size_bytes)}</span>}
                         </div>
@@ -568,7 +568,7 @@ function EvidenceEditor({
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
-      fontFamily: 'Oswald, sans-serif', fontWeight: 600, fontSize: 12,
+      fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 12,
       color: 'var(--text)', marginBottom: 8,
       textTransform: 'uppercase', letterSpacing: '.04em',
     }}>

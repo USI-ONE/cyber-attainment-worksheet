@@ -89,7 +89,7 @@ export default function StandardsClient({
                   />
                 </td>
                 <td>
-                  <div style={{ fontFamily: 'Oswald, sans-serif', fontWeight: 600, fontSize: 13, color: 'var(--white)' }}>{s.display_name}</div>
+                  <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 13, color: 'var(--white)' }}>{s.display_name}</div>
                   <code style={{ color: 'var(--gold-light)', fontSize: 10 }}>{s.slug}</code>
                 </td>
                 <td style={{ color: 'var(--text-mid)', fontSize: 12 }}>{s.description ?? ''}</td>

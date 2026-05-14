@@ -192,7 +192,7 @@ function PriorityTable({
                   {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               </td>
-              <td style={{ color: overdue ? 'var(--red-text)' : 'var(--text-mid)', fontFamily: 'JetBrains Mono', fontSize: 11 }}>
+              <td style={{ color: overdue ? 'var(--red-text)' : 'var(--text-mid)', fontFamily: 'Inter, sans-serif', fontSize: 11 }}>
                 <input type="date" className="score-select" defaultValue={p.due_date ?? ''}
                   onChange={(e) => onPatch(p.id, { due_date: e.target.value || null })} />
               </td>
@@ -208,7 +208,7 @@ function PriorityTable({
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label style={{ fontFamily: 'Oswald, sans-serif', fontWeight: 500, fontSize: 10, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-mid)' }}>
+      <label style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500, fontSize: 10, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-mid)' }}>
         {label}{required ? ' *' : ''}
       </label>
       {children}

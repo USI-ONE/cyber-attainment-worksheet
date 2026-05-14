@@ -431,7 +431,7 @@ function PlaybookEditor({
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
-      fontFamily: 'Oswald, sans-serif', fontWeight: 600, fontSize: 13,
+      fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 13,
       color: 'var(--text)', marginTop: 22, marginBottom: 12,
       paddingBottom: 6, borderBottom: '1px solid var(--bg-border)',
     }}>

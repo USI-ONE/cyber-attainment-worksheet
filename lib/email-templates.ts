@@ -54,7 +54,7 @@ function shell({ preheader, body }: { preheader: string; body: string }): string
   <tr><td align="center" style="padding:32px 16px;">
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="560" style="max-width:560px;background:${BRAND.bgPanel};border-radius:12px;box-shadow:0 1px 3px rgba(15,23,42,0.06);overflow:hidden;">
       <tr><td style="padding:24px 28px 8px;">
-        <div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:18px;letter-spacing:.06em;color:${BRAND.body};">
+        <div style="font-family:'Inter',sans-serif;font-weight:700;font-size:18px;letter-spacing:-0.01em;color:${BRAND.body};">
           ${BRAND.productName}
         </div>
         <div style="font-size:11px;color:${BRAND.muted};margin-top:2px;letter-spacing:.02em;">
@@ -87,7 +87,7 @@ function button({ href, label }: { href: string; label: string }): string {
 }
 
 function urlBlock(url: string): string {
-  return `<div style="font-family:'JetBrains Mono','Courier New',monospace;font-size:11px;color:${BRAND.muted};background:${BRAND.bgPage};border:1px solid #E2E8F0;border-radius:6px;padding:10px 12px;margin:8px 0 18px;word-break:break-all;">
+  return `<div style="font-family:'Inter',sans-serif;font-variant-numeric:tabular-nums;font-size:11px;color:${BRAND.muted};background:${BRAND.bgPage};border:1px solid #E2E8F0;border-radius:6px;padding:10px 12px;margin:8px 0 18px;word-break:break-all;">
     ${url}
   </div>`;
 }
@@ -119,7 +119,7 @@ export function renderInviteEmail({
   const html = shell({
     preheader,
     body: `
-      <h1 style="font-family:'Oswald',sans-serif;font-weight:600;font-size:22px;margin:0 0 6px;color:${BRAND.body};">
+      <h1 style="font-family:'Inter',sans-serif;font-weight:600;font-size:22px;margin:0 0 6px;color:${BRAND.body};">
         You're invited to ${BRAND.productName}
       </h1>
       <p style="margin:0 0 14px;color:${BRAND.muted};font-size:13px;">
@@ -182,7 +182,7 @@ export function renderPasswordResetEmail({
   const html = shell({
     preheader,
     body: `
-      <h1 style="font-family:'Oswald',sans-serif;font-weight:600;font-size:22px;margin:0 0 6px;color:${BRAND.body};">
+      <h1 style="font-family:'Inter',sans-serif;font-weight:600;font-size:22px;margin:0 0 6px;color:${BRAND.body};">
         Reset your ${BRAND.productName} password
       </h1>
       <p style="margin:0 0 14px;color:${BRAND.muted};font-size:13px;">
@@ -238,7 +238,7 @@ export function renderWelcomeEmail({
   const html = shell({
     preheader: `Your ${BRAND.productName} account is active. Sign in to get started.`,
     body: `
-      <h1 style="font-family:'Oswald',sans-serif;font-weight:600;font-size:22px;margin:0 0 6px;color:${BRAND.body};">
+      <h1 style="font-family:'Inter',sans-serif;font-weight:600;font-size:22px;margin:0 0 6px;color:${BRAND.body};">
         ${greet}
       </h1>
       <p style="margin:0 0 14px;color:${BRAND.muted};font-size:13px;">

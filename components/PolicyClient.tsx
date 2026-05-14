@@ -163,7 +163,7 @@ export default function PolicyClient({
                 {isEditing ? (
                   <input className="score-select" value={draft?.title ?? s.title}
                     onChange={(e) => setDrafts((d) => ({ ...d, [s.id]: { title: e.target.value, body_md: draft?.body_md ?? s.body_md } }))}
-                    style={{ fontFamily: 'Oswald, sans-serif', fontSize: 16, fontWeight: 600 }} />
+                    style={{ fontFamily: 'Inter, sans-serif', fontSize: 16, fontWeight: 600 }} />
                 ) : (
                   <>
                     <div className="scorecard-title">{i + 1}. {s.title}</div>
@@ -197,7 +197,7 @@ export default function PolicyClient({
                   width: '100%', padding: '12px 14px',
                   background: 'var(--bg-deep)', border: '1px solid var(--bg-border)',
                   color: 'var(--text)', fontSize: 12, lineHeight: 1.5,
-                  fontFamily: '"JetBrains Mono", monospace', borderRadius: 2, resize: 'vertical',
+                  fontFamily: 'Inter, sans-serif', borderRadius: 2, resize: 'vertical',
                 }}
                 placeholder="Markdown content…"
               />

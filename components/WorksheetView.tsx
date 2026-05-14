@@ -640,7 +640,7 @@ function SubcategoryRow({
               border: '1px solid rgba(201,169,97,0.42)',
               color: 'var(--gold-light)', borderRadius: 999,
               textDecoration: 'none', verticalAlign: 'middle',
-              fontFamily: 'JetBrains Mono, monospace', fontWeight: 600,
+              fontFamily: 'Inter, sans-serif', fontWeight: 600,
             }}>
             📄 {polCount}
           </a>
@@ -653,7 +653,7 @@ function SubcategoryRow({
               border: '1px solid rgba(37,99,235,0.32)',
               color: 'var(--gold-light)', borderRadius: 999,
               textDecoration: 'none', verticalAlign: 'middle',
-              fontFamily: 'JetBrains Mono, monospace', fontWeight: 600,
+              fontFamily: 'Inter, sans-serif', fontWeight: 600,
             }}>
             ↔ {cwCount}
           </a>

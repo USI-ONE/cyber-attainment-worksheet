@@ -266,7 +266,7 @@ function Sparkline({ obs, target, direction }: { obs: KpiObs[]; target: number |
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label style={{ fontFamily: 'Oswald, sans-serif', fontWeight: 500, fontSize: 10, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-mid)' }}>
+      <label style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500, fontSize: 10, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-mid)' }}>
         {label}
       </label>
       {children}

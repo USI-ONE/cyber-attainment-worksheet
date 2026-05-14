@@ -307,7 +307,7 @@ function HeatMapSection({
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           writingMode: 'vertical-rl', transform: 'rotate(180deg)',
-          fontFamily: 'Oswald, sans-serif', fontWeight: 600, fontSize: 12,
+          fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 12,
           color: 'var(--text-mid)', letterSpacing: '.06em', textTransform: 'uppercase',
         }}>
           Likelihood →
@@ -328,12 +328,12 @@ function HeatMapSection({
             <div />
             {([1, 2, 3, 4, 5] as RiskLevel[]).map((i) => (
               <div key={i} style={{
-                fontFamily: 'Oswald, sans-serif', fontWeight: 600, fontSize: 11,
+                fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 11,
                 color: 'var(--text-mid)', textAlign: 'center', paddingTop: 6,
                 textTransform: 'uppercase', letterSpacing: '.04em',
               }}>
                 {IMPACT_LABEL[i]}
-                <div style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: 'var(--text-muted)', fontWeight: 500 }}>{i}</div>
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, color: 'var(--text-muted)', fontWeight: 500 }}>{i}</div>
               </div>
             ))}
           </div>
@@ -341,7 +341,7 @@ function HeatMapSection({
           {/* X-axis title */}
           <div style={{
             textAlign: 'center', marginTop: 8,
-            fontFamily: 'Oswald, sans-serif', fontWeight: 600, fontSize: 12,
+            fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 12,
             color: 'var(--text-mid)', letterSpacing: '.06em', textTransform: 'uppercase',
           }}>
             Impact →
@@ -382,13 +382,13 @@ function RowGroup({
   return (
     <>
       <div style={{
-        fontFamily: 'Oswald, sans-serif', fontWeight: 600, fontSize: 11,
+        fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 11,
         color: 'var(--text-mid)', display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
         textAlign: 'center', textTransform: 'uppercase', letterSpacing: '.04em',
       }}>
         <span>{LIKELIHOOD_LABEL[likelihood]}</span>
-        <span style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: 'var(--text-muted)', fontWeight: 500 }}>{likelihood}</span>
+        <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, color: 'var(--text-muted)', fontWeight: 500 }}>{likelihood}</span>
       </div>
       {([1, 2, 3, 4, 5] as RiskLevel[]).map((impact) => {
         const cellRisks = grid[likelihood][impact];
@@ -420,7 +420,7 @@ function RowGroup({
             title={`${LIKELIHOOD_LABEL[likelihood]} × ${IMPACT_LABEL[impact]} — score ${score}\n${cellRisks.length} risk(s)`}
           >
             <span style={{
-              fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: 18, lineHeight: 1,
+              fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 18, lineHeight: 1,
             }}>
               {cellRisks.length || ''}
             </span>
@@ -431,7 +431,7 @@ function RowGroup({
             )}
             <span style={{
               position: 'absolute', top: 3, right: 5,
-              fontFamily: 'JetBrains Mono', fontSize: 9, opacity: .8, fontWeight: 600,
+              fontFamily: 'Inter, sans-serif', fontSize: 9, opacity: .8, fontWeight: 600,
             }}>
               {score}
             </span>
@@ -516,7 +516,7 @@ function RegisterSection({
             const tsComplete = ts.filter((t) => t.status === 'Complete').length;
             return (
               <tr key={r.id} style={{ cursor: 'pointer' }} onClick={() => onOpen(r.id)}>
-                <td><code style={{ fontFamily: 'JetBrains Mono', fontSize: 11, color: 'var(--text-mid)', fontWeight: 600 }}>{r.code}</code></td>
+                <td><code style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: 'var(--text-mid)', fontWeight: 600 }}>{r.code}</code></td>
                 <td>
                   <div style={{ fontWeight: 600 }}>{r.title}</div>
                   {r.description && (
@@ -530,7 +530,7 @@ function RegisterSection({
                 <td className="num">
                   <span style={{ display: 'inline-block', minWidth: 32, padding: '2px 8px',
                     background: `${inh.color}1a`, color: inh.color, borderRadius: 6,
-                    fontFamily: 'JetBrains Mono', fontWeight: 700, fontSize: 12 }}>
+                    fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12 }}>
                     {r.inherent_score}
                   </span>
                   <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 2 }}>{r.inherent_likelihood}×{r.inherent_impact}</div>
@@ -538,7 +538,7 @@ function RegisterSection({
                 <td className="num">
                   <span style={{ display: 'inline-block', minWidth: 32, padding: '2px 8px',
                     background: `${res.color}1a`, color: res.color, borderRadius: 6,
-                    fontFamily: 'JetBrains Mono', fontWeight: 700, fontSize: 12 }}>
+                    fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12 }}>
                     {r.residual_score}
                   </span>
                   <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 2 }}>{r.residual_likelihood}×{r.residual_impact}</div>
@@ -616,7 +616,7 @@ function RiskDetailEditor({
       <div className="scorecard-header">
         <div>
           <div className="scorecard-title">
-            <code style={{ fontFamily: 'JetBrains Mono', fontSize: 14, color: 'var(--text-mid)', marginRight: 10 }}>{risk.code}</code>
+            <code style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: 'var(--text-mid)', marginRight: 10 }}>{risk.code}</code>
             {risk.title}
           </div>
           <div className="scorecard-tag" style={{ marginTop: 4 }}>
@@ -720,7 +720,7 @@ function RiskDetailEditor({
       {/* Treatments */}
       <div style={{ marginTop: 22 }}>
         <div style={{
-          fontFamily: 'Oswald, sans-serif', fontWeight: 600, fontSize: 13,
+          fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 13,
           color: 'var(--text)', paddingBottom: 6, marginBottom: 10,
           borderBottom: '1px solid var(--bg-border)',
         }}>
@@ -814,7 +814,7 @@ function RiskDetailEditor({
         display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24,
       }}>
         <div>
-          <div style={{ fontFamily: 'Oswald, sans-serif', fontWeight: 600, fontSize: 12, color: 'var(--text)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.04em' }}>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 12, color: 'var(--text)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.04em' }}>
             Cross-references
           </div>
           <Field label="NIST CSF controls" hint="Comma-separated control IDs that treat this risk.">
@@ -838,7 +838,7 @@ function RiskDetailEditor({
           </Field>
         </div>
         <div>
-          <div style={{ fontFamily: 'Oswald, sans-serif', fontWeight: 600, fontSize: 12, color: 'var(--text)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.04em' }}>
+          <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 12, color: 'var(--text)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.04em' }}>
             Review cadence
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -872,10 +872,10 @@ function ScoreEditor({
       border: `1px solid ${color}55`, borderLeft: `4px solid ${color}`,
       background: `${color}0a`, borderRadius: 'var(--r-md)', padding: 14,
     }}>
-      <div style={{ fontFamily: 'Oswald, sans-serif', fontWeight: 600, fontSize: 12, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+      <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 12, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
         {heading}
       </div>
-      <div style={{ fontFamily: 'JetBrains Mono', fontSize: 20, fontWeight: 700, color, marginTop: 4 }}>
+      <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 20, fontWeight: 700, color, marginTop: 4 }}>
         {label}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>

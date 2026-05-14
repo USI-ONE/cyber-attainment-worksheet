@@ -364,7 +364,7 @@ function AcceptUrlBanner({ url, onDismiss }: { url: string; onDismiss: () => voi
           style={{
             width: '100%', padding: '8px 10px',
             background: 'var(--bg-mid)', border: '1px solid var(--bg-border)',
-            color: 'var(--text)', fontFamily: 'JetBrains Mono, monospace', fontSize: 11,
+            color: 'var(--text)', fontFamily: 'Inter, sans-serif', fontSize: 11,
             borderRadius: 6,
           }}
         />

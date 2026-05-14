@@ -283,7 +283,7 @@ function GroupSection({
         display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 8,
         paddingBottom: 6, borderBottom: '1px solid var(--bg-border)',
       }}>
-        <span style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 14, letterSpacing: '0.04em' }}>
+        <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 14, letterSpacing: '0.04em' }}>
           {groupId}
         </span>
         <span style={{ fontSize: 13, color: 'var(--text-mid)' }}>{groupName}</span>
@@ -323,7 +323,7 @@ function ControlRow({
     }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
         <code style={{
-          fontFamily: 'JetBrains Mono', fontWeight: 700, fontSize: 12,
+          fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 12,
           color: 'var(--text)', minWidth: 64,
         }}>{control.control_id}</code>
         <span style={{ flex: 1, fontSize: 12, color: 'var(--text)' }}>{control.outcome}</span>
@@ -344,7 +344,7 @@ function ControlRow({
           }}>
             <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Inherited Pra</span>
             <span style={{
-              fontFamily: 'JetBrains Mono', fontWeight: 700, fontSize: 14,
+              fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 14,
               color: tierColor(inheritedPra),
               padding: '2px 8px', borderRadius: 6,
               background: `${tierColor(inheritedPra)}1a`,
@@ -366,7 +366,7 @@ function ControlRow({
               const meta = RELATIONSHIP_META[c.relationship];
               return (
                 <div key={i} style={{ display: 'flex', alignItems: 'baseline', gap: 8, fontSize: 11.5 }}>
-                  <code style={{ fontFamily: 'JetBrains Mono', fontWeight: 600, color: 'var(--text-mid)', minWidth: 56 }}>
+                  <code style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: 'var(--text-mid)', minWidth: 56 }}>
                     {c.source_control_id}
                   </code>
                   <span style={{ flex: 1, color: 'var(--text-mid)' }}>
@@ -382,7 +382,7 @@ function ControlRow({
                     {meta.label}
                   </span>
                   <span style={{
-                    fontFamily: 'JetBrains Mono', fontWeight: 600, fontSize: 11,
+                    fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 11,
                     color: tierColor(c.pra), minWidth: 28, textAlign: 'right',
                   }}>
                     {fmtScore(c.pra)}

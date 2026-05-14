@@ -134,7 +134,7 @@ export default function AssessmentWizard({
       <section className="scorecard">
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
           <code style={{
-            fontFamily: 'JetBrains Mono, monospace', fontSize: 16,
+            fontFamily: 'Inter, sans-serif', fontSize: 16,
             fontWeight: 700, color: accent,
           }}>{controlId}</code>
           <span style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
@@ -189,7 +189,7 @@ export default function AssessmentWizard({
 
         <div style={{ marginTop: 12 }}>
           <label style={{
-            fontFamily: 'Oswald, sans-serif', fontWeight: 500, fontSize: 11,
+            fontFamily: 'Inter, sans-serif', fontWeight: 500, fontSize: 11,
             letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-mid)',
           }}>
             Q4 (optional) — Improvement in the last 12 months
@@ -213,7 +213,7 @@ export default function AssessmentWizard({
 
         <div style={{ marginTop: 12 }}>
           <label style={{
-            fontFamily: 'Oswald, sans-serif', fontWeight: 500, fontSize: 11,
+            fontFamily: 'Inter, sans-serif', fontWeight: 500, fontSize: 11,
             letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-mid)',
           }}>
             Assessor notes (optional)
@@ -243,7 +243,7 @@ export default function AssessmentWizard({
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginTop: 4 }}>
               <span style={{
                 fontSize: 28, fontWeight: 700, color: accent,
-                fontFamily: 'JetBrains Mono, monospace',
+                fontFamily: 'Inter, sans-serif',
               }}>
                 {computedScore != null ? computedScore.toFixed(1) : '—'}
               </span>
@@ -323,7 +323,7 @@ function Question({
                 background: sel ? `${color}22` : 'var(--bg-deep)',
                 border: sel ? `1px solid ${color}` : '1px solid var(--bg-border)',
                 color: sel ? color : 'var(--text-mid)',
-                fontFamily: 'Oswald, sans-serif', fontWeight: 600, fontSize: 12,
+                fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 12,
                 textTransform: 'uppercase', letterSpacing: '0.08em',
                 cursor: 'pointer', borderRadius: 2,
               }}

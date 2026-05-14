@@ -97,7 +97,7 @@ function UserChip({ currentUser, tenant }: { currentUser: CurrentUser; tenant: T
           background: `${badge.color}1a`,
           border: `1px solid ${badge.color}55`,
           color: badge.color,
-          fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: 10,
+          fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 10, letterSpacing: 0,
         }}>
           {label.slice(0, 2).toUpperCase()}
         </span>

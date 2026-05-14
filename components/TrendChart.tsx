@@ -42,7 +42,7 @@ export default function TrendChart({ series }: { series: TrendSeries[] }) {
             stroke={y === 3 ? 'rgba(37,99,235,0.40)' : 'rgba(15,23,42,0.10)'}
             strokeDasharray={y === 3 ? '3,3' : 'none'}
           />
-          <text x={PAD_L - 8} y={yScale(y) + 4} textAnchor="end" fontSize={10} fontFamily="JetBrains Mono" fill="rgba(0,0,0,0.55)">
+          <text x={PAD_L - 8} y={yScale(y) + 4} textAnchor="end" fontSize={10} fontFamily="Inter" fill="rgba(0,0,0,0.55)">
             {y}
           </text>
         </g>
@@ -88,7 +88,7 @@ export default function TrendChart({ series }: { series: TrendSeries[] }) {
         {series.map((s, i) => (
           <g key={s.key} transform={`translate(${i * 110}, 0)`}>
             <line x1={0} y1={6} x2={20} y2={6} stroke={s.color} strokeWidth={s.thick ? 3 : 1.6} />
-            <text x={26} y={9} fontSize={10} fontFamily="Oswald" fill="rgba(0,0,0,0.70)" letterSpacing="0.06em">
+            <text x={26} y={9} fontSize={10} fontFamily="Inter" fill="rgba(0,0,0,0.70)" letterSpacing="0.06em">
               {s.key}
             </text>
           </g>

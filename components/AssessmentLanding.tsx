@@ -90,7 +90,7 @@ export default function AssessmentLanding({
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                   <span style={{
-                    fontFamily: 'Oswald, sans-serif', fontWeight: 600, fontSize: 11,
+                    fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 11,
                     color: c.accent, letterSpacing: '0.06em',
                   }}>{f.id}</span>
                   <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{f.done}/{f.total}</span>
@@ -159,7 +159,7 @@ export default function AssessmentLanding({
                     const score = r?.computed_score ?? null;
                     return (
                       <tr key={ctrl.id}>
-                        <td><code style={{ color: c.accent, fontFamily: 'JetBrains Mono, monospace', fontSize: 12 }}>{ctrl.id}</code></td>
+                        <td><code style={{ color: c.accent, fontFamily: 'Inter, sans-serif', fontSize: 12 }}>{ctrl.id}</code></td>
                         <td style={{ fontSize: 12, color: 'var(--text-mid)', maxWidth: 480 }}>{ctrl.outcome}</td>
                         <td className="num score-num">
                           {score != null ? score.toFixed(1) : <span className="empty">—</span>}

@@ -83,7 +83,7 @@ export default function ImportClient({ tenantSlug }: { tenantSlug: string }) {
               border: '1px solid var(--bg-border)',
               padding: 12,
               fontSize: 11,
-              fontFamily: 'JetBrains Mono, monospace',
+              fontFamily: 'Inter, sans-serif',
               overflowX: 'auto',
               borderRadius: 2,
               color: 'var(--text)',

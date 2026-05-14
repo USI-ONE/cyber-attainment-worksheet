@@ -1,10 +1,16 @@
-/* Cyber Attainment Worksheet — modern light theme.
+/* TrustOS — MomentumOS-aligned light theme.
  *
- * Design language:
- *   - Cool slate surfaces + saturated blue brand accent (no warm undertone).
- *   - Soft shadows + generous radii instead of heavy 1px borders.
- *   - Inter for body, Oswald reserved for short labels at light letter-spacing.
- *   - Subtle elevation hierarchy: page → card → input.
+ * Design language (shadcn/ui-inspired, matching momentumos.tech):
+ *   - Flat white surfaces over a #FFFFFF page; no gradient washes, no blur.
+ *   - Inter everywhere (body, headings, numerics with tabular-nums).
+ *   - Subtle 1px borders + shadow-sm only — no heavy elevation.
+ *   - Blue-600 (#2563EB) primary, slate text + muted-foreground for chrome.
+ *   - 0.5rem default radius, 14px base.
+ *
+ * Tenant brand_config still overrides --gold / --gold-light etc. at runtime
+ * (via inline style on <body> in app/layout.tsx), so a tenant with a custom
+ * theme.primary keeps winning — only the platform defaults move to the
+ * MomentumOS palette.
  *
  * .crown-mark reads from --crown-image so each tenant supplies its own logo
  * via brand_config.logo_url at runtime.
@@ -13,28 +19,28 @@
 *{box-sizing:border-box;margin:0;padding:0}
 
 :root{
-  /* Surface layers */
+  /* Surface layers — flat white page like MomentumOS. */
   --bg-deep:#FFFFFF;            /* innermost panel surface */
-  --bg:#F5F7FB;                 /* page background — cool slate */
+  --bg:#FFFFFF;                 /* page background — pure white */
   --bg-mid:#FFFFFF;             /* card background */
   --bg-card:#F8FAFC;            /* secondary card variant */
-  --bg-border:#E5E9F0;          /* hairline border (very light) */
+  --bg-border:#E2E8F0;          /* hairline border = shadcn border (214 32% 91%) */
   --bg-line:#CBD5E1;            /* heavier rule */
 
-  /* Default brand accents — modern cyber blue.
+  /* Default brand accents — MomentumOS blue (shadcn primary 221 83% 53%).
      --gold-light is darker than --gold so text reads on white. */
-  --gold:#2563EB;               /* blue-600 — primary accent */
-  --gold-light:#1E40AF;         /* blue-800 — emphasized text */
+  --gold:#2563EB;               /* primary (blue-600) */
+  --gold-light:#1D4ED8;         /* primary-emphasis (blue-700) */
   --gold-bright:#3B82F6;        /* blue-500 — filled badges */
-  --gold-pale:rgba(37,99,235,0.08);
-  --gold-border:rgba(37,99,235,0.32);
+  --gold-pale:#F1F5F9;          /* shadcn secondary/accent surface (210 40% 96%) */
+  --gold-border:#E2E8F0;        /* keep equal to bg-border for the flat look */
   --brand-secondary:#0EA5E9;    /* sky-500 — secondary accent */
   --brand-accent:#475569;       /* slate-600 — tertiary / chrome */
 
   --white:#FFFFFF;
-  --text:#0F172A;               /* slate-900 — primary text */
+  --text:#0F172A;               /* shadcn foreground (222 84% 5%) */
   --text-mid:#475569;           /* slate-600 — secondary text */
-  --text-dim:#64748B;           /* slate-500 — tertiary */
+  --text-dim:#64748B;           /* shadcn muted-foreground (215 16% 47%) */
   --text-muted:#94A3B8;         /* slate-400 — placeholder / faded */
 
   /* CMM tiers */
@@ -55,50 +61,42 @@
   --red:#DC2626;
   --red-text:#B91C1C;
 
-  /* Modern elevation tokens — soft, layered shadows. */
-  --shadow-xs: 0 1px 2px rgba(15,23,42,0.04);
-  --shadow-sm: 0 1px 3px rgba(15,23,42,0.04), 0 1px 2px rgba(15,23,42,0.06);
-  --shadow-md: 0 4px 12px rgba(15,23,42,0.06), 0 2px 4px rgba(15,23,42,0.04);
-  --shadow-lg: 0 10px 30px rgba(15,23,42,0.08), 0 4px 10px rgba(15,23,42,0.05);
-  --shadow-focus: 0 0 0 3px rgba(37,99,235,0.18);
+  /* Elevation tokens — matched 1:1 to Tailwind shadow-sm/md/lg as
+     MomentumOS uses them (neutral black alpha, no blue tint). */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-focus: 0 0 0 3px rgb(37 99 235 / 0.18);
 
-  /* Radius scale — generous on surfaces, modest on inputs. */
-  --r-sm: 6px;
-  --r-md: 8px;
-  --r-lg: 12px;
-  --r-xl: 16px;
+  /* Radius scale — shadcn-style: 0.5rem (8px) default, 4px tight, 12px loose. */
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 8px;
+  --r-xl: 12px;
 }
 
 html,body{
   font-family:'Inter',-apple-system,sans-serif;
   background:var(--bg);
   color:var(--text);
-  font-size:13px;
-  line-height:1.55;
+  font-size:14px;
+  line-height:1.5;
   min-height:100vh;
-  font-feature-settings:'cv11','ss01';
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
 }
 
-body{
-  /* Subtle cool-blue gradient wash so the page never reads as flat paper. */
-  background:
-    radial-gradient(ellipse 80% 50% at top, rgba(37,99,235,0.05), transparent 70%),
-    radial-gradient(ellipse 60% 40% at bottom right, rgba(14,165,233,0.04), transparent 70%),
-    var(--bg);
-}
+/* Flat white page — matches MomentumOS. No gradient wash. */
 
-/* HEADER */
+/* HEADER — MomentumOS-style flat light bar, no blur, no glass. */
 .app-header{
-  background:rgba(255,255,255,0.85);
+  background:var(--bg-mid);
   border-bottom:1px solid var(--bg-border);
-  padding:18px 32px;
+  padding:16px 32px;
   position:sticky;
   top:0;
   z-index:100;
-  backdrop-filter:blur(12px) saturate(150%);
-  -webkit-backdrop-filter:blur(12px) saturate(150%);
 }
 .app-header-inner{
   max-width:1700px;
@@ -121,11 +119,11 @@ body{
 }
 .brand-text{display:flex;flex-direction:column;gap:3px;border-left:1px solid var(--bg-border);padding-left:16px}
 .wordmark{
-  font-family:'Oswald',sans-serif;
-  font-weight:600;
-  font-size:20px;
+  font-family:'Inter',sans-serif;
+  font-weight:700;
+  font-size:18px;
   color:var(--text);
-  letter-spacing:.06em;
+  letter-spacing:-0.01em;             /* Inter wants tight tracking, not Oswald-style wide */
   line-height:1.1;
 }
 .tagline{
@@ -144,7 +142,7 @@ body{
   letter-spacing:0;
 }
 .doc-sub{
-  font-family:'JetBrains Mono',monospace;
+  font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums;
   font-size:10px;
   color:var(--gold);
   letter-spacing:.04em;
@@ -206,15 +204,13 @@ body{
    + 4 menus) the bar fits on any reasonable screen without scrolling, so we
    accept that constraint in exchange for working dropdowns. */
 .app-nav{
-  background:rgba(245,247,251,0.85);
+  background:var(--bg-mid);
   border-bottom:1px solid var(--bg-border);
-  padding:8px 28px 0;
+  padding:0 28px;
   position:sticky;
-  top:78px;
+  top:73px;
   z-index:90;
   overflow:visible;
-  backdrop-filter:blur(12px) saturate(150%);
-  -webkit-backdrop-filter:blur(12px) saturate(150%);
 }
 .app-nav-inner{
   max-width:1700px;
@@ -225,25 +221,26 @@ body{
   white-space:nowrap;
 }
 .nav-tab{
-  display:inline-block;
-  padding:10px 16px;
+  display:inline-flex;
+  align-items:center;
+  padding:14px 14px;
   font-family:'Inter',sans-serif;
   font-weight:500;
-  font-size:13px;
+  font-size:14px;
   letter-spacing:0;
-  color:var(--text-mid);
+  color:var(--text-dim);              /* shadcn muted-foreground */
   text-decoration:none;
-  border-radius:var(--r-md) var(--r-md) 0 0;
+  border-radius:0;
   border-bottom:2px solid transparent;
-  transition:all .15s ease;
+  transition:color .15s ease, border-color .15s ease;
   position:relative;
 }
 .nav-tab:hover{
-  color:var(--gold-light);
-  background:var(--gold-pale);
+  color:var(--text);                  /* shadcn foreground */
+  background:transparent;
 }
 .nav-tab.active{
-  color:var(--gold-light);
+  color:var(--text);
   border-bottom-color:var(--gold);
   font-weight:600;
 }
@@ -278,15 +275,15 @@ body{
   left:0;
   min-width:260px;
   max-width:340px;
-  padding:8px;
+  padding:4px;
   background:var(--bg-mid);
   border:1px solid var(--bg-border);
   border-radius:var(--r-lg);
-  box-shadow:var(--shadow-lg);
+  box-shadow:var(--shadow-md);
   z-index:200;
   display:flex;
   flex-direction:column;
-  gap:2px;
+  gap:0;
   animation:nav-menu-in .12s ease;
 }
 @keyframes nav-menu-in{
@@ -297,8 +294,8 @@ body{
   display:flex;
   flex-direction:column;
   gap:2px;
-  padding:8px 12px;
-  border-radius:var(--r-md);
+  padding:8px 10px;
+  border-radius:var(--r-sm);
   text-decoration:none;
   transition:background .12s ease;
   color:var(--text);
@@ -306,11 +303,8 @@ body{
 .nav-menu-item:hover{
   background:var(--gold-pale);
 }
-.nav-menu-item.active{
-  background:var(--gold-pale);
-}
 .nav-menu-item.active .nav-menu-label{
-  color:var(--gold-light);
+  color:var(--gold);
   font-weight:600;
 }
 .nav-menu-label{
@@ -339,21 +333,12 @@ body{
   padding:20px 22px;
   position:relative;
   box-shadow:var(--shadow-sm);
-  transition:all .2s ease;
+  transition:border-color .15s ease;
   overflow:hidden;
 }
-.kpi-tile::before{
-  content:'';
-  position:absolute;
-  left:0;top:0;bottom:0;
-  width:3px;
-  background:var(--accent, var(--gold));
-  border-radius:var(--r-lg) 0 0 var(--r-lg);
-}
-.kpi-tile:hover{
-  transform:translateY(-1px);
-  box-shadow:var(--shadow-md);
-}
+/* No left accent stripe, no hover-lift — MomentumOS keeps cards perfectly
+   flat. The category color is conveyed by tile-label color instead. */
+.kpi-tile:hover{ border-color:var(--text-muted); }
 .kpi-tile-label{
   font-family:'Inter',sans-serif;
   font-weight:600;
@@ -364,7 +349,7 @@ body{
   margin-bottom:8px;
 }
 .kpi-tile-value{
-  font-family:'JetBrains Mono',monospace;
+  font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums;
   font-weight:600;
   font-size:30px;
   color:var(--text);
@@ -392,7 +377,7 @@ body{
 }
 .maturity-fn-row{display:contents}
 .maturity-fn-label{
-  font-family:'Oswald',sans-serif;
+  font-family:'Inter',sans-serif;
   font-weight:600;
   font-size:13px;
   letter-spacing:.04em;
@@ -410,7 +395,7 @@ body{
   display:flex;
   align-items:center;
   justify-content:center;
-  font-family:'JetBrains Mono',monospace;
+  font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums;
   font-size:9.5px;
   font-weight:600;
   color:rgba(0,0,0,0.85);
@@ -466,7 +451,7 @@ body{
   box-shadow:var(--shadow-sm);
 }
 .placeholder h2{
-  font-family:'Oswald',sans-serif;
+  font-family:'Inter',sans-serif;
   font-weight:600;
   font-size:20px;
   color:var(--text);
@@ -499,7 +484,7 @@ body{
   flex-wrap:wrap;
 }
 .scorecard-title{
-  font-family:'Oswald',sans-serif;
+  font-family:'Inter',sans-serif;
   font-weight:600;
   font-size:18px;
   color:var(--text);
@@ -534,7 +519,7 @@ body{
 .radar-legend-item{ display:flex; align-items:center; gap:7px; }
 .radar-legend-swatch{ width:18px; height:3px; border-radius:2px; }
 .radar-legend-val{
-  font-family:'JetBrains Mono',monospace; font-weight:600;
+  font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-weight:600;
   color:var(--text); margin-left:4px;
 }
 
@@ -564,11 +549,11 @@ body{
 .score-fn-cell{ display:flex; align-items:center; gap:10px; }
 .score-fn-dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
 .score-fn-code{
-  font-family:'Oswald',sans-serif; font-weight:600; font-size:13px; letter-spacing:.02em;
+  font-family:'Inter',sans-serif; font-weight:600; font-size:13px; letter-spacing:.02em;
 }
 .score-fn-name{ color:var(--text-mid); font-size:12px; }
 .score-num{
-  font-family:'JetBrains Mono',monospace; font-weight:600; font-size:13px; text-align:right;
+  font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-weight:600; font-size:13px; text-align:right;
 }
 .score-num.empty{color:var(--text-muted);font-weight:400}
 .score-num.policy{color:var(--gold-light)}
@@ -608,7 +593,7 @@ body{
   border-color:var(--bg-line);
 }
 .dash-card-fn{
-  font-family:'Oswald',sans-serif; font-weight:600; font-size:12px;
+  font-family:'Inter',sans-serif; font-weight:600; font-size:12px;
   letter-spacing:.04em;
   color:var(--fn-color, var(--gold)); margin-bottom:4px;
 }
@@ -616,7 +601,7 @@ body{
 .dash-card-stats{ display:flex; gap:16px; align-items:baseline; }
 .dash-stat{display:flex;flex-direction:column}
 .dash-stat-val{
-  font-family:'JetBrains Mono',monospace; font-weight:600; font-size:18px;
+  font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-weight:600; font-size:18px;
   color:var(--text); line-height:1;
 }
 .dash-stat-lbl{
@@ -664,18 +649,23 @@ body{
 .fn-btn:hover{border-color:var(--gold-border);color:var(--text);background:var(--gold-pale)}
 .fn-btn.active{ background:var(--gold); border-color:var(--gold); color:#fff; box-shadow:var(--shadow-xs); }
 
+/* Action buttons — flat shadcn-style. Outline default, solid primary,
+   destructive variant. No box-shadow lift, no transform — MomentumOS uses
+   a flat hover with a tonal background change only. */
 .action-btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
   padding:8px 14px; background:var(--bg-mid); border:1px solid var(--bg-border);
-  color:var(--text-mid); font-family:'Inter',sans-serif; font-weight:500;
-  font-size:12px;
-  cursor:pointer; border-radius:var(--r-md); transition:all .15s ease;
-  box-shadow:var(--shadow-xs);
+  color:var(--text); font-family:'Inter',sans-serif; font-weight:500;
+  font-size:13px; line-height:1;
+  cursor:pointer; border-radius:var(--r-md);
+  transition:background .15s ease, color .15s ease, border-color .15s ease;
 }
-.action-btn:hover{ border-color:var(--gold-border); color:var(--gold-light); background:var(--gold-pale); box-shadow:var(--shadow-sm); }
-.action-btn.primary{ background:var(--gold); border-color:var(--gold); color:#fff; box-shadow:var(--shadow-sm); }
-.action-btn.primary:hover{ background:var(--gold-bright); border-color:var(--gold-bright); color:#fff; box-shadow:var(--shadow-md); transform:translateY(-1px); }
-.action-btn.danger:hover{ border-color:var(--red); color:var(--red-text); background:rgba(220,38,38,0.06); }
-.action-btn[disabled]{opacity:.5;cursor:not-allowed;transform:none}
+.action-btn:hover{ background:var(--gold-pale); color:var(--text); border-color:var(--bg-border); }
+.action-btn.primary{ background:var(--gold); border-color:var(--gold); color:#fff; }
+.action-btn.primary:hover{ background:var(--gold-light); border-color:var(--gold-light); color:#fff; }
+.action-btn.danger{ background:var(--bg-mid); border-color:var(--bg-border); color:var(--red-text); }
+.action-btn.danger:hover{ background:rgba(220,38,38,0.08); border-color:var(--red); color:var(--red-text); }
+.action-btn[disabled]{opacity:.5;cursor:not-allowed}
 
 /* TABLE */
 .csf-table{
@@ -705,16 +695,16 @@ body{
 .fn-toggle{ font-size:11px; color:var(--text-mid); transition:transform .2s ease; width:14px; }
 .fn-row.collapsed .fn-toggle{transform:rotate(-90deg)}
 .fn-code{
-  font-family:'Oswald',sans-serif; font-weight:700; font-size:18px;
+  font-family:'Inter',sans-serif; font-weight:700; font-size:18px;
   color:var(--text); letter-spacing:.02em;
 }
 .fn-name{
-  font-family:'Oswald',sans-serif; font-weight:600; font-size:14px;
+  font-family:'Inter',sans-serif; font-weight:600; font-size:14px;
   color:var(--text); letter-spacing:.04em;
 }
 .fn-desc{ font-size:12px; color:var(--text-mid); flex:1; }
 .fn-summary{
-  font-family:'JetBrains Mono',monospace; font-size:11px;
+  font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-size:11px;
   color:var(--text-mid); font-weight:600; white-space:nowrap;
 }
 
@@ -727,11 +717,11 @@ body{
 }
 .cat-row .cat-id{
   color:var(--fn-text); margin-right:8px;
-  font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600;
+  font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-size:11px; font-weight:600;
 }
 .cat-row .cat-count{
   float:right; font-size:10px; color:var(--text-dim);
-  font-family:'JetBrains Mono',monospace; font-weight:500;
+  font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-weight:500;
 }
 
 .sub-row{ transition:background .12s ease; }
@@ -741,7 +731,7 @@ body{
 }
 .sub-row:hover{background:rgba(37,99,235,0.03)}
 .sub-row td.col-id{
-  font-family:'JetBrains Mono',monospace; font-weight:600;
+  font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-weight:600;
   color:var(--gold-light); white-space:nowrap;
   padding-left:24px; font-size:11px;
 }
@@ -773,7 +763,7 @@ body{
 .col-goal{border-left:3px solid var(--green-text)}
 
 .gap-cell{
-  text-align:center; font-family:'JetBrains Mono',monospace;
+  text-align:center; font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums;
   font-weight:600; font-size:12px; padding:10px 4px;
 }
 .gap-positive{color:var(--gap-pos)}
@@ -888,7 +878,7 @@ body[data-readonly="true"] .app-main .fn-btn {
   font-size:11px; color:var(--text-dim);
 }
 .app-footer-meta{
-  font-family:'JetBrains Mono',monospace; font-size:10.5px;
+  font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-size:10.5px;
   color:var(--text-muted); letter-spacing:.02em;
 }
 .app-footer-tag{
@@ -908,7 +898,7 @@ body[data-readonly="true"] .app-main .fn-btn {
   box-shadow:var(--shadow-lg);
 }
 .signin-title{
-  font-family:'Oswald',sans-serif; font-weight:600; font-size:22px;
+  font-family:'Inter',sans-serif; font-weight:600; font-size:22px;
   color:var(--text); letter-spacing:.02em;
   margin-bottom:8px;
 }

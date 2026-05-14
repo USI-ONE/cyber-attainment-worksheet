@@ -493,7 +493,7 @@ function CampaignEditor({
           marginTop: 22, paddingTop: 16, borderTop: '1px solid var(--bg-border)',
         }}>
           <div style={{
-            fontFamily: 'Oswald, sans-serif', fontWeight: 600, fontSize: 13,
+            fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 13,
             color: 'var(--text)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '.04em',
           }}>
             Phishing Simulation Outcomes
@@ -550,7 +550,7 @@ function CampaignEditor({
       {!isPhish && (
         <div style={{ marginTop: 22, paddingTop: 16, borderTop: '1px solid var(--bg-border)' }}>
           <div style={{
-            fontFamily: 'Oswald, sans-serif', fontWeight: 600, fontSize: 13,
+            fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 13,
             color: 'var(--text)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '.04em',
           }}>
             Training Records ({records.length})
@@ -662,7 +662,7 @@ function Stat({ label, value, color }: { label: string; value: string; color: st
       <span style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '.04em', textTransform: 'uppercase', fontWeight: 600 }}>
         {label}
       </span>
-      <span style={{ fontFamily: 'JetBrains Mono', fontWeight: 700, fontSize: 22, color }}>
+      <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 22, color }}>
         {value}
       </span>
     </div>

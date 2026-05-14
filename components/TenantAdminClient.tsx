@@ -91,7 +91,7 @@ export default function TenantAdminClient({
                         if (v && v !== t.display_name) patchTenant(t.id, { display_name: v });
                       }} />
                   </td>
-                  <td><code style={{ fontFamily: 'JetBrains Mono', fontSize: 11, color: 'var(--text-mid)' }}>{t.slug}</code></td>
+                  <td><code style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: 'var(--text-mid)' }}>{t.slug}</code></td>
                   <td>
                     <input className="score-select" defaultValue={t.hostname ?? ''}
                       placeholder={`caw-${t.slug}.vercel.app`}
@@ -100,8 +100,8 @@ export default function TenantAdminClient({
                         if (v !== t.hostname) patchTenant(t.id, { hostname: v });
                       }} />
                   </td>
-                  <td style={{ fontFamily: 'JetBrains Mono' }}>{counts.editors}</td>
-                  <td style={{ fontFamily: 'JetBrains Mono' }}>{counts.viewers}</td>
+                  <td style={{ fontFamily: 'Inter, sans-serif' }}>{counts.editors}</td>
+                  <td style={{ fontFamily: 'Inter, sans-serif' }}>{counts.viewers}</td>
                   <td style={{ fontSize: 11, color: 'var(--text-mid)' }}>{new Date(t.created_at).toLocaleDateString()}</td>
                 </tr>
               );

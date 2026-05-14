@@ -247,7 +247,7 @@ export default async function HubPage() {
                   width: 28, height: 28, borderRadius: 4,
                   background: c.accent + '33', border: '1px solid ' + c.accent + '55',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: c.accent, fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: 11,
+                  color: c.accent, fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 11,
                 }}>{c.slug.slice(0, 2).toUpperCase()}</div>
               )}
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -257,7 +257,7 @@ export default async function HubPage() {
                 <div style={{
                   fontSize: 10, color: 'var(--text-muted)',
                   whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                  fontFamily: 'JetBrains Mono, monospace',
+                  fontFamily: 'Inter, sans-serif',
                 }}>
                   {c.url.replace(/^https?:\/\//, '')}
                 </div>
@@ -329,7 +329,7 @@ function AttentionBadge({ summary }: { summary: AttentionSummary }) {
         padding: '3px 8px',
         background: `${color}1a`, color, border: `1px solid ${color}55`,
         borderRadius: 999, fontSize: 11, fontWeight: 700, lineHeight: 1,
-        fontFamily: 'JetBrains Mono, monospace',
+        fontFamily: 'Inter, sans-serif',
         flexShrink: 0,
       }}
     >

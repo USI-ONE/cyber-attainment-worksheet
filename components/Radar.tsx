@@ -78,7 +78,7 @@ export default function Radar({ avgs }: { avgs: GroupAverage[] }) {
           <g key={`fn-${s.parent_id}-${s.startIdx}`}>
             <path d={arcPath(startDeg, endDeg, outerArcR)} fill="none" stroke={accent} strokeOpacity={0.55} strokeWidth={3} strokeLinecap="round" />
             <text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle"
-              fill={accent} fontSize={14} fontWeight={700} fontFamily="Oswald" letterSpacing="0.1em">
+              fill={accent} fontSize={14} fontWeight={700} fontFamily="Inter" letterSpacing="0.1em">
               {s.parent_id}
             </text>
           </g>
@@ -104,7 +104,7 @@ export default function Radar({ avgs }: { avgs: GroupAverage[] }) {
       {[1, 2, 3, 4, 5].map((level) => {
         const [x, y] = pt(0, level);
         return (
-          <text key={level} x={x + 4} y={y + 3} fill="rgba(0,0,0,0.35)" fontSize={9} fontFamily="JetBrains Mono">
+          <text key={level} x={x + 4} y={y + 3} fill="rgba(0,0,0,0.35)" fontSize={9} fontFamily="Inter">
             {level}
           </text>
         );
@@ -116,7 +116,7 @@ export default function Radar({ avgs }: { avgs: GroupAverage[] }) {
           ?? '#475569';
         return (
           <text key={a.group_id} x={x} y={y} textAnchor="middle" dominantBaseline="middle"
-            fill={accent} fontSize={labelFontSize} fontWeight={600} fontFamily="Oswald" letterSpacing="0.06em">
+            fill={accent} fontSize={labelFontSize} fontWeight={600} fontFamily="Inter" letterSpacing="0.06em">
             {a.group_id}
           </text>
         );
@@ -138,14 +138,14 @@ export default function Radar({ avgs }: { avgs: GroupAverage[] }) {
           <g key={`val-${a.group_id}`}>
             {showPol && (
               <text x={x} y={y - (showPra ? 8 : 0)} textAnchor="middle" dominantBaseline="middle"
-                fill={RADAR.pol.stroke} fontSize={valueFontSize} fontWeight={600} fontFamily="JetBrains Mono"
+                fill={RADAR.pol.stroke} fontSize={valueFontSize} fontWeight={600} fontFamily="Inter"
                 style={haloStyle}>
                 {a.pol.toFixed(2)}
               </text>
             )}
             {showPra && (
               <text x={x} y={y + (showPol ? 8 : 0)} textAnchor="middle" dominantBaseline="middle"
-                fill={RADAR.pra.stroke} fontSize={valueFontSize} fontWeight={600} fontFamily="JetBrains Mono"
+                fill={RADAR.pra.stroke} fontSize={valueFontSize} fontWeight={600} fontFamily="Inter"
                 style={haloStyle}>
                 {a.pra.toFixed(2)}
               </text>

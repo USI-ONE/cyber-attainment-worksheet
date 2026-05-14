@@ -129,7 +129,7 @@ export default function DrPlansClient({ initialPlans }: { initialPlans: DrPlan[]
             <div key={tier} style={{ marginTop: 18 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 10 }}>
                 <span style={{
-                  fontFamily: 'Oswald, sans-serif', fontWeight: 600, fontSize: 13,
+                  fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 13,
                   color: meta.color, letterSpacing: '.04em',
                 }}>
                   {meta.label}
@@ -380,7 +380,7 @@ function PlanEditor({
       </div>
 
       <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--bg-border)' }}>
-        <div style={{ fontFamily: 'Oswald, sans-serif', fontWeight: 600, fontSize: 13, color: 'var(--text)', marginBottom: 12 }}>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 13, color: 'var(--text)', marginBottom: 12 }}>
           Test history
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 16 }}>

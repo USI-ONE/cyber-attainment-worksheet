@@ -156,9 +156,9 @@ function ControlCard({
       }}
     >
       <summary style={{ cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <code style={{ fontFamily: 'JetBrains Mono', fontWeight: 600, color: c.accent, fontSize: 12 }}>{control.id}</code>
+        <code style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: c.accent, fontSize: 12 }}>{control.id}</code>
         <span style={{ color: 'var(--text)', fontSize: 12, flex: 1 }}>{control.outcome}</span>
-        <span style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: 'var(--text-mid)' }}>
+        <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, color: 'var(--text-mid)' }}>
           {open}/{tasks.length} open
         </span>
       </summary>
@@ -223,7 +223,7 @@ function ControlCard({
         </div>
 
         <div>
-          <label style={{ fontFamily: 'Oswald, sans-serif', fontWeight: 500, fontSize: 10, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-mid)' }}>
+          <label style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500, fontSize: 10, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-mid)' }}>
             Control notes
           </label>
           <textarea

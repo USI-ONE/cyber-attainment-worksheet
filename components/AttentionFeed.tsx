@@ -164,7 +164,7 @@ function AttentionRow({ item }: { item: AttentionItem }) {
             {KIND_LABEL[item.kind]}
           </span>
           {item.age_days != null && item.age_days > 0 && (
-            <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'JetBrains Mono' }}>
+            <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
               {item.age_days}d old
             </span>
           )}

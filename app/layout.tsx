@@ -90,7 +90,7 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&family=JetBrains+Mono:wght@500;600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
         />
       </head>
       <body style={rootStyle} data-readonly={readOnly ? 'true' : undefined}>
@@ -108,8 +108,8 @@ export default async function RootLayout({
               gap: 16,
             }}>
               <span style={{
-                fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: 14,
-                letterSpacing: '0.2em', textTransform: 'uppercase',
+                fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 16,
+                letterSpacing: '-0.01em',
               }}>Portfolio Hub</span>
               <span style={{ flex: 1, fontSize: 11, color: 'var(--text-muted)' }}>
                 TrustOS · Operator
