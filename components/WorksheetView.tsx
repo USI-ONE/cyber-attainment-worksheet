@@ -39,6 +39,14 @@ export interface ControlPolicyRef {
   version: string | null;
 }
 
+/** One row in the crosswalk badge: a control on ANOTHER framework that
+ * the current control maps to. */
+export interface ControlCrosswalkRef {
+  control_id: string;
+  framework: string;            // "ISO/IEC 27001:2022 Annex A"
+  relationship: 'equivalent' | 'related' | 'partial';
+}
+
 export default function WorksheetView({
   tenantId: _tenantId,
   frameworkVersionId,
@@ -47,6 +55,7 @@ export default function WorksheetView({
   saveEndpoint,
   extraSaveFields,
   policyByControl,
+  crosswalkByControl,
 }: {
   tenantId: string;
   frameworkVersionId: string;
@@ -56,8 +65,13 @@ export default function WorksheetView({
   extraSaveFields?: Record<string, unknown>;
   /** control_id → list of policy documents that back this control */
   policyByControl?: Record<string, ControlPolicyRef[]>;
+  /** control_id → list of OTHER-framework controls this maps to (the
+   *  "Also covers ISO A.5.16" badge data, loaded server-side from
+   *  framework_mappings). */
+  crosswalkByControl?: Record<string, ControlCrosswalkRef[]>;
 }) {
   const policyMap = policyByControl ?? {};
+  const crosswalkMap = crosswalkByControl ?? {};
   const [scores, setScores] = useState<Scores>(initialScores);
   const [filter, setFilter] = useState<Filter>('ALL');
   const [search, setSearch] = useState('');
@@ -227,6 +241,7 @@ export default function WorksheetView({
         search={search.toLowerCase().trim()}
         updateField={updateField}
         policyMap={policyMap}
+        crosswalkMap={crosswalkMap}
       />
     </>
   );
@@ -402,7 +417,7 @@ function Dashboard({ groups, scores }: { groups: FrameworkGroup[]; scores: Score
 }
 
 function CsfTable({
-  groups, scores, collapsed, toggleCollapse, filter, search, updateField, policyMap,
+  groups, scores, collapsed, toggleCollapse, filter, search, updateField, policyMap, crosswalkMap,
 }: {
   groups: FrameworkGroup[];
   scores: Scores;
@@ -412,6 +427,7 @@ function CsfTable({
   search: string;
   updateField: (controlId: string, field: ScoreField, value: string) => void;
   policyMap: Record<string, ControlPolicyRef[]>;
+  crosswalkMap: Record<string, ControlCrosswalkRef[]>;
 }) {
   return (
     <table className="csf-table">
@@ -458,6 +474,7 @@ function CsfTable({
               scored={scored}
               total={total}
               policyMap={policyMap}
+              crosswalkMap={crosswalkMap}
             />
           );
         })}
@@ -467,7 +484,7 @@ function CsfTable({
 }
 
 function FunctionBlock({
-  group, scores, colorAccent, colorText, colorBg, collapsed, onToggle, search, updateField, scored, total, policyMap,
+  group, scores, colorAccent, colorText, colorBg, collapsed, onToggle, search, updateField, scored, total, policyMap, crosswalkMap,
 }: {
   group: FrameworkGroup;
   scores: Scores;
@@ -481,6 +498,7 @@ function FunctionBlock({
   scored: number;
   total: number;
   policyMap: Record<string, ControlPolicyRef[]>;
+  crosswalkMap: Record<string, ControlCrosswalkRef[]>;
 }) {
   return (
     <>
@@ -523,6 +541,7 @@ function FunctionBlock({
             colorAccent={colorAccent}
             colorText={colorText}
             policyMap={policyMap}
+            crosswalkMap={crosswalkMap}
             updateField={updateField}
           />
         );
@@ -532,7 +551,7 @@ function FunctionBlock({
 }
 
 function FrameworkCategorySection({
-  categoryId, categoryName, controls, scores, colorAccent, colorText, updateField, policyMap,
+  categoryId, categoryName, controls, scores, colorAccent, colorText, updateField, policyMap, crosswalkMap,
 }: {
   categoryId: string;
   categoryName: string;
@@ -542,6 +561,7 @@ function FrameworkCategorySection({
   colorText: string;
   updateField: (controlId: string, field: ScoreField, value: string) => void;
   policyMap: Record<string, ControlPolicyRef[]>;
+  crosswalkMap: Record<string, ControlCrosswalkRef[]>;
 }) {
   return (
     <>
@@ -559,6 +579,7 @@ function FrameworkCategorySection({
           row={scores[ctrl.id] ?? {}}
           updateField={updateField}
           policies={policyMap[ctrl.id]}
+          crosswalks={crosswalkMap[ctrl.id]}
         />
       ))}
     </>
@@ -570,11 +591,13 @@ function SubcategoryRow({
   row,
   updateField,
   policies,
+  crosswalks,
 }: {
   control: { id: string; outcome: string };
   row: Partial<CurrentScore>;
   updateField: (controlId: string, field: ScoreField, value: string) => void;
   policies?: ControlPolicyRef[];
+  crosswalks?: ControlCrosswalkRef[];
 }) {
   const gap = row.pra && row.gol ? row.gol - row.pra : null;
   const gapCls =
@@ -589,6 +612,21 @@ function SubcategoryRow({
   const polTitle = polCount > 0
     ? policies!.map((p) => p.version ? `${p.title} (v${p.version})` : p.title).join('\n')
     : undefined;
+  // Crosswalk hover-tip: list each mapped target control + its framework
+  // + relationship. Grouped by framework so a tip reads as one line per
+  // framework rather than fifteen identical "ISO/IEC 27001:2022" repeats.
+  const cwCount = crosswalks?.length ?? 0;
+  const cwTitle = (() => {
+    if (cwCount === 0) return undefined;
+    const byFw = new Map<string, string[]>();
+    for (const c of crosswalks!) {
+      const tag = c.relationship === 'equivalent' ? c.control_id
+        : c.relationship === 'related' ? `${c.control_id} (related)`
+        : `${c.control_id} (partial)`;
+      (byFw.get(c.framework) ?? byFw.set(c.framework, []).get(c.framework)!).push(tag);
+    }
+    return Array.from(byFw, ([fw, ids]) => `${fw}: ${ids.join(', ')}`).join('\n');
+  })();
 
   return (
     <tr className="sub-row">
@@ -605,6 +643,19 @@ function SubcategoryRow({
               fontFamily: 'JetBrains Mono, monospace', fontWeight: 600,
             }}>
             📄 {polCount}
+          </a>
+        )}
+        {cwCount > 0 && (
+          <a href="/crosswalk" title={cwTitle}
+            style={{
+              marginLeft: 4, fontSize: 10, padding: '1px 6px',
+              background: 'rgba(37,99,235,0.10)',
+              border: '1px solid rgba(37,99,235,0.32)',
+              color: 'var(--gold-light)', borderRadius: 999,
+              textDecoration: 'none', verticalAlign: 'middle',
+              fontFamily: 'JetBrains Mono, monospace', fontWeight: 600,
+            }}>
+            ↔ {cwCount}
           </a>
         )}
       </td>

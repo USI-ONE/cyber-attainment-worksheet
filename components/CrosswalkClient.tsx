@@ -144,7 +144,18 @@ export default function CrosswalkClient({
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 11, color: 'var(--text-mid)' }}>Source:</span>
+            {/* Plain .action-btn (not .primary) so viewers can generate
+                the PDF too — it's a read operation. Honors the current
+                source/target picks via query params on the API. */}
+            <a
+              className="action-btn"
+              href={`/api/report/crosswalk?source=${encodeURIComponent(source.framework_version_id)}&target=${encodeURIComponent(target.framework_version_id)}`}
+              download
+              title={`Generate a PDF showing ${target.display_name} coverage inherited from ${source.display_name} scores.`}
+            >
+              Generate Crosswalk PDF
+            </a>
+            <span style={{ fontSize: 11, color: 'var(--text-mid)', marginLeft: 8 }}>Source:</span>
             <select
               className="score-select"
               value={source.framework_version_id}
