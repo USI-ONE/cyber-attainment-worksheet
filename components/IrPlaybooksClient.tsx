@@ -135,9 +135,19 @@ export default function IrPlaybooksClient({ initialPlaybooks }: { initialPlayboo
               </button>
             ))}
           </div>
-          <button className="action-btn primary" onClick={() => setCreating((v) => !v)}>
-            {creating ? 'Cancel' : '+ New Playbook'}
-          </button>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {/* Plain .action-btn (not .primary) so it stays clickable for
+                viewers — generating a printable runbook PDF is a read op. */}
+            <a className="action-btn"
+               href="/api/report/ir-playbooks"
+               download
+               title="Generate a printable IR Playbook Binder — every active playbook with response phases, comms matrix, escalation contacts, and regulatory clocks.">
+              Generate IR Binder
+            </a>
+            <button className="action-btn primary" onClick={() => setCreating((v) => !v)}>
+              {creating ? 'Cancel' : '+ New Playbook'}
+            </button>
+          </div>
         </div>
 
         {creating && <NewPlaybookForm busy={busy} onCancel={() => setCreating(false)} onSubmit={createPlaybook} />}

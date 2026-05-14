@@ -98,9 +98,19 @@ export default function DrPlansClient({ initialPlans }: { initialPlans: DrPlan[]
               Per-system recovery procedures with RTO/RPO, backup story, and test cadence
             </div>
           </div>
-          <button className="action-btn primary" onClick={() => setCreating((v) => !v)}>
-            {creating ? 'Cancel' : '+ New DR Plan'}
-          </button>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {/* Plain .action-btn (not .primary) so it stays clickable for
+                viewers — generating a runbook PDF is a read operation. */}
+            <a className="action-btn"
+               href="/api/report/dr-plans"
+               download
+               title="Generate a printable DR Plan Binder — one page per active plan, with cover summary + recovery procedures.">
+              Generate DR Binder
+            </a>
+            <button className="action-btn primary" onClick={() => setCreating((v) => !v)}>
+              {creating ? 'Cancel' : '+ New DR Plan'}
+            </button>
+          </div>
         </div>
 
         {creating && <NewPlanForm busy={busy} onCancel={() => setCreating(false)} onSubmit={createPlan} />}
