@@ -35,11 +35,12 @@ const STATIC_GROUPS: NavGroup[] = [
     id: 'plan',
     label: 'Plan',
     items: [
-      { href: '/risks',      label: 'Risk Register',     tag: 'Heat map + treatments' },
-      { href: '/priorities', label: '30-Day Priorities', tag: 'Sprint focus' },
-      { href: '/work-plans', label: 'Work Plans',        tag: 'Tactical tasks per control' },
-      { href: '/dr-plans',   label: 'Disaster Recovery', tag: 'RTO/RPO + recovery procedures' },
-      { href: '/ir-plans',   label: 'IR Playbooks',      tag: 'Per-category response runbooks' },
+      { href: '/recommendations', label: 'Recommendations',   tag: 'Practice-gap action checklist' },
+      { href: '/risks',           label: 'Risk Register',     tag: 'Heat map + treatments' },
+      { href: '/priorities',      label: '30-Day Priorities', tag: 'Sprint focus' },
+      { href: '/work-plans',      label: 'Work Plans',        tag: 'Tactical tasks per control' },
+      { href: '/dr-plans',        label: 'Disaster Recovery', tag: 'RTO/RPO + recovery procedures' },
+      { href: '/ir-plans',        label: 'IR Playbooks',      tag: 'Per-category response runbooks' },
     ],
   },
   {
