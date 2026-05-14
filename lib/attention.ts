@@ -27,7 +27,10 @@ export type AttentionKind =
   | 'evidence_expiring'
   | 'vendor_attestation_expired'
   | 'vendor_attestation_expiring'
-  | 'vendor_assessment_overdue';
+  | 'vendor_assessment_overdue'
+  | 'training_record_overdue'
+  | 'training_completion_low'
+  | 'phishing_click_rate_high';
 
 export interface AttentionItem {
   kind: AttentionKind;
@@ -90,6 +93,8 @@ export async function computeAttention(
     evidenceRes,
     vendorAttRes,
     vendorAssessRes,
+    trainingOverdueRes,
+    trainingCampaignsRes,
   ] = await Promise.all([
     db.from('risks')
       .select('id, code, title, residual_score, status, next_review_due, treatment_strategy')
@@ -137,6 +142,16 @@ export async function computeAttention(
       .eq('tenant_id', tenantId)
       .eq('status', 'active')
       .not('next_assessment_at', 'is', null),
+    db.from('training_records')
+      .select('id, trainee_name, trainee_email, due_date, status, campaign_id')
+      .eq('tenant_id', tenantId)
+      .not('due_date', 'is', null)
+      .lt('due_date', todayISO)
+      .not('status', 'in', '(complete,exempt)'),
+    db.from('training_campaigns')
+      .select('id, name, kind, status, scheduled_at, recipient_count, clicked_count')
+      .eq('tenant_id', tenantId)
+      .in('status', ['active','completed']),
   ]);
 
   const out: AttentionItem[] = [];
@@ -382,6 +397,51 @@ export async function computeAttention(
       href: '/vendors',
       age_days: days,
     });
+  }
+
+  // ---- Training — overdue records ---------------------------------------
+  // Group overdue records by campaign so the feed shows one row per
+  // campaign instead of dozens of individual trainees. The detail line
+  // lists the count so the operator gets the magnitude at a glance.
+  type TROverdue = { id: string; trainee_name: string | null; trainee_email: string | null; due_date: string; status: string; campaign_id: string };
+  const overdueByCampaign = new Map<string, TROverdue[]>();
+  for (const r of (trainingOverdueRes.data ?? []) as TROverdue[]) {
+    const arr = overdueByCampaign.get(r.campaign_id) ?? [];
+    arr.push(r);
+    overdueByCampaign.set(r.campaign_id, arr);
+  }
+  const campaignNameById = new Map<string, string>();
+  type TCRow = { id: string; name: string; kind: string; status: string; scheduled_at: string | null; recipient_count: number; clicked_count: number };
+  const campaigns = (trainingCampaignsRes.data ?? []) as TCRow[];
+  for (const c of campaigns) campaignNameById.set(c.id, c.name);
+  for (const [campaignId, recs] of overdueByCampaign) {
+    const oldest = recs.reduce((a, b) => a.due_date < b.due_date ? a : b);
+    const days = daysSince(oldest.due_date) ?? 0;
+    out.push({
+      kind: 'training_record_overdue',
+      severity: recs.length > 10 ? 'high' : recs.length > 3 ? 'medium' : 'low',
+      title: `Training overdue: ${recs.length} trainee${recs.length === 1 ? '' : 's'} on ${campaignNameById.get(campaignId) ?? 'a campaign'}`,
+      detail: `Oldest record is ${fmtAge(days)} past due. Recover completions or mark exempt.`,
+      href: '/training',
+      age_days: days,
+    });
+  }
+
+  // ---- Phishing — elevated click rate on most recent simulation -------
+  const recentPhish = campaigns
+    .filter((c) => c.kind === 'phishing' && c.recipient_count > 0)
+    .sort((a, b) => (b.scheduled_at ?? '').localeCompare(a.scheduled_at ?? ''))[0];
+  if (recentPhish) {
+    const rate = (recentPhish.clicked_count / recentPhish.recipient_count) * 100;
+    if (rate >= 15) {
+      out.push({
+        kind: 'phishing_click_rate_high',
+        severity: rate >= 25 ? 'high' : 'medium',
+        title: `Phishing click rate elevated: ${rate.toFixed(1)}%`,
+        detail: `${recentPhish.name} — ${recentPhish.clicked_count} of ${recentPhish.recipient_count} clicked. Industry benchmark: 5-10%. Plan a remediation campaign.`,
+        href: '/training',
+      });
+    }
   }
 
   // Sort by severity (worst first), then by age descending. Critical incidents

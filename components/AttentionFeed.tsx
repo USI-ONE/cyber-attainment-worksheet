@@ -33,6 +33,9 @@ const KIND_LABEL: Record<AttentionKind, string> = {
   vendor_attestation_expired:  'Vendor — attestation expired',
   vendor_attestation_expiring: 'Vendor — attestation expiring',
   vendor_assessment_overdue:   'Vendor — assessment overdue',
+  training_record_overdue:     'Training — records overdue',
+  training_completion_low:     'Training — completion low',
+  phishing_click_rate_high:    'Phishing — elevated click rate',
 };
 
 const KIND_ICON: Record<AttentionKind, string> = {
@@ -50,6 +53,9 @@ const KIND_ICON: Record<AttentionKind, string> = {
   vendor_attestation_expired:  '⏱',
   vendor_attestation_expiring: '⏱',
   vendor_assessment_overdue:   '⏱',
+  training_record_overdue:     '⏱',
+  training_completion_low:     '⚠',
+  phishing_click_rate_high:    '!',
 };
 
 export default function AttentionFeed({ items }: { items: AttentionItem[] }) {

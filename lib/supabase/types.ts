@@ -286,6 +286,57 @@ export interface Risk {
 export type RiskTreatmentStatus = 'Not Started' | 'In Progress' | 'Blocked' | 'Complete';
 
 // ---------------------------------------------------------------------------
+// Security Awareness Training — see db/migrations/0018_training.sql
+// ---------------------------------------------------------------------------
+
+export type TrainingCampaignKind =
+  | 'awareness' | 'phishing' | 'role_specific' | 'onboarding' | 'tabletop' | 'other';
+export type TrainingCampaignStatus = 'planned' | 'active' | 'completed' | 'archived';
+
+export interface TrainingCampaign {
+  id: string;
+  tenant_id: string;
+  name: string;
+  kind: TrainingCampaignKind;
+  description: string | null;
+  vendor: string | null;
+  scheduled_at: string | null;
+  completed_at: string | null;
+  target_audience: string | null;
+  status: TrainingCampaignStatus;
+  recipient_count: number;
+  clicked_count: number;
+  reported_count: number;
+  credentials_submitted_count: number;
+  attachment_opened_count: number;
+  linked_control_ids: string[];
+  linked_risk_ids: string[];
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type TrainingRecordStatus =
+  | 'assigned' | 'in_progress' | 'complete' | 'overdue' | 'exempt' | 'failed';
+
+export interface TrainingRecord {
+  id: string;
+  tenant_id: string;
+  campaign_id: string;
+  trainee_email: string | null;
+  trainee_name: string | null;
+  trainee_role: string | null;
+  assigned_at: string | null;
+  due_date: string | null;
+  completed_at: string | null;
+  status: TrainingRecordStatus;
+  score: number | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ---------------------------------------------------------------------------
 // Vendor Risk — see db/migrations/0017_vendor_risk.sql
 // ---------------------------------------------------------------------------
 
