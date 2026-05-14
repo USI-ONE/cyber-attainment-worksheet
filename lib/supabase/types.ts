@@ -286,6 +286,71 @@ export interface Risk {
 export type RiskTreatmentStatus = 'Not Started' | 'In Progress' | 'Blocked' | 'Complete';
 
 // ---------------------------------------------------------------------------
+// Vendor Risk — see db/migrations/0017_vendor_risk.sql
+// ---------------------------------------------------------------------------
+
+export type VendorType =
+  | 'saas' | 'msp' | 'hardware' | 'consulting'
+  | 'payments' | 'infrastructure' | 'contractor' | 'other';
+export type VendorCriticality = 'low' | 'medium' | 'high' | 'critical';
+export type VendorDataSensitivity =
+  | 'none' | 'public' | 'internal' | 'confidential'
+  | 'pii' | 'phi' | 'financial' | 'regulated';
+export type VendorStatus = 'pending' | 'active' | 'offboarded';
+
+export interface Vendor {
+  id: string;
+  tenant_id: string;
+  name: string;
+  service_description: string | null;
+  vendor_type: VendorType;
+  criticality: VendorCriticality;
+  data_sensitivity: VendorDataSensitivity;
+  access_summary: string | null;
+  status: VendorStatus;
+  owner: string | null;
+  primary_contact: string | null;
+  contact_email: string | null;
+  contract_renewal_at: string | null;
+  annual_spend_usd: number | null;
+  website: string | null;
+  notes: string | null;
+  linked_risk_ids: string[];
+  linked_control_ids: string[];
+  linked_incident_ids: string[];
+  last_assessed_at: string | null;
+  next_assessment_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type AttestationType =
+  | 'soc2_type1' | 'soc2_type2'
+  | 'iso_27001' | 'iso_27017' | 'iso_27018' | 'iso_27701'
+  | 'pci_dss' | 'hipaa_baa'
+  | 'fedramp_high' | 'fedramp_moderate' | 'cmmc'
+  | 'cyber_insurance' | 'penetration_test' | 'vulnerability_scan' | 'other';
+export type AttestationStatus = 'pending' | 'current' | 'expired' | 'superseded' | 'archived';
+
+export interface VendorAttestation {
+  id: string;
+  tenant_id: string;
+  vendor_id: string;
+  attestation_type: AttestationType;
+  title: string;
+  issued_on: string | null;
+  expires_on: string | null;
+  status: AttestationStatus;
+  evidence_artifact_id: string | null;
+  findings_critical: number;
+  findings_major: number;
+  findings_minor: number;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ---------------------------------------------------------------------------
 // Evidence Library — see db/migrations/0014_evidence_library.sql
 // ---------------------------------------------------------------------------
 

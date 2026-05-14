@@ -24,7 +24,10 @@ export type AttentionKind =
   | 'priority_overdue'
   | 'task_overdue'
   | 'evidence_expired'
-  | 'evidence_expiring';
+  | 'evidence_expiring'
+  | 'vendor_attestation_expired'
+  | 'vendor_attestation_expiring'
+  | 'vendor_assessment_overdue';
 
 export interface AttentionItem {
   kind: AttentionKind;
@@ -85,6 +88,8 @@ export async function computeAttention(
     prioritiesRes,
     tasksRes,
     evidenceRes,
+    vendorAttRes,
+    vendorAssessRes,
   ] = await Promise.all([
     db.from('risks')
       .select('id, code, title, residual_score, status, next_review_due, treatment_strategy')
@@ -122,6 +127,16 @@ export async function computeAttention(
       .eq('tenant_id', tenantId)
       .eq('status', 'current')
       .not('retention_until', 'is', null),
+    db.from('vendor_attestations')
+      .select('id, title, attestation_type, expires_on, status, vendor_id')
+      .eq('tenant_id', tenantId)
+      .eq('status', 'current')
+      .not('expires_on', 'is', null),
+    db.from('vendors')
+      .select('id, name, criticality, next_assessment_at, status')
+      .eq('tenant_id', tenantId)
+      .eq('status', 'active')
+      .not('next_assessment_at', 'is', null),
   ]);
 
   const out: AttentionItem[] = [];
@@ -315,6 +330,58 @@ export async function computeAttention(
         age_days: days,
       });
     }
+  }
+
+  // ---- Vendor attestations — expired or expiring within 60 days -------
+  for (const a of (vendorAttRes.data ?? []) as {
+    id: string; title: string; attestation_type: string;
+    expires_on: string | null; status: string; vendor_id: string;
+  }[]) {
+    if (!a.expires_on) continue;
+    const days = daysSince(a.expires_on);
+    if (days == null) continue;
+    if (days > 0) {
+      out.push({
+        kind: 'vendor_attestation_expired',
+        severity: days > 90 ? 'high' : 'medium',
+        title: `Vendor attestation expired: ${a.title}`,
+        detail: `${a.attestation_type.toUpperCase().replace(/_/g, ' ')} expired ${fmtAge(days)} ago. Request the refreshed report from the vendor.`,
+        href: '/vendors',
+        age_days: days,
+      });
+    } else if (days >= -60) {
+      // Within 60 days of expiry.
+      out.push({
+        kind: 'vendor_attestation_expiring',
+        severity: days >= -14 ? 'medium' : 'low',
+        title: `Vendor attestation expiring: ${a.title}`,
+        detail: `${a.attestation_type.toUpperCase().replace(/_/g, ' ')} expires in ${Math.abs(days)} day${days === -1 ? '' : 's'}. Plan the renewal.`,
+        href: '/vendors',
+        age_days: days,
+      });
+    }
+  }
+
+  // ---- Vendor assessment cadence — overdue next_assessment_at --------
+  for (const v of (vendorAssessRes.data ?? []) as {
+    id: string; name: string; criticality: string;
+    next_assessment_at: string | null; status: string;
+  }[]) {
+    if (!v.next_assessment_at) continue;
+    const days = daysSince(v.next_assessment_at);
+    if (days == null || days <= 0) continue;
+    const sev: AttentionSeverity =
+      v.criticality === 'critical' ? 'high'
+      : v.criticality === 'high'   ? 'medium'
+      : 'low';
+    out.push({
+      kind: 'vendor_assessment_overdue',
+      severity: sev,
+      title: `Vendor risk review overdue: ${v.name}`,
+      detail: `${v.criticality} vendor — assessment was due ${fmtAge(days)} ago. Schedule a review and update last_assessed_at.`,
+      href: '/vendors',
+      age_days: days,
+    });
   }
 
   // Sort by severity (worst first), then by age descending. Critical incidents

@@ -28,8 +28,11 @@ const KIND_LABEL: Record<AttentionKind, string> = {
   incident_open_critical:  'Incident — open high/critical',
   priority_overdue:        'Priority — overdue',
   task_overdue:            'Work plan task — overdue',
-  evidence_expired:        'Evidence — retention expired',
-  evidence_expiring:       'Evidence — expiring soon',
+  evidence_expired:           'Evidence — retention expired',
+  evidence_expiring:          'Evidence — expiring soon',
+  vendor_attestation_expired:  'Vendor — attestation expired',
+  vendor_attestation_expiring: 'Vendor — attestation expiring',
+  vendor_assessment_overdue:   'Vendor — assessment overdue',
 };
 
 const KIND_ICON: Record<AttentionKind, string> = {
@@ -42,8 +45,11 @@ const KIND_ICON: Record<AttentionKind, string> = {
   incident_open_critical:  '!',
   priority_overdue:        '⏱',
   task_overdue:            '⏱',
-  evidence_expired:        '⏱',
-  evidence_expiring:       '⏱',
+  evidence_expired:            '⏱',
+  evidence_expiring:           '⏱',
+  vendor_attestation_expired:  '⏱',
+  vendor_attestation_expiring: '⏱',
+  vendor_assessment_overdue:   '⏱',
 };
 
 export default function AttentionFeed({ items }: { items: AttentionItem[] }) {

@@ -47,7 +47,8 @@ const STATIC_GROUPS: NavGroup[] = [
     label: 'Operate',
     items: [
       { href: '/incidents', label: 'Incidents',         tag: 'Live + historical log' },
-      { href: '/registers', label: 'Registers',         tag: 'Assets, vendors, stakeholders' },
+      { href: '/vendors',   label: 'Vendor Risk',       tag: 'Third-party register + attestation tracking' },
+      { href: '/registers', label: 'Registers',         tag: 'Assets, stakeholders, compliance' },
       { href: '/standards', label: 'Security Standards', tag: 'Control standards library' },
     ],
   },
