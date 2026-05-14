@@ -99,6 +99,11 @@ export async function POST(request: NextRequest, { params }: { params: { control
   // partial-progress save (no answers yet) shouldn't blow away an existing
   // score the user manually set on /worksheet.
   if (computed != null) {
+    // current_scores.updated_by is UUID-typed; responded_by from the client
+    // is a freeform text label ("Chris W."), which Postgres would reject
+    // with 22P02 and silently kill the mirror. Prefer the authenticated
+    // user's id (always a valid UUID), fall back to null.
+    const updatedBy = auth.currentUser?.user.id ?? null;
     const { error: csErr } = await supabase
       .from('current_scores')
       .upsert({
@@ -106,7 +111,12 @@ export async function POST(request: NextRequest, { params }: { params: { control
         framework_version_id: fw.version.id,
         control_id: params.control_id,
         pra: computed,
-        updated_by: responded_by,
+        updated_by: updatedBy,
+        // updated_at has DEFAULT now() but DEFAULT only fires on INSERT —
+        // an upsert that hits the UPDATE branch keeps the old timestamp,
+        // so the worksheet shows stale "last updated" markers and the
+        // Attention Feed misses recent assessment activity. Explicit set.
+        updated_at: new Date().toISOString(),
       }, { onConflict: 'tenant_id,framework_version_id,control_id' });
     if (csErr) {
       // Don't fail the whole request — the response row is saved; the score

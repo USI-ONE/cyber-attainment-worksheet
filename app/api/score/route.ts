@@ -39,10 +39,27 @@ export async function POST(request: NextRequest) {
   let normalized: number | string | null = null;
   if (value === null || value === '' || value === undefined) {
     normalized = null;
-  } else if (TIER_FIELDS.has(field)) {
+  } else if (field === 'prio') {
+    // Priority is a 1..4 integer label (P1..P4). parseInt is correct here —
+    // any half-step would be a UI bug.
     const n = typeof value === 'number' ? value : parseInt(String(value), 10);
     if (!Number.isFinite(n) || n < 1 || n > 4) {
-      return NextResponse.json({ error: `${field} must be 1..4 or null` }, { status: 400 });
+      return NextResponse.json({ error: 'prio must be 1..4 or null' }, { status: 400 });
+    }
+    normalized = n;
+  } else if (TIER_FIELDS.has(field)) {
+    // CMM tier scores (pol / pra / gol) accept the same half-step ladder the
+    // worksheet ScoreSelect renders: 0.5 .. 5.0 in 0.5 increments. parseInt
+    // here is the original bug — it truncated 4.5 to 4 and rejected 0.5/4.5/5
+    // entirely, so any half-step or "Optimizing" (5) save returned 400 and
+    // the worksheet flashed "Save failed". parseFloat + a half-step range
+    // restores the intended scoring grain.
+    const n = typeof value === 'number' ? value : parseFloat(String(value));
+    if (!Number.isFinite(n) || n < 0.5 || n > 5 || (n * 2) % 1 !== 0) {
+      return NextResponse.json(
+        { error: `${field} must be a 0.5..5 half-step or null` },
+        { status: 400 },
+      );
     }
     normalized = n;
   } else {
