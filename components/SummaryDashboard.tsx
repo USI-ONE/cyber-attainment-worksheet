@@ -10,6 +10,7 @@ import {
   type GroupAverage,
 } from '@/lib/scoring';
 import Radar from '@/components/Radar';
+import AttainmentDashboard from '@/components/AttainmentDashboard';
 
 type Scores = Record<string, Partial<CurrentScore>>;
 
@@ -27,6 +28,8 @@ export default function SummaryDashboard({
   return (
     <>
       <KpiTiles totals={totals} />
+
+      <AttainmentDashboard definition={definition} scores={scores} />
 
       <section className="scorecard">
         <div className="scorecard-header">
