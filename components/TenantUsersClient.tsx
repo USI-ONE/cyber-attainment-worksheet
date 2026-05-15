@@ -37,7 +37,12 @@ export default function TenantUsersClient({
   const [members, setMembers] = useState<TenantMember[]>(initialMembers);
   const [invites, setInvites] = useState<TenantPendingInvite[]>(initialInvites);
   const [openInvite, setOpenInvite] = useState(false);
-  const [acceptUrl, setAcceptUrl] = useState<string | null>(null);
+  const [tempPasswordBanner, setTempPasswordBanner] = useState<{
+    email: string; password: string; emailSent: boolean; context: 'invite' | 'reset';
+  } | null>(null);
+  const [resetLinkBanner, setResetLinkBanner] = useState<{
+    email: string; url: string; emailSent: boolean;
+  } | null>(null);
 
   async function invite(payload: { email: string; role: 'editor' | 'viewer'; display_name?: string }) {
     const res = await fetch('/api/settings/users', {
@@ -47,15 +52,66 @@ export default function TenantUsersClient({
     });
     const j = await res.json();
     if (!res.ok || !j.ok) { alert(j.error ?? 'invite failed'); return; }
-    // Server returns an explicit accept_url with the tenant's hostname
-    // baked in — use it if present, otherwise fall back to origin+path.
-    setAcceptUrl(j.accept_url ?? (window.location.origin + j.accept_url_path));
-    setInvites((s) => [
-      { id: j.invite.id, email: j.invite.email, role: j.invite.role,
-        expires_at: j.invite.expires_at, created_at: new Date().toISOString() },
-      ...s,
-    ]);
+    // New temp-password flow: server returns { user_id, email, role,
+    // temp_password, sign_in_url, email_sent }. Surface the temp password
+    // so the admin can copy/paste or read it aloud.
+    setTempPasswordBanner({
+      email: j.email,
+      password: j.temp_password,
+      emailSent: !!j.email_sent,
+      context: 'invite',
+    });
     setOpenInvite(false);
+    // Optimistically refresh members list — the new user is now a member
+    // (the API applied the membership immediately, not on accept).
+    refreshMembers();
+  }
+
+  async function refreshMembers() {
+    const res = await fetch('/api/settings/users');
+    if (!res.ok) return;
+    const j = await res.json();
+    if (j.members) setMembers(j.members);
+    if (j.pending_invites) setInvites(j.pending_invites);
+  }
+
+  async function revokeInvite(invite_id: string) {
+    const previous = invites;
+    setInvites((s) => s.filter((i) => i.id !== invite_id));
+    const res = await fetch(`/api/settings/invites/${invite_id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      alert(j.error ?? 'revoke failed');
+      setInvites(previous);
+    }
+  }
+
+  async function resetPassword(user_id: string, email: string, method: 'temp_password' | 'email_link') {
+    const verb = method === 'temp_password'
+      ? `Generate a new temporary password for ${email}? Their current password will stop working and every active session will be revoked.`
+      : `Send a password-reset email to ${email}? Their current password will be cleared and they'll need the link to set a new one.`;
+    if (!confirm(verb)) return;
+    const res = await fetch(`/api/settings/users/${user_id}/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ method }),
+    });
+    const j = await res.json();
+    if (!res.ok || !j.ok) { alert(j.error ?? 'reset failed'); return; }
+    if (method === 'temp_password') {
+      setTempPasswordBanner({
+        email: j.email,
+        password: j.temp_password,
+        emailSent: !!j.email_sent,
+        context: 'reset',
+      });
+    } else {
+      setResetLinkBanner({
+        email: j.email,
+        url: j.reset_url,
+        emailSent: !!j.email_sent,
+      });
+    }
   }
 
   async function changeRole(user_id: string, role: 'editor' | 'viewer') {
@@ -83,26 +139,29 @@ export default function TenantUsersClient({
 
   return (
     <>
-      {acceptUrl && (
-        <div className="banner success" style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '16px 18px', marginBottom: 18 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>Invite issued — copy this URL</div>
-            <div style={{ fontSize: 11, color: 'var(--text-mid)', marginBottom: 8 }}>
-              Send this one-time link to the invitee. It expires in 14 days.
-            </div>
-            <input readOnly value={acceptUrl} onFocus={(e) => e.target.select()} style={{
-              width: '100%', padding: '8px 10px',
-              background: 'var(--bg-mid)', border: '1px solid var(--bg-border)',
-              color: 'var(--text)', fontFamily: 'Inter, sans-serif', fontSize: 11, borderRadius: 6,
-            }} />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <button className="action-btn primary" onClick={() => {
-              navigator.clipboard.writeText(acceptUrl).catch(() => alert('Clipboard write failed; copy manually.'));
-            }}>Copy URL</button>
-            <button className="action-btn" onClick={() => setAcceptUrl(null)}>Dismiss</button>
-          </div>
-        </div>
+      {tempPasswordBanner && (
+        <CredentialBanner
+          title={tempPasswordBanner.context === 'invite'
+            ? `Invite issued for ${tempPasswordBanner.email} — temporary password`
+            : `New temporary password for ${tempPasswordBanner.email}`}
+          subtitle={tempPasswordBanner.emailSent
+            ? `We emailed these credentials to the user. On first sign-in they'll be required to choose a new password.`
+            : `Email service isn't configured — read this password to the user directly. On first sign-in they'll be required to choose a new password.`}
+          value={tempPasswordBanner.password}
+          mono
+          onDismiss={() => setTempPasswordBanner(null)}
+        />
+      )}
+
+      {resetLinkBanner && (
+        <CredentialBanner
+          title={`Password-reset email queued for ${resetLinkBanner.email}`}
+          subtitle={resetLinkBanner.emailSent
+            ? `We sent a reset link to the user. The URL below is the same one we emailed — keep as a fallback if email doesn't arrive.`
+            : `Email service isn't configured — copy this URL and send it to the user manually. Their old password is cleared.`}
+          value={resetLinkBanner.url}
+          onDismiss={() => setResetLinkBanner(null)}
+        />
       )}
 
       <section className="scorecard">
@@ -167,11 +226,30 @@ export default function TenantUsersClient({
                     {u.last_login_at ? new Date(u.last_login_at).toLocaleString() : '—'}
                   </td>
                   <td>
-                    <button className="action-btn danger"
-                      disabled={m.user_id === currentUserId}
-                      onClick={() => remove(m.user_id)}>
-                      {m.user_id === currentUserId ? 'You' : 'Remove'}
-                    </button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
+                      {m.user_id === currentUserId ? (
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>(you)</span>
+                      ) : (
+                        <>
+                          <button
+                            className="action-btn"
+                            title="Generate a fresh temporary password and force change on next login"
+                            onClick={() => resetPassword(m.user_id, u.email, 'temp_password')}
+                          >Reset password</button>
+                          <button
+                            className="action-btn"
+                            title="Email this user a password-reset link"
+                            style={{ fontSize: 11 }}
+                            onClick={() => resetPassword(m.user_id, u.email, 'email_link')}
+                          >Send reset email</button>
+                          <button className="action-btn danger"
+                            style={{ fontSize: 11 }}
+                            onClick={() => remove(m.user_id)}>
+                            Remove
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );
@@ -190,7 +268,7 @@ export default function TenantUsersClient({
           </div>
           <table className="score-table">
             <thead>
-              <tr><th>Email</th><th>Role</th><th>Expires</th><th>Issued</th></tr>
+              <tr><th>Email</th><th>Role</th><th>Expires</th><th>Issued</th><th></th></tr>
             </thead>
             <tbody>
               {invites.map((i) => (
@@ -199,6 +277,16 @@ export default function TenantUsersClient({
                   <td>{i.role}</td>
                   <td style={{ fontSize: 11, color: 'var(--text-mid)' }}>{new Date(i.expires_at).toLocaleDateString()}</td>
                   <td style={{ fontSize: 11, color: 'var(--text-mid)' }}>{new Date(i.created_at).toLocaleString()}</td>
+                  <td style={{ textAlign: 'right' }}>
+                    <button
+                      className="action-btn danger"
+                      onClick={() => {
+                        if (confirm(`Revoke pending invite for ${i.email}? The accept-invite link will stop working.`)) {
+                          revokeInvite(i.id);
+                        }
+                      }}
+                    >Revoke</button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -206,6 +294,54 @@ export default function TenantUsersClient({
         </section>
       )}
     </>
+  );
+}
+
+/**
+ * Reusable success-banner that surfaces a copyable credential value
+ * (temp password OR reset URL). The visual treatment is identical for
+ * both — only the title/subtitle text differs.
+ */
+function CredentialBanner({ title, subtitle, value, mono, onDismiss }: {
+  title: string;
+  subtitle: string;
+  value: string;
+  mono?: boolean;
+  onDismiss: () => void;
+}) {
+  return (
+    <div className="banner success" style={{
+      display: 'flex', alignItems: 'flex-start', gap: 12,
+      padding: '16px 18px', marginBottom: 18,
+    }}>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{title}</div>
+        <div style={{ fontSize: 11, color: 'var(--text-mid)', marginBottom: 8 }}>{subtitle}</div>
+        <input
+          readOnly
+          value={value}
+          onFocus={(e) => e.target.select()}
+          style={{
+            width: '100%', padding: '8px 10px',
+            background: 'var(--bg-mid)', border: '1px solid var(--bg-border)',
+            color: 'var(--text)',
+            fontFamily: 'Inter, sans-serif',
+            fontVariantNumeric: mono ? 'tabular-nums' : 'normal',
+            fontSize: mono ? 13 : 11,
+            fontWeight: mono ? 600 : 400,
+            letterSpacing: mono ? '0.02em' : 'normal',
+            borderRadius: 6,
+          }}
+        />
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <button className="action-btn primary" onClick={() => {
+          navigator.clipboard.writeText(value)
+            .catch(() => alert('Clipboard write failed; copy manually.'));
+        }}>Copy</button>
+        <button className="action-btn" onClick={onDismiss}>Dismiss</button>
+      </div>
+    </div>
   );
 }
 

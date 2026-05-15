@@ -57,6 +57,12 @@ export default function UserAdminClient({
   const [invites, setInvites] = useState<AdminInvite[]>(pendingInvites);
   const [openInvite, setOpenInvite] = useState(false);
   const [acceptUrl, setAcceptUrl] = useState<string | null>(null);
+  const [tempPasswordBanner, setTempPasswordBanner] = useState<{
+    email: string; password: string; emailSent: boolean;
+  } | null>(null);
+  const [resetLinkBanner, setResetLinkBanner] = useState<{
+    email: string; url: string; emailSent: boolean;
+  } | null>(null);
   const [filter, setFilter] = useState('');
 
   const tenantsById = useMemo(() => {
@@ -166,12 +172,70 @@ export default function UserAdminClient({
       { method: 'DELETE' });
   }
 
+  async function revokeInvite(invite_id: string) {
+    // Optimistic: drop from local state immediately so the row doesn't sit
+    // there with a "revoking…" spinner. Re-add on failure.
+    const previous = invites;
+    setInvites((s) => s.filter((i) => i.id !== invite_id));
+    const res = await fetch(`/api/admin/invites/${invite_id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      alert(j.error ?? 'revoke failed');
+      setInvites(previous);
+    }
+  }
+
+  async function resetPassword(user: AdminProfile, method: 'temp_password' | 'email_link') {
+    const verb = method === 'temp_password'
+      ? `Generate a new temporary password for ${user.email}? Their current password (if any) will stop working and every active session will be revoked.`
+      : `Send a password-reset email to ${user.email}? Their current password will be cleared and they'll need to use the link in the email to set a new one.`;
+    if (!confirm(verb)) return;
+    const res = await fetch(`/api/admin/users/${user.id}/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ method }),
+    });
+    const j = await res.json();
+    if (!res.ok || !j.ok) { alert(j.error ?? 'reset failed'); return; }
+    if (method === 'temp_password') {
+      setTempPasswordBanner({
+        email: j.email,
+        password: j.temp_password,
+        emailSent: !!j.email_sent,
+      });
+    } else {
+      setResetLinkBanner({
+        email: j.email,
+        url: j.reset_url,
+        emailSent: !!j.email_sent,
+      });
+    }
+  }
+
   // -- Render --------------------------------------------------------------
 
   return (
     <>
       {acceptUrl && (
         <AcceptUrlBanner url={acceptUrl} onDismiss={() => setAcceptUrl(null)} />
+      )}
+
+      {tempPasswordBanner && (
+        <TempPasswordBanner
+          email={tempPasswordBanner.email}
+          password={tempPasswordBanner.password}
+          emailSent={tempPasswordBanner.emailSent}
+          onDismiss={() => setTempPasswordBanner(null)}
+        />
+      )}
+
+      {resetLinkBanner && (
+        <ResetLinkBanner
+          email={resetLinkBanner.email}
+          url={resetLinkBanner.url}
+          emailSent={resetLinkBanner.emailSent}
+          onDismiss={() => setResetLinkBanner(null)}
+        />
       )}
 
       <div className="kpi-row" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
@@ -255,13 +319,32 @@ export default function UserAdminClient({
                     {u.last_login_at ? new Date(u.last_login_at).toLocaleString() : '—'}
                   </td>
                   <td onClick={(e) => e.stopPropagation()}>
-                    {u.status === 'disabled' ? (
-                      <button className="action-btn" onClick={() => setStatus(u, 'active')}>Re-enable</button>
-                    ) : u.id === currentUserId ? (
-                      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>(you)</span>
-                    ) : (
-                      <button className="action-btn danger" onClick={() => setStatus(u, 'disabled')}>Disable</button>
-                    )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
+                      {u.status === 'disabled' ? (
+                        <button className="action-btn" onClick={() => setStatus(u, 'active')}>Re-enable</button>
+                      ) : u.id === currentUserId ? (
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>(you)</span>
+                      ) : (
+                        <>
+                          <button
+                            className="action-btn"
+                            title="Generate a fresh temporary password and force change on next login"
+                            onClick={() => resetPassword(u, 'temp_password')}
+                          >Reset password</button>
+                          <button
+                            className="action-btn"
+                            title="Email this user a password-reset link"
+                            onClick={() => resetPassword(u, 'email_link')}
+                            style={{ fontSize: 11 }}
+                          >Send reset email</button>
+                          <button
+                            className="action-btn danger"
+                            onClick={() => setStatus(u, 'disabled')}
+                            style={{ fontSize: 11 }}
+                          >Disable</button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );
@@ -287,6 +370,7 @@ export default function UserAdminClient({
                 <th>Grants</th>
                 <th>Expires</th>
                 <th>Issued</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -306,6 +390,17 @@ export default function UserAdminClient({
                   </td>
                   <td style={{ fontSize: 11, color: 'var(--text-mid)' }}>
                     {new Date(i.created_at).toLocaleString()}
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <button
+                      className="action-btn danger"
+                      title="Revoke this invite so the accept-invite link stops working"
+                      onClick={() => {
+                        if (confirm(`Revoke pending invite for ${i.email}? The accept-invite link will stop working.`)) {
+                          revokeInvite(i.id);
+                        }
+                      }}
+                    >Revoke</button>
                   </td>
                 </tr>
               ))}
@@ -344,6 +439,89 @@ function Pill({ color, children, style }: { color: string; children: React.React
 
 function StatusPill({ status }: { status: AdminProfile['status'] }) {
   return <Pill color={STATUS_COLOR[status]}>{status}</Pill>;
+}
+
+function TempPasswordBanner({ email, password, emailSent, onDismiss }: {
+  email: string; password: string; emailSent: boolean; onDismiss: () => void;
+}) {
+  return (
+    <div className="banner success" style={{
+      display: 'flex', alignItems: 'flex-start', gap: 12,
+      padding: '16px 18px', marginBottom: 18,
+    }}>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>
+          New temporary password for {email}
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-mid)', marginBottom: 8 }}>
+          {emailSent
+            ? 'We also emailed these credentials to the user. They\'ll be forced to set a new password on their next sign-in.'
+            : 'Email service is not configured — read this password to the user directly. They\'ll be forced to set a new password on their next sign-in.'}
+        </div>
+        <input
+          readOnly
+          value={password}
+          onFocus={(e) => e.target.select()}
+          style={{
+            width: '100%', padding: '8px 10px',
+            background: 'var(--bg-mid)', border: '1px solid var(--bg-border)',
+            color: 'var(--text)', fontFamily: 'Inter, sans-serif', fontVariantNumeric: 'tabular-nums',
+            fontSize: 13, fontWeight: 600, letterSpacing: '0.02em',
+            borderRadius: 6,
+          }}
+        />
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <button className="action-btn primary" onClick={() => {
+          navigator.clipboard.writeText(password)
+            .then(() => { /* good */ })
+            .catch(() => alert('Clipboard write failed; copy the password manually.'));
+        }}>Copy</button>
+        <button className="action-btn" onClick={onDismiss}>Dismiss</button>
+      </div>
+    </div>
+  );
+}
+
+function ResetLinkBanner({ email, url, emailSent, onDismiss }: {
+  email: string; url: string; emailSent: boolean; onDismiss: () => void;
+}) {
+  return (
+    <div className="banner success" style={{
+      display: 'flex', alignItems: 'flex-start', gap: 12,
+      padding: '16px 18px', marginBottom: 18,
+    }}>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>
+          Password-reset email queued for {email}
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-mid)', marginBottom: 8 }}>
+          {emailSent
+            ? 'We sent a reset link to the user. Their old password is cleared; they must use the link to set a new one. The URL below is the same one we emailed — copy if needed as a fallback.'
+            : 'Email service is not configured — copy the URL below and send it to the user manually. Their old password is already cleared.'}
+        </div>
+        <input
+          readOnly
+          value={url}
+          onFocus={(e) => e.target.select()}
+          style={{
+            width: '100%', padding: '8px 10px',
+            background: 'var(--bg-mid)', border: '1px solid var(--bg-border)',
+            color: 'var(--text)', fontFamily: 'Inter, sans-serif', fontSize: 11,
+            borderRadius: 6,
+          }}
+        />
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <button className="action-btn primary" onClick={() => {
+          navigator.clipboard.writeText(url)
+            .then(() => { /* good */ })
+            .catch(() => alert('Clipboard write failed; copy the URL manually.'));
+        }}>Copy URL</button>
+        <button className="action-btn" onClick={onDismiss}>Dismiss</button>
+      </div>
+    </div>
+  );
 }
 
 function AcceptUrlBanner({ url, onDismiss }: { url: string; onDismiss: () => void }) {
