@@ -18,7 +18,7 @@ export default async function AdminTenantsPage() {
   const supabase = createServiceRoleClient();
   const [tenantsRes, membershipsRes] = await Promise.all([
     supabase.from('tenants')
-      .select('id, slug, hostname, display_name, brand_config, created_at')
+      .select('id, slug, hostname, display_name, brand_config, is_admin_tenant, created_at')
       .order('display_name'),
     supabase.from('memberships').select('tenant_id, role'),
   ]);

@@ -15,7 +15,12 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   const cu = await getCurrentUser();
   if (!isPlatformAdmin(cu)) return bad('platform admin required', 403);
 
-  let body: { display_name?: string; hostname?: string; brand_config?: Record<string, unknown> };
+  let body: {
+    display_name?: string;
+    hostname?: string;
+    brand_config?: Record<string, unknown>;
+    is_admin_tenant?: boolean;
+  };
   try { body = await request.json(); } catch { return bad('invalid JSON'); }
 
   const patch: Record<string, unknown> = {};
@@ -26,6 +31,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
   if ('hostname' in body) patch.hostname = body.hostname?.trim() || null;
   if (body.brand_config && typeof body.brand_config === 'object') patch.brand_config = body.brand_config;
+  if (typeof body.is_admin_tenant === 'boolean') patch.is_admin_tenant = body.is_admin_tenant;
 
   if (Object.keys(patch).length === 0) return bad('no patchable fields');
 

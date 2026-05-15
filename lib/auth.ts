@@ -318,6 +318,25 @@ export async function getCurrentUserByToken(token: string): Promise<CurrentUser 
     .from('memberships')
     .select('user_id, tenant_id, role, created_at')
     .eq('user_id', user.id);
+  const memList = (memberships ?? []) as CawMembership[];
+
+  // Admin-tenant elevation. Membership in ANY tenant flagged
+  // is_admin_tenant=true confers effective platform-admin status — this is
+  // how the operator adds admins by "inviting them to the USI tenant"
+  // instead of poking the per-user profiles.is_platform_admin flag.
+  // We resolve the elevation here so the rest of the codebase keeps using
+  // a single is_platform_admin boolean and doesn't need to know about
+  // admin-tenant memberships.
+  let effectiveIsPlatformAdmin = !!user.is_platform_admin;
+  if (!effectiveIsPlatformAdmin && memList.length > 0) {
+    const tenantIds = memList.map((m) => m.tenant_id);
+    const { data: adminTenants } = await supabase
+      .from('tenants')
+      .select('id')
+      .eq('is_admin_tenant', true)
+      .in('id', tenantIds);
+    if ((adminTenants ?? []).length > 0) effectiveIsPlatformAdmin = true;
+  }
 
   // Sliding refresh: touch last_seen_at + slide expires_at forward by the
   // full TTL if it hasn't been touched in the last hour.
@@ -333,8 +352,8 @@ export async function getCurrentUserByToken(token: string): Promise<CurrentUser 
   }
 
   return {
-    user: user as CawUser,
-    memberships: (memberships ?? []) as CawMembership[],
+    user: { ...user, is_platform_admin: effectiveIsPlatformAdmin } as CawUser,
+    memberships: memList,
     session_id: session.id,
     session_expires_at: session.expires_at,
   };
