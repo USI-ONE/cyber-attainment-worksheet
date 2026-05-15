@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import PolicyDocumentsTab from '@/components/PolicyDocumentsTab';
-import type { PolicyDocument } from '@/lib/supabase/types';
+import type { CurrentScore, FrameworkDefinition, PolicyDocument } from '@/lib/supabase/types';
 
 interface Section {
   id: string;
@@ -29,9 +29,13 @@ const DEFAULT_SECTIONS = [
 export default function PolicyClient({
   initialSections,
   initialDocuments = [],
+  frameworkDefinition = null,
+  scoresByControl = {},
 }: {
   initialSections: Section[];
   initialDocuments?: PolicyDocument[];
+  frameworkDefinition?: FrameworkDefinition | null;
+  scoresByControl?: Record<string, Partial<CurrentScore>>;
 }) {
   const [sections, setSections] = useState<Section[]>(initialSections);
   const [editing, setEditing] = useState<string | null>(null);
@@ -53,7 +57,11 @@ export default function PolicyClient({
     return (
       <>
         {tabBar}
-        <PolicyDocumentsTab initialDocuments={initialDocuments} />
+        <PolicyDocumentsTab
+          initialDocuments={initialDocuments}
+          frameworkDefinition={frameworkDefinition}
+          scoresByControl={scoresByControl}
+        />
       </>
     );
   }
