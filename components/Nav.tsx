@@ -7,10 +7,13 @@ import { useEffect, useRef, useState } from 'react';
 /**
  * Grouped, dropdown-style navigation for the tenant portal.
  *
- * Static groups: Assess / Plan / Operate / Govern. Conditional groups:
- *   - Settings (any user who can administer THIS tenant — editors + platform
- *     admins) — local tenant administration.
- *   - Admin    (platform admins only) — platform-wide administration.
+ * Static groups: Assess / Plan / Operate / Govern. Conditional group:
+ *   - Settings — visible to any signed-in user, but only ever shows
+ *     "My Account" on a tenant deploy. User-management (invite users,
+ *     reset passwords, revoke invites, tenant administration) lives at
+ *     the operator hub, not on individual tenant portals. This keeps
+ *     identity centralized: every user signs in once at the hub and
+ *     SSOs into the tenant they're assigned to.
  *
  * The Portfolio Hub does not appear here — it lives on the operator-only
  * deployment (caw-portfolio-hub) with no tenant chrome.
@@ -67,30 +70,23 @@ const STATIC_GROUPS: NavGroup[] = [
   },
 ];
 
-/** Settings group is split: items that apply to ANY signed-in user
- *  ("My Account") show whenever a session exists; tenant-administration
- *  items ("Users") only show for editors / platform admins. The
- *  buildSettingsGroup helper assembles the visible item list at render. */
+/** Settings group on a tenant deploy is now "My Account only" — every
+ *  user-management responsibility (invite, role change, password reset,
+ *  invite revoke, platform-wide admin) is owned by the operator hub. The
+ *  canAdminister prop is still threaded through so we can re-introduce a
+ *  per-tenant settings item later if needed; today it has no effect on
+ *  what renders here. */
 const SETTINGS_GROUP_ID = 'settings';
-function buildSettingsGroup({ signedIn, canAdminister }: { signedIn: boolean; canAdminister: boolean }): NavGroup | null {
+function buildSettingsGroup({ signedIn }: { signedIn: boolean }): NavGroup | null {
   if (!signedIn) return null;
-  const items: NavItem[] = [
-    { href: '/settings/me', label: 'My Account', tag: 'Change password, view your access' },
-  ];
-  if (canAdminister) {
-    items.push({ href: '/settings/users', label: 'Users', tag: 'Manage this tenant’s members + invites' });
-  }
-  return { id: SETTINGS_GROUP_ID, label: 'Settings', items };
+  return {
+    id: SETTINGS_GROUP_ID,
+    label: 'Settings',
+    items: [
+      { href: '/settings/me', label: 'My Account', tag: 'Change password, view your access' },
+    ],
+  };
 }
-
-const ADMIN_GROUP: NavGroup = {
-  id: 'admin',
-  label: 'Admin',
-  items: [
-    { href: '/admin/users',   label: 'Users',   tag: 'Platform-wide user administration' },
-    { href: '/admin/tenants', label: 'Tenants', tag: 'Platform-wide tenant administration' },
-  ],
-};
 
 export default function Nav({
   signedIn = false,
@@ -110,9 +106,12 @@ export default function Nav({
   // shows for any signed-in user (so viewers can reach My Account);
   // Admin stays platform-admin-only.
   const groups: NavGroup[] = [...STATIC_GROUPS];
-  const settings = buildSettingsGroup({ signedIn, canAdminister });
+  const settings = buildSettingsGroup({ signedIn });
   if (settings) groups.push(settings);
-  if (isPlatformAdmin) groups.push(ADMIN_GROUP);
+  // Admin nav group intentionally NOT injected here — admin tools live at
+  // the operator hub (caw-portfolio-hub). Even platform admins reach them
+  // from the hub, not from each tenant deploy.
+  void canAdminister; void isPlatformAdmin;
 
   function findGroup(pn: string | null): string | null {
     if (!pn) return null;

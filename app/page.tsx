@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { resolveTenant } from '@/lib/tenant';
 import { loadActiveFramework } from '@/lib/framework';
 import { createServiceRoleClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/auth';
 import type { CurrentScore } from '@/lib/supabase/types';
 import SummaryDashboard from '@/components/SummaryDashboard';
 import AttentionFeed from '@/components/AttentionFeed';
@@ -11,10 +12,19 @@ import { computeAttention } from '@/lib/attention';
 export const dynamic = 'force-dynamic';
 
 export default async function Page() {
-  // Operator deploy: there is no tenant scoring to show; route the user to
-  // the Portfolio Hub which is the actual landing page for that deployment.
+  // Operator deploy: route by role.
+  //   - Platform admins → /hub (cross-tenant portfolio view, the existing landing).
+  //   - Anyone else (tenant editors/viewers signed into the hub) → /my-tenants
+  //     so they see a picker of tenants they can SSO into, instead of the
+  //     operator portfolio they shouldn't be looking at.
+  //   - Anonymous → middleware will already have redirected them to /auth/signin.
   if (process.env.OPERATOR_MODE === 'true') {
-    redirect('/hub');
+    const cu = await getCurrentUser();
+    if (cu?.user.is_platform_admin) {
+      redirect('/hub');
+    } else {
+      redirect('/my-tenants');
+    }
   }
 
   const host = headers().get('host') ?? undefined;

@@ -2,9 +2,12 @@ import SignOutButton from '@/components/SignOutButton';
 import type { Tenant } from '@/lib/supabase/types';
 import type { CurrentUser } from '@/lib/auth';
 
-// Operator Portfolio Hub URL — hard-coded for now until per-user config
-// surfaces a preferred entry point.
-const PORTFOLIO_HUB_URL = 'https://caw-portfolio-hub.vercel.app/hub';
+// Operator hub URLs — hard-coded for now until per-user config surfaces a
+// preferred entry point. The Portfolio link is for platform admins; the
+// "Switch tenant" link points at the My Tenants picker any signed-in user
+// can use to hop between their accessible tenants via SSO.
+const PORTFOLIO_HUB_URL  = 'https://caw-portfolio-hub.vercel.app/hub';
+const MY_TENANTS_HUB_URL = 'https://caw-portfolio-hub.vercel.app/my-tenants';
 
 /** Pick the role label + color for the chip badge based on the user's
  *  effective scope on the current tenant. Platform admin trumps tenant
@@ -55,14 +58,25 @@ export default function Header({
           )}
         </div>
 
-        {/* Portfolio Hub back-link — only useful for platform admins. */}
+        {/* Hub back-links — every signed-in user gets "Switch tenant" so they
+            can hop to another assigned tenant via SSO without re-signing in;
+            platform admins also get the operator Portfolio Hub link. */}
+        {currentUser && (
+          <a
+            href={MY_TENANTS_HUB_URL}
+            className="hub-back-link"
+            title="Switch to another tenant you have access to"
+          >
+            ← Switch tenant
+          </a>
+        )}
         {currentUser?.user.is_platform_admin && (
           <a
             href={PORTFOLIO_HUB_URL}
             className="hub-back-link"
             title="Back to the operator Portfolio Hub"
           >
-            ← Portfolio Hub
+            Portfolio Hub
           </a>
         )}
 

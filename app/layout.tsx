@@ -138,16 +138,21 @@ export default async function RootLayout({
             </header>
             {/* Operator-mode top-level nav. Hub is the home; Admin pages are
                 only visible to signed-in platform admins. */}
-            {isPlatformAdmin && (
+            {currentUser && (
               <nav style={{
                 padding: '6px 20px',
                 borderBottom: '1px solid var(--bg-border)',
                 display: 'flex', gap: 4,
                 background: 'rgba(245,247,251,0.85)',
               }}>
-                <a href="/hub" className="nav-tab" style={{ padding: '8px 14px' }}>Portfolio</a>
-                <a href="/admin/users" className="nav-tab" style={{ padding: '8px 14px' }}>Users</a>
-                <a href="/admin/tenants" className="nav-tab" style={{ padding: '8px 14px' }}>Tenants</a>
+                <a href="/my-tenants" className="nav-tab" style={{ padding: '8px 14px' }}>My Tenants</a>
+                {isPlatformAdmin && (
+                  <>
+                    <a href="/hub" className="nav-tab" style={{ padding: '8px 14px' }}>Portfolio</a>
+                    <a href="/admin/users" className="nav-tab" style={{ padding: '8px 14px' }}>Users</a>
+                    <a href="/admin/tenants" className="nav-tab" style={{ padding: '8px 14px' }}>Tenants</a>
+                  </>
+                )}
               </nav>
             )}
           </>
