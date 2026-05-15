@@ -60,7 +60,8 @@ const STATIC_GROUPS: NavGroup[] = [
     items: [
       { href: '/policy',    label: 'Policy Documents',   tag: 'Versioned policy library' },
       { href: '/evidence',  label: 'Evidence Library',   tag: 'Audit-ready artifact store' },
-      { href: '/crosswalk', label: 'Compliance Crosswalk', tag: 'Score once, see ISO/CIS/HIPAA coverage' },
+      { href: '/compliance', label: 'Compliance Progress', tag: 'Per-framework attainment dashboard' },
+      { href: '/crosswalk', label: 'Compliance Crosswalk', tag: 'Per-control mapping drill-down' },
       { href: '/kpis',      label: 'Board KPIs',         tag: 'Executive metrics' },
     ],
   },
