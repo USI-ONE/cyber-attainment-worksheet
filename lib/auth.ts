@@ -80,6 +80,12 @@ export interface CawUser {
   display_name: string | null;
   is_platform_admin: boolean;
   status: 'active' | 'disabled' | 'invited';
+  /**
+   * Forced password-change flag — true when an admin issued a temp-password
+   * invite. The user must hit /auth/change-password before any other UI is
+   * usable. Cleared by /api/me/password once they pick a real password.
+   */
+  password_must_change: boolean;
   last_login_at: string | null;
   created_at: string;
   updated_at: string;
@@ -116,6 +122,54 @@ export async function hashPassword(password: string): Promise<string> {
     salt.toString('hex'),
     derived.toString('hex'),
   ].join('$');
+}
+
+/**
+ * Generate a single-use temporary password for the invite flow.
+ *
+ * Strict constraints:
+ *   - 14 chars long (one over the 12 minimum hashPassword enforces, so the
+ *     temp value can be typed out at the door without bumping into the floor)
+ *   - Exactly one lowercase, one uppercase, one digit, one symbol
+ *   - Symbol set picked to read clearly in an email or over a phone call:
+ *     no l/I/1/0/O confusables and no characters that break URL encoding
+ *     on the off-chance someone pastes it into a query string by accident
+ *
+ * Returns the cleartext password. Caller is responsible for hashing it,
+ * persisting the hash, and getting the cleartext to the user once (the
+ * admin/users response body + the invite email).
+ */
+export function generateTempPassword(): string {
+  const LOWER = 'abcdefghjkmnpqrstuvwxyz';   // no i/l/o
+  const UPPER = 'ABCDEFGHJKMNPQRSTUVWXYZ';   // no I/L/O
+  const DIGIT = '23456789';                  // no 0/1
+  const SYMBOL = '!@#$%&*-_=+';              // URL-safe, screen-friendly
+  const ALL = LOWER + UPPER + DIGIT + SYMBOL;
+
+  const pickFrom = (pool: string): string => {
+    // randomBytes(1) gives a 0..255 byte; rejection-sampling out of the
+    // pool length keeps the distribution uniform without modulo bias.
+    while (true) {
+      const b = randomBytes(1)[0];
+      const max = Math.floor(256 / pool.length) * pool.length;
+      if (b < max) return pool[b % pool.length];
+    }
+  };
+
+  // Seed with one from each category to guarantee class coverage, then
+  // fill the rest from the full pool.
+  const chars: string[] = [
+    pickFrom(LOWER), pickFrom(UPPER), pickFrom(DIGIT), pickFrom(SYMBOL),
+  ];
+  while (chars.length < 14) chars.push(pickFrom(ALL));
+
+  // Fisher–Yates shuffle so the class-coverage seed doesn't betray
+  // its positions to anyone reading the cleartext.
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = randomBytes(1)[0] % (i + 1);
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join('');
 }
 
 export async function verifyPassword(password: string, stored: string): Promise<boolean> {
@@ -254,7 +308,7 @@ export async function getCurrentUserByToken(token: string): Promise<CurrentUser 
 
   const { data: user } = await supabase
     .from('profiles')
-    .select('id, email, display_name, is_platform_admin, status, last_login_at, created_at, updated_at')
+    .select('id, email, display_name, is_platform_admin, status, password_must_change, last_login_at, created_at, updated_at')
     .eq('id', session.user_id)
     .maybeSingle();
   if (!user) return null;

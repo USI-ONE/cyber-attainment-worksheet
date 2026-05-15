@@ -93,13 +93,32 @@ function urlBlock(url: string): string {
 }
 
 // =============================================================================
-// Invite — sent when an admin creates a user and issues an accept token
+// Invite — sent when an admin creates a user with a generated temp password
 // =============================================================================
 
+/**
+ * Temp-password invite. The user logs in with the credentials in this email
+ * and is forced through /auth/change-password on first login.
+ *
+ * Notes for future maintainers:
+ *   - The temp password is rendered in a mono-style block + a copy-friendly
+ *     line in the text part. Don't change to anything that wraps it across
+ *     lines — recipients on mobile mail clients regularly copy by long-press
+ *     and lines that wrap end up with stray whitespace in the clipboard.
+ *   - The sign-in URL is tenant-scoped (or hub-scoped for platform-admin
+ *     invites) so the recipient lands on the right deploy and gets a session
+ *     cookie that's actually valid for the work they need to do.
+ */
 export function renderInviteEmail({
-  inviteUrl, tenantName, role, isPlatformAdmin, inviterName,
+  signInUrl, email, tempPassword, tenantName, role, isPlatformAdmin, inviterName,
 }: {
-  inviteUrl: string;
+  signInUrl: string;
+  /** Recipient email — included verbatim so the user knows which account
+   *  to sign in as (helpful when an admin emails a generic mailbox). */
+  email: string;
+  /** Cleartext temporary password — must be displayed so the user can sign
+   *  in. The user is forced through /auth/change-password on first login. */
+  tempPassword: string;
   /** "Universal Systems Inc." — null if the invite is platform-admin-only. */
   tenantName: string | null;
   /** "editor" / "viewer" — null if no tenant grant. */
@@ -114,17 +133,31 @@ export function renderInviteEmail({
   if (tenantName && role) grants.push(`${role.charAt(0).toUpperCase() + role.slice(1)} on ${tenantName}`);
   const grantSummary = grants.length === 0 ? 'Access pending' : grants.join('<br>');
 
-  const preheader = `You've been invited to ${BRAND.productName}. Set a password to activate your account.`;
+  const preheader = `Your ${BRAND.productName} account is ready. Use the temporary password below to sign in.`;
+
+  const credentialsBlock = `
+    <div style="background:${BRAND.bgPage};border:1px solid #E2E8F0;border-radius:8px;padding:14px 16px;margin:14px 0;">
+      <div style="font-size:11px;color:${BRAND.muted};text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">
+        Sign in with
+      </div>
+      <div style="font-size:13px;color:${BRAND.body};margin-bottom:8px;">
+        <strong>Email:</strong> ${escapeHtml(email)}
+      </div>
+      <div style="font-size:13px;color:${BRAND.body};">
+        <strong>Temporary password:</strong>
+        <span style="display:inline-block;margin-left:4px;padding:3px 8px;background:#FFFFFF;border:1px solid #E2E8F0;border-radius:4px;font-family:'Inter',sans-serif;font-variant-numeric:tabular-nums;font-weight:600;letter-spacing:.02em;color:${BRAND.body};">${escapeHtml(tempPassword)}</span>
+      </div>
+    </div>`;
 
   const html = shell({
     preheader,
     body: `
       <h1 style="font-family:'Inter',sans-serif;font-weight:600;font-size:22px;margin:0 0 6px;color:${BRAND.body};">
-        You're invited to ${BRAND.productName}
+        Your ${BRAND.productName} account is ready
       </h1>
       <p style="margin:0 0 14px;color:${BRAND.muted};font-size:13px;">
-        ${inviterName ? `${escapeHtml(inviterName)} ` : 'An administrator '}has set up an account for you.
-        Click the button below to set a password and sign in.
+        ${inviterName ? `${escapeHtml(inviterName)} ` : 'An administrator '}has created an account for you. Sign in with the
+        temporary password below — you'll be asked to set a new one of your own choosing on first sign-in.
       </p>
 
       <div style="background:${BRAND.bgPage};border-radius:8px;padding:12px 14px;font-size:13px;color:${BRAND.body};margin-bottom:8px;">
@@ -132,38 +165,46 @@ export function renderInviteEmail({
         ${grantSummary}
       </div>
 
-      ${button({ href: inviteUrl, label: 'Set my password' })}
+      ${credentialsBlock}
+
+      ${button({ href: signInUrl, label: 'Sign in' })}
 
       <p style="margin:0;color:${BRAND.muted};font-size:12px;">
-        The link is single-use and expires in 14 days. If it doesn't work, your administrator can issue a fresh one.
+        For your security: the temporary password is single-use. The first
+        time you sign in we'll require you to choose a new one before you
+        can do anything else in ${BRAND.productName}.
       </p>
       <p style="margin:14px 0 4px;color:${BRAND.muted};font-size:11px;">
         Trouble with the button? Copy this URL into your browser:
       </p>
-      ${urlBlock(inviteUrl)}
+      ${urlBlock(signInUrl)}
     `,
   });
 
   const text = [
-    `You're invited to ${BRAND.productName}`,
+    `Your ${BRAND.productName} account is ready`,
     '',
-    `${inviterName ? inviterName + ' ' : 'An administrator '}has set up an account for you.`,
-    'Click the link below to set a password and sign in.',
+    `${inviterName ? inviterName + ' ' : 'An administrator '}has created an account for you. Sign in with the temporary`,
+    `password below — you'll be asked to set a new one of your own choosing on first sign-in.`,
     '',
     'YOUR ACCESS',
     isPlatformAdmin ? 'Platform administrator (every tenant + admin tools)' : '',
     tenantName && role ? `${role.charAt(0).toUpperCase() + role.slice(1)} on ${tenantName}` : '',
     '',
-    inviteUrl,
+    'SIGN IN WITH',
+    `Email:              ${email}`,
+    `Temporary password: ${tempPassword}`,
     '',
-    'The link is single-use and expires in 14 days.',
-    'If it doesn\'t work, ask your administrator to issue a fresh invite.',
+    `Sign-in URL: ${signInUrl}`,
+    '',
+    'The temporary password is single-use. On first sign-in we require you to',
+    'set a new password before you can do anything else.',
   ].filter(Boolean).join('\n');
 
   return {
     subject: tenantName
-      ? `You're invited to ${tenantName} on ${BRAND.productName}`
-      : `You're invited to ${BRAND.productName}`,
+      ? `Your ${tenantName} ${BRAND.productName} account is ready`
+      : `Your ${BRAND.productName} account is ready`,
     html, text,
   };
 }

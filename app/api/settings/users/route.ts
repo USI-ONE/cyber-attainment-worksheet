@@ -2,7 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { resolveTenant } from '@/lib/tenant';
 import {
-  audit, canAdministerTenant, getCurrentUser, isPlatformAdmin, issueInvite,
+  audit, canAdministerTenant, generateTempPassword, getCurrentUser,
+  hashPassword, isPlatformAdmin,
 } from '@/lib/auth';
 import { sendEmail, isEmailConfigured } from '@/lib/email';
 import { renderInviteEmail } from '@/lib/email-templates';
@@ -80,52 +81,78 @@ export async function POST(request: NextRequest) {
 
   const supabase = createServiceRoleClient();
 
-  // Pre-create a profile row in 'invited' state if not already known.
+  // Temp-password invite flow — same shape as /api/admin/users POST, but
+  // bound to THIS tenant and locked to non-platform-admin grants.
+  const tempPassword = generateTempPassword();
+  const passwordHash = await hashPassword(tempPassword);
+  const now = new Date().toISOString();
+
   const { data: existing } = await supabase
     .from('profiles')
     .select('id')
     .ilike('email', email)
     .maybeSingle();
+
+  let userId: string;
   if (!existing) {
-    await supabase.from('profiles').insert({
-      email,
-      display_name: body.display_name?.trim() || null,
-      status: 'invited',
-      invited_by: cu!.user.id,
-      invited_at: new Date().toISOString(),
-    });
+    const { data: inserted, error: insErr } = await supabase
+      .from('profiles')
+      .insert({
+        email,
+        display_name: body.display_name?.trim() || null,
+        status: 'active',
+        password_hash: passwordHash,
+        password_must_change: true,
+        password_changed_at: now,
+        invited_by: cu!.user.id,
+        invited_at: now,
+      })
+      .select('id')
+      .single();
+    if (insErr || !inserted) return bad(insErr?.message ?? 'profile insert failed', 500);
+    userId = inserted.id;
+  } else {
+    userId = existing.id;
+    const updates: Record<string, unknown> = {
+      password_hash: passwordHash,
+      password_must_change: true,
+      password_changed_at: now,
+      status: 'active',
+    };
+    if (body.display_name?.trim()) updates.display_name = body.display_name.trim();
+    await supabase.from('profiles').update(updates).eq('id', userId);
   }
 
-  const { token, invite } = await issueInvite({
-    email,
-    invited_by: cu!.user.id,
+  // Apply the membership for this tenant. Upsert so re-invites with a
+  // changed role take effect.
+  await supabase.from('memberships').upsert({
+    user_id: userId,
     tenant_id: tenant.id,
     role: body.role,
-    grant_platform_admin: false,
-    supabase,
-  });
+  }, { onConflict: 'user_id,tenant_id' });
 
   await audit({
-    actor_id: cu!.user.id, tenant_id: tenant.id, action: 'invite_issued',
-    detail: { email, role: body.role, by_platform_admin: isPlatformAdmin(cu) },
+    actor_id: cu!.user.id,
+    target_id: userId,
+    tenant_id: tenant.id,
+    action: 'invite_issued',
+    detail: {
+      email,
+      role: body.role,
+      by_platform_admin: isPlatformAdmin(cu),
+      flow: 'temp_password',
+    },
   });
 
-  // Construct an explicit tenant-deploy URL. /settings/users is already
-  // executing on a tenant deploy, so window.location.origin would do the
-  // right thing — but if the tenant has a custom hostname configured
-  // (different from the Vercel default), prefer that. Falls back to the
-  // standard caw-<slug>.vercel.app if no custom hostname is set.
   const tenantHost = tenant.hostname || `caw-${tenant.slug}.vercel.app`;
-  const accept_url_path = `/auth/accept-invite?token=${token}`;
-  const accept_url = `https://${tenantHost}${accept_url_path}`;
+  const signInUrl = `https://${tenantHost}/auth/signin`;
 
-  // Send the invite email if Resend is configured. Failure to send does
-  // NOT fail the request — the URL is still surfaced in the response so
-  // the inviter can fall back to copy/paste.
   let email_sent = false;
   if (isEmailConfigured()) {
     const { subject, html, text } = renderInviteEmail({
-      inviteUrl: accept_url,
+      signInUrl,
+      email,
+      tempPassword,
       tenantName: tenant.display_name,
       role: body.role,
       isPlatformAdmin: false,
@@ -140,10 +167,11 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     ok: true,
-    invite: { id: invite.id, email, role: body.role, expires_at: invite.expires_at },
-    invite_token: token,
-    accept_url_path,
-    accept_url,
+    user_id: userId,
+    email,
+    role: body.role,
+    temp_password: tempPassword,
+    sign_in_url: signInUrl,
     email_sent,
   });
 }

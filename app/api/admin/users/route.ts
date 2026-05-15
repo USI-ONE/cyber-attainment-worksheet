@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import {
-  audit, getCurrentUser, isPlatformAdmin, issueInvite,
+  audit, generateTempPassword, getCurrentUser, hashPassword,
+  isPlatformAdmin,
 } from '@/lib/auth';
 import { sendEmail, isEmailConfigured } from '@/lib/email';
 import { renderInviteEmail } from '@/lib/email-templates';
@@ -89,56 +90,90 @@ export async function POST(request: NextRequest) {
     tenantHost = t.hostname || `caw-${t.slug}.vercel.app`;
   }
 
-  // Pre-create a profile row in 'invited' state (so memberships can FK to
-  // it on acceptance). Skip if one already exists for this email.
+  // Temp-password invite flow:
+  //
+  //   1. Generate a strong one-time password (14 chars, mixed-class, no
+  //      l/I/1/0/O confusables — see generateTempPassword in lib/auth).
+  //   2. Hash it with the same scrypt routine as a real password.
+  //   3. Upsert the profile with status='active' (so login works immediately),
+  //      password_hash set, and password_must_change=true so the user gets
+  //      forced to /auth/change-password on first login.
+  //   4. Apply the membership / platform-admin grant right now — there's no
+  //      separate "accept" step in this flow.
+  //   5. Email the user the temp credentials so they can sign in. The admin
+  //      also gets the temp password back in the response for read-aloud /
+  //      copy-paste situations.
+  const tempPassword = generateTempPassword();
+  const passwordHash = await hashPassword(tempPassword);
+  const now = new Date().toISOString();
+
   const { data: existing } = await supabase
     .from('profiles')
     .select('id')
     .ilike('email', email)
     .maybeSingle();
+
+  let userId: string;
   if (!existing) {
-    await supabase.from('profiles').insert({
-      email,
-      display_name: body.display_name?.trim() || null,
-      status: 'invited',
-      invited_by: cu!.user.id,
-      invited_at: new Date().toISOString(),
-    });
+    const { data: inserted, error: insErr } = await supabase
+      .from('profiles')
+      .insert({
+        email,
+        display_name: body.display_name?.trim() || null,
+        status: 'active',
+        password_hash: passwordHash,
+        password_must_change: true,
+        password_changed_at: now,
+        invited_by: cu!.user.id,
+        invited_at: now,
+      })
+      .select('id')
+      .single();
+    if (insErr || !inserted) return bad(insErr?.message ?? 'profile insert failed', 500);
+    userId = inserted.id;
+  } else {
+    // Existing user: replace the password with the temp one and force a
+    // change. Re-issuing a temp password is the operator's "reset this
+    // user's credentials" path — equivalent to forgot-password but
+    // initiated by an admin.
+    userId = existing.id;
+    const updates: Record<string, unknown> = {
+      password_hash: passwordHash,
+      password_must_change: true,
+      password_changed_at: now,
+      status: 'active',
+    };
+    if (body.display_name?.trim()) updates.display_name = body.display_name.trim();
+    await supabase.from('profiles').update(updates).eq('id', userId);
   }
 
-  const { token, invite } = await issueInvite({
-    email,
-    invited_by: cu!.user.id,
-    tenant_id: tenantId,
-    role,
-    grant_platform_admin: grantPlatform,
-    supabase,
-  });
+  // Apply the platform-admin grant if requested.
+  if (grantPlatform) {
+    await supabase.from('profiles').update({ is_platform_admin: true }).eq('id', userId);
+  }
+
+  // Apply the tenant membership if specified. ON CONFLICT updates the role
+  // so re-inviting an existing user with a new role works as expected.
+  if (tenantId && role) {
+    await supabase.from('memberships').upsert({
+      user_id: userId,
+      tenant_id: tenantId,
+      role,
+    }, { onConflict: 'user_id,tenant_id' });
+  }
 
   await audit({
     actor_id: cu!.user.id,
+    target_id: userId,
     tenant_id: tenantId,
     action: 'invite_issued',
     detail: {
       email, role, grant_platform_admin: grantPlatform,
-      invite_id: invite.id,
+      flow: 'temp_password',
     },
   });
 
-  // Compose the accept URL with the right host:
-  //   - tenant-scoped invite WITHOUT platform admin → tenant deploy host
-  //     (so the invitee's session lands where their role applies)
-  //   - platform-admin invite (with or without a tenant) → null, client
-  //     falls back to window.location.origin which is the operator hub
-  //     in practice — exactly where a platform admin wants their session
-  const accept_url_path = `/auth/accept-invite?token=${token}`;
-  const accept_url = (tenantHost && !grantPlatform)
-    ? `https://${tenantHost}${accept_url_path}`
-    : null;
-
-  // Resolve the tenant display name once for the email body. We don't pull
-  // it inside the .insert chain above because we needed the FK validation
-  // result; reuse the existing supabase client.
+  // Resolve the tenant display name once for the email body.
   let tenantName: string | null = null;
   if (tenantId) {
     const { data: t } = await supabase
@@ -146,19 +181,21 @@ export async function POST(request: NextRequest) {
     tenantName = (t as { display_name: string } | null)?.display_name ?? null;
   }
 
-  // Build the URL we'll put in the email. Prefer the tenant-scoped URL
-  // when this is a tenant-only invite; for platform-admin invites fall
-  // back to the operator hub, which is where the inviter is acting from.
+  // Build the sign-in URL we put in the email. Tenant-scoped invite without
+  // platform admin → tenant deploy. Platform admin → operator hub (request
+  // origin). The user's session is set when they sign in on that origin.
+  const signInPath = '/auth/signin';
   const requestOrigin = `https://${request.headers.get('host') ?? 'caw-portfolio-hub.vercel.app'}`;
-  const emailUrl = accept_url ?? `${requestOrigin}${accept_url_path}`;
+  const signInUrl = (tenantHost && !grantPlatform)
+    ? `https://${tenantHost}${signInPath}`
+    : `${requestOrigin}${signInPath}`;
 
-  // Send the invite email if the integration is configured. The DB write
-  // already succeeded; an email failure should NOT fail this request —
-  // the inviter can fall back to copy/pasting the URL from the response.
   let email_sent = false;
   if (isEmailConfigured()) {
     const { subject, html, text } = renderInviteEmail({
-      inviteUrl: emailUrl,
+      signInUrl,
+      email,
+      tempPassword,
       tenantName,
       role,
       isPlatformAdmin: grantPlatform,
@@ -173,10 +210,16 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     ok: true,
-    invite: { id: invite.id, email, tenant_id: tenantId, role, grant_platform_admin: grantPlatform, expires_at: invite.expires_at },
-    invite_token: token,
-    accept_url_path,
-    accept_url,
+    user_id: userId,
+    email,
+    tenant_id: tenantId,
+    role,
+    grant_platform_admin: grantPlatform,
+    // Cleartext temp password — return so the admin can read it aloud / paste
+    // into a chat if the email doesn't make it through. Returned only on
+    // this single response; never persisted in plaintext.
+    temp_password: tempPassword,
+    sign_in_url: signInUrl,
     email_sent,
   });
 }

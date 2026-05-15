@@ -1,8 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { cookies } from 'next/headers';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import {
   audit, destroyCurrentSession, getCurrentUser, hashPassword, verifyPassword,
 } from '@/lib/auth';
+import { MUST_CHANGE_COOKIE_NAME } from '@/lib/auth-shared';
 
 /**
  * POST /api/me/password — self-service password change for the signed-in
@@ -75,6 +77,10 @@ export async function POST(request: NextRequest) {
     .update({
       password_hash: newHash,
       password_changed_at: new Date().toISOString(),
+      // Clear the temp-password flag. Users arriving here from /auth/change-password
+      // (forced flow on first login) have password_must_change=true; after this
+      // update the global redirect in app/layout stops bouncing them.
+      password_must_change: false,
     })
     .eq('id', cu.user.id);
   if (upErr) return bad(upErr.message, 500);
@@ -95,6 +101,10 @@ export async function POST(request: NextRequest) {
     ip: request.headers.get('x-forwarded-for') ?? null,
     user_agent: request.headers.get('user-agent') ?? null,
   });
+
+  // Clear the middleware gate cookie. After this response the user can
+  // navigate anywhere they have permission to reach.
+  cookies().delete(MUST_CHANGE_COOKIE_NAME);
 
   void destroyCurrentSession; // imported but reserved for /api/me/password/revoke-all
   return NextResponse.json({ ok: true });

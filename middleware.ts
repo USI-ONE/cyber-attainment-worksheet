@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { SESSION_COOKIE_NAME } from '@/lib/auth-shared';
+import { MUST_CHANGE_COOKIE_NAME, SESSION_COOKIE_NAME } from '@/lib/auth-shared';
 // IMPORTANT: do NOT import from '@/lib/auth' here. That module pulls in
 // node:crypto (scrypt, randomBytes), which the Edge runtime middleware
 // runs under does not support. Constants live in lib/auth-shared so
@@ -47,6 +47,19 @@ const ALWAYS_PROTECTED_PREFIXES = [
   '/api/settings/',
 ];
 
+/**
+ * Paths a user with the must-change cookie set is still allowed to reach.
+ * They need to hit the change-password page, sign out, and call the
+ * password-change API. Anything else gets redirected.
+ */
+const MUST_CHANGE_ALLOWED_PREFIXES = [
+  '/auth/change-password',
+  '/auth/signout',
+  '/api/auth/',          // login/logout/forgot-password
+  '/api/me/password',    // the actual change endpoint
+  '/_next/',             // never block bundles
+];
+
 function isPublic(pathname: string): boolean {
   if (pathname === '/auth' || pathname === '/auth/') return true;
   for (const p of PUBLIC_PATHS) if (pathname.startsWith(p)) return true;
@@ -68,6 +81,19 @@ function isAlwaysProtected(pathname: string): boolean {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Force-password-change gate runs BEFORE the public-path check — a user
+  // mid-temp-password flow should land back on /auth/change-password even
+  // when they try to visit, e.g., /auth/signin again.
+  const hasMustChange = !!request.cookies.get(MUST_CHANGE_COOKIE_NAME)?.value;
+  if (hasMustChange) {
+    const allowed = MUST_CHANGE_ALLOWED_PREFIXES.some((p) => pathname.startsWith(p));
+    if (!allowed) {
+      const url = new URL('/auth/change-password', request.url);
+      url.searchParams.set('next', pathname + request.nextUrl.search);
+      return NextResponse.redirect(url);
+    }
+  }
 
   if (isPublic(pathname)) return NextResponse.next();
 

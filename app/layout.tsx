@@ -37,6 +37,11 @@ export default async function RootLayout({
     resolveTenant(host),
     getCurrentUser(),
   ]);
+  // Forced password change is enforced via cookie + middleware. The
+  // /api/auth/login route sets caw_must_change=1 when the user logs in
+  // with a temp-password invite; middleware then redirects every request
+  // outside the allow-list to /auth/change-password. /api/me/password
+  // clears the cookie when the user picks a real password.
 
   // Determine whether the signed-in user can administer THIS tenant (editor
   // OR platform admin). Drives the conditional Nav groups (Settings, Admin).

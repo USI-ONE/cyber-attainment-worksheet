@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { cookies } from 'next/headers';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { audit, createSessionForUser, verifyPassword } from '@/lib/auth';
+import { MUST_CHANGE_COOKIE_NAME, SESSION_TTL_DAYS } from '@/lib/auth-shared';
 
 /**
  * POST /api/auth/login
@@ -27,7 +29,7 @@ export async function POST(request: NextRequest) {
   const supabase = createServiceRoleClient();
   const { data: user } = await supabase
     .from('profiles')
-    .select('id, email, display_name, password_hash, is_platform_admin, status')
+    .select('id, email, display_name, password_hash, is_platform_admin, status, password_must_change')
     .ilike('email', email)
     .maybeSingle();
 
@@ -56,9 +58,43 @@ export async function POST(request: NextRequest) {
   await createSessionForUser(user.id, { user_agent: ua, ip }, supabase);
   await audit({
     actor_id: user.id, target_id: user.id, action: 'login_success',
-    detail: { email },
+    detail: { email, must_change_password: !!user.password_must_change },
     ip, user_agent: ua,
   });
+
+  // Redirect logic:
+  //   - If the user MUST change their password (admin issued a temp-password
+  //     invite), force them to /auth/change-password regardless of what
+  //     they originally tried to reach. The page itself bounces back to
+  //     `redirect` after a successful change.
+  //   - Otherwise, honor the redirect they passed in (defaulting to /).
+  const requestedRedirect = body.redirect && body.redirect.startsWith('/')
+    ? body.redirect : '/';
+  const mustChange = !!user.password_must_change;
+  const redirect = mustChange
+    ? `/auth/change-password?next=${encodeURIComponent(requestedRedirect)}`
+    : requestedRedirect;
+
+  // Set the middleware gate cookie when forced password change is required.
+  // HttpOnly so the browser can't read or tamper from JS; SameSite=Lax so
+  // it travels on the post-login redirect; same TTL as the session itself
+  // (irrelevant in practice since /api/me/password clears it on success).
+  if (mustChange) {
+    cookies().set({
+      name: MUST_CHANGE_COOKIE_NAME,
+      value: '1',
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: SESSION_TTL_DAYS * 24 * 60 * 60,
+    });
+  } else {
+    // Defensive: if a stale cookie is laying around (e.g., the admin
+    // cleared the flag in the DB out-of-band), make sure middleware
+    // doesn't keep bouncing the user.
+    cookies().delete(MUST_CHANGE_COOKIE_NAME);
+  }
 
   return NextResponse.json({
     ok: true,
@@ -66,6 +102,7 @@ export async function POST(request: NextRequest) {
       id: user.id, email: user.email, display_name: user.display_name,
       is_platform_admin: user.is_platform_admin,
     },
-    redirect: body.redirect && body.redirect.startsWith('/') ? body.redirect : '/',
+    password_must_change: mustChange,
+    redirect,
   });
 }
