@@ -622,6 +622,8 @@ function AcceptUrlBanner({ url, onDismiss }: { url: string; onDismiss: () => voi
   );
 }
 
+type AccessLevel = 'global_admin' | 'tenant_admin' | 'tenant_viewer';
+
 function InviteForm({
   tenants, onSubmit, onCancel,
 }: {
@@ -631,23 +633,27 @@ function InviteForm({
 }) {
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [grantPlatform, setGrantPlatform] = useState(false);
+  // Three explicit access levels — picked at invite time, no implicit
+  // elevation. Tenant admin = edit access on a single tenant; Tenant
+  // viewer = read-only on a single tenant; Global admin = edit everywhere.
+  const [level, setLevel] = useState<AccessLevel>('tenant_viewer');
   const [tenantId, setTenantId] = useState('');
-  const [role, setRole] = useState<'editor' | 'viewer' | 'admin'>('viewer');
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.includes('@')) return;
-    if (!grantPlatform && !tenantId) {
-      alert('Either grant platform admin OR assign a tenant + role (or both).');
+    if ((level === 'tenant_admin' || level === 'tenant_viewer') && !tenantId) {
+      alert('Pick a tenant for this user.');
       return;
     }
     onSubmit({
       email: email.trim(),
       display_name: displayName.trim() || undefined,
-      grant_platform_admin: grantPlatform,
-      tenant_id: tenantId || null,
-      role: tenantId ? role : undefined,
+      grant_platform_admin: level === 'global_admin',
+      tenant_id: level === 'global_admin' ? null : (tenantId || null),
+      role: level === 'tenant_admin' ? 'admin'
+          : level === 'tenant_viewer' ? 'viewer'
+          : undefined,
     });
   }
 
@@ -656,44 +662,94 @@ function InviteForm({
       marginTop: 12, padding: 14,
       background: 'var(--bg-card)', border: '1px solid var(--bg-border)',
       borderRadius: 'var(--r-md)',
-      display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 10,
+      display: 'flex', flexDirection: 'column', gap: 14,
     }}>
-      <Field label="Email (required)" style={{ gridColumn: 'span 2' }}>
-        <input className="score-select" type="email" required autoFocus
-          value={email} onChange={(e) => setEmail(e.target.value)}
-          placeholder="user@example.com" />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <Field label="Email (required)">
+          <input className="score-select" type="email" required autoFocus
+            value={email} onChange={(e) => setEmail(e.target.value)}
+            placeholder="user@example.com" />
+        </Field>
+        <Field label="Display name (optional)">
+          <input className="score-select"
+            value={displayName} onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="Name" />
+        </Field>
+      </div>
+
+      <Field label="Access level" hint="Pick how much access this user gets. The choice determines whether you also need to pick a tenant below.">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <AccessRadio
+            level="global_admin"
+            current={level}
+            onSelect={setLevel}
+            title="Global admin"
+            sub="Edits every tenant. Sees everything. The MSP role."
+          />
+          <AccessRadio
+            level="tenant_admin"
+            current={level}
+            onSelect={setLevel}
+            title="Tenant admin"
+            sub="Edits one tenant's data. No access to other tenants."
+          />
+          <AccessRadio
+            level="tenant_viewer"
+            current={level}
+            onSelect={setLevel}
+            title="Tenant viewer"
+            sub="Read-only access to one tenant's data. Most common."
+          />
+        </div>
       </Field>
-      <Field label="Display name (optional)" style={{ gridColumn: 'span 2' }}>
-        <input className="score-select"
-          value={displayName} onChange={(e) => setDisplayName(e.target.value)}
-          placeholder="Name" />
-      </Field>
-      <Field label="Platform admin" hint="Edits everything across every tenant.">
-        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, paddingTop: 8, fontSize: 13 }}>
-          <input type="checkbox" checked={grantPlatform} onChange={(e) => setGrantPlatform(e.target.checked)} />
-          Grant platform-admin role
-        </label>
-      </Field>
-      <Field label="Assign to tenant" hint="Read-only access to this tenant's data. Editing remains platform-admin-only.">
-        <select className="score-select" value={tenantId} onChange={(e) => setTenantId(e.target.value)}>
-          <option value="">— none —</option>
-          {tenants.map((t) => <option key={t.id} value={t.id}>{t.display_name}</option>)}
-        </select>
-      </Field>
-      <Field label="Role in tenant" hint="Viewer/Editor are read-only today. Admin on an admin-tenant (e.g., USI) grants platform-wide admin to this user.">
-        <select className="score-select" value={role}
-          disabled={!tenantId}
-          onChange={(e) => setRole(e.target.value as 'editor' | 'viewer' | 'admin')}>
-          <option value="viewer">Viewer (read-only)</option>
-          <option value="editor">Editor (read-only today)</option>
-          <option value="admin">Admin (platform-wide if admin tenant)</option>
-        </select>
-      </Field>
-      <div style={{ gridColumn: 'span 4', display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
+
+      {(level === 'tenant_admin' || level === 'tenant_viewer') && (
+        <Field label="Tenant" hint="Which tenant this user gets access to.">
+          <select className="score-select" required
+            value={tenantId} onChange={(e) => setTenantId(e.target.value)}>
+            <option value="">— select a tenant —</option>
+            {tenants.map((t) => <option key={t.id} value={t.id}>{t.display_name}</option>)}
+          </select>
+        </Field>
+      )}
+
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
         <button type="button" className="action-btn" onClick={onCancel}>Cancel</button>
         <button type="submit" className="action-btn primary" disabled={!email.includes('@')}>Issue invite</button>
       </div>
     </form>
+  );
+}
+
+function AccessRadio({ level, current, onSelect, title, sub }: {
+  level: AccessLevel; current: AccessLevel;
+  onSelect: (l: AccessLevel) => void;
+  title: string; sub: string;
+}) {
+  const active = level === current;
+  return (
+    <label style={{
+      display: 'flex', alignItems: 'flex-start', gap: 10,
+      padding: '10px 12px',
+      background: active ? 'var(--gold-pale)' : 'var(--bg-mid)',
+      border: `1px solid ${active ? 'var(--gold)' : 'var(--bg-border)'}`,
+      borderRadius: 'var(--r-md)',
+      cursor: 'pointer',
+    }}>
+      <input
+        type="radio"
+        checked={active}
+        onChange={() => onSelect(level)}
+        style={{ marginTop: 2 }}
+      />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={{
+          fontWeight: 600, fontSize: 13,
+          color: active ? 'var(--gold-light)' : 'var(--text)',
+        }}>{title}</span>
+        <span style={{ fontSize: 11, color: 'var(--text-mid)' }}>{sub}</span>
+      </div>
+    </label>
   );
 }
 
@@ -736,10 +792,10 @@ function MembershipsCell({
             {available.map((t) => <option key={t.id} value={t.id}>{t.display_name}</option>)}
           </select>
           <select className="score-select" value={role} onChange={(e) => setRole(e.target.value as 'editor' | 'viewer' | 'admin')} style={{ fontSize: 11 }}
-            title="Admin on an admin-flagged tenant grants platform-wide admin access">
-            <option value="viewer">viewer</option>
-            <option value="editor">editor</option>
-            <option value="admin">admin</option>
+            title="Tenant admin can edit THIS tenant. Viewer is read-only on this tenant. (Legacy editor role is treated as viewer.)">
+            <option value="viewer">viewer (read-only)</option>
+            <option value="admin">admin (edits this tenant)</option>
+            <option value="editor">editor (legacy, read-only)</option>
           </select>
           <button className="action-btn" disabled={!tid}
             onClick={() => { onAdd(tid, role); setTid(''); setOpen(false); }}>OK</button>

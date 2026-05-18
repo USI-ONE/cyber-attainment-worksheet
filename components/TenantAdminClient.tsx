@@ -43,9 +43,8 @@ export default function TenantAdminClient({
 
   return (
     <>
-      <div className="kpi-row" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+      <div className="kpi-row" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
         <KpiTile label="Tenants" value={list.length.toString()} sub="active portals" accent="#2563EB" />
-        <KpiTile label="Admin Tenants" value={list.filter((t) => t.is_admin_tenant).length.toString()} sub="members get platform-admin access" accent="#1E40AF" />
         <KpiTile label="Total Editors" value={Object.values(memberCounts).reduce((s, c) => s + c.editors, 0).toString()} sub="across all tenants" accent="#10B981" />
         <KpiTile label="Total Viewers" value={Object.values(memberCounts).reduce((s, c) => s + c.viewers, 0).toString()} sub="across all tenants" accent="#64748B" />
       </div>
@@ -56,7 +55,7 @@ export default function TenantAdminClient({
             <div className="scorecard-title">Tenants</div>
             <div className="scorecard-tag" style={{ marginTop: 4 }}>
               Each row is a client deployment. Slug is immutable; display name, hostname, brand_config, and the admin-tenant flag are editable.
-              {' '}<strong>Admin tenant</strong> grants every member of that tenant platform-wide access.
+              {' '}<em>The admin-tenant flag is deprecated</em> — access levels are set per-user at invite time (Global admin / Tenant admin / Tenant viewer). The column below is read-only and will be removed in a future migration.
             </div>
           </div>
           <Link href="/admin/tenants/new" className="action-btn primary">
@@ -70,7 +69,6 @@ export default function TenantAdminClient({
               <th>Display name</th>
               <th>Slug</th>
               <th>Hostname</th>
-              <th title="When on, every member of this tenant gets effective platform-admin access — they can see and edit every other tenant in the hub.">Admin tenant</th>
               <th>Editors</th>
               <th>Viewers</th>
               <th>Created</th>
@@ -88,15 +86,6 @@ export default function TenantAdminClient({
                           const v = e.target.value.trim();
                           if (v && v !== t.display_name) patchTenant(t.id, { display_name: v });
                         }} />
-                      {t.is_admin_tenant && (
-                        <span style={{
-                          fontSize: 9, fontWeight: 700, padding: '2px 6px',
-                          borderRadius: 999, background: '#1E40AF1a',
-                          color: '#1E40AF', border: '1px solid #1E40AF55',
-                          textTransform: 'uppercase', letterSpacing: '.06em',
-                          whiteSpace: 'nowrap',
-                        }}>Admin</span>
-                      )}
                     </div>
                   </td>
                   <td><code style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: 'var(--text-mid)' }}>{t.slug}</code></td>
@@ -107,32 +96,6 @@ export default function TenantAdminClient({
                         const v = e.target.value.trim() || null;
                         if (v !== t.hostname) patchTenant(t.id, { hostname: v });
                       }} />
-                  </td>
-                  <td>
-                    <label style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 6,
-                      cursor: 'pointer', fontSize: 12,
-                    }}>
-                      <input
-                        type="checkbox"
-                        checked={t.is_admin_tenant}
-                        onChange={(e) => {
-                          const next = e.target.checked;
-                          if (next && !confirm(`Mark "${t.display_name}" as an admin tenant? Every current and future member of this tenant will get platform-admin access across all tenants.`)) {
-                            e.target.checked = false;
-                            return;
-                          }
-                          if (!next && t.is_admin_tenant && !confirm(`Remove admin-tenant flag from "${t.display_name}"? Members will lose platform-wide access (unless they have profiles.is_platform_admin set directly).`)) {
-                            e.target.checked = true;
-                            return;
-                          }
-                          patchTenant(t.id, { is_admin_tenant: next });
-                        }}
-                      />
-                      {t.is_admin_tenant
-                        ? <span style={{ color: '#1E40AF', fontWeight: 600 }}>On</span>
-                        : <span style={{ color: 'var(--text-muted)' }}>Off</span>}
-                    </label>
                   </td>
                   <td style={{ fontFamily: 'Inter, sans-serif' }}>{counts.editors}</td>
                   <td style={{ fontFamily: 'Inter, sans-serif' }}>{counts.viewers}</td>

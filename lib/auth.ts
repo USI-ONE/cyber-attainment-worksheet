@@ -328,30 +328,21 @@ export async function getCurrentUserByToken(token: string): Promise<CurrentUser 
     .eq('user_id', user.id);
   const memList = (memberships ?? []) as CawMembership[];
 
-  // Admin-tenant elevation. Membership with role='admin' in a tenant
-  // flagged is_admin_tenant=true confers effective platform-admin status.
-  // Editor/viewer memberships in an admin tenant grant ONLY read access
-  // to that tenant's data, not platform-wide admin — that's the bug-fix
-  // that prompted migration 0023. Before this, ANY membership on the
-  // admin tenant elevated; that turned out too coarse and surprised
-  // operators who added a user as a viewer expecting read-only behavior.
+  // Admin elevation is now ENTIRELY per-user via profiles.is_platform_admin.
+  // The previous admin-tenant magic (any role='admin' membership in a
+  // tenant flagged is_admin_tenant=true ⇒ effective platform-admin) was
+  // dropped on the operator's request: they wanted access levels granted
+  // at user-invite time, not implicitly via tenant membership.
   //
-  // Non-admin tenants ignore role='admin' — it has no special meaning
-  // outside an is_admin_tenant=true tenant today. The role exists as a
-  // forward-compat slot for a future per-tenant admin tier.
-  let effectiveIsPlatformAdmin = !!user.is_platform_admin;
-  if (!effectiveIsPlatformAdmin && memList.length > 0) {
-    const adminMems = memList.filter((m) => m.role === 'admin');
-    if (adminMems.length > 0) {
-      const tenantIds = adminMems.map((m) => m.tenant_id);
-      const { data: adminTenants } = await supabase
-        .from('tenants')
-        .select('id')
-        .eq('is_admin_tenant', true)
-        .in('id', tenantIds);
-      if ((adminTenants ?? []).length > 0) effectiveIsPlatformAdmin = true;
-    }
-  }
+  // New three-level model:
+  //   Global admin  — profiles.is_platform_admin = true
+  //   Tenant admin  — memberships row with role='admin' on that tenant
+  //   Tenant viewer — memberships row with role='viewer' (or legacy
+  //                   'editor', which now resolves the same as 'viewer')
+  //
+  // The is_admin_tenant column on tenants is no longer consulted by the
+  // auth path. Left in place for a follow-up migration to drop.
+  const effectiveIsPlatformAdmin = !!user.is_platform_admin;
 
   // Sliding refresh: touch last_seen_at + slide expires_at forward by the
   // full TTL if it hasn't been touched in the last hour.
@@ -379,29 +370,28 @@ export async function getCurrentUserByToken(token: string): Promise<CurrentUser 
 // =============================================================================
 
 /**
- * Access model (current):
- *   - canAccessTenant — read access. Granted by any membership on that
- *     tenant (editor OR viewer) or by platform-admin status.
- *   - canEditTenant   — write access. Granted ONLY by platform-admin status.
- *     Tenant memberships do not confer edit. The 'editor' role still exists
- *     in the schema for future use (e.g., a per-tenant admin tier), but as
- *     of this commit it grants the same access as 'viewer': read-only.
- *   - canAdministerTenant — same as canEditTenant for now. User management
- *     remains platform-admin-only at the hub.
+ * Three-level access model:
  *
- * Why the simplification: the platform is operated by a single MSP (USI).
- * Customers and their tenant users should be able to see their data, run
- * the assessment, view dashboards, and download reports — but the MSP
- * remains the editor of record. This avoids the surprise of one customer
- * accidentally rewriting another's scores or policies, and keeps the
- * blast radius of a compromised tenant credential tightly limited.
+ *   Global admin   profiles.is_platform_admin = true
+ *                  ├─ canAccessTenant → true for every tenant
+ *                  ├─ canEditTenant   → true for every tenant
+ *                  └─ canAdministerTenant → true for every tenant
  *
- * A user becomes a "full admin" via either path:
- *   - profiles.is_platform_admin = true (per-user flag), OR
- *   - membership to any tenant flagged is_admin_tenant=true (e.g., USI)
- * Both paths are checked by isPlatformAdmin/getCurrentUserByToken and
- * collapse into the single cu.user.is_platform_admin boolean by the
- * time anything calls these helpers.
+ *   Tenant admin   memberships row with role='admin' on that tenant
+ *                  ├─ canAccessTenant → true for the assigned tenant only
+ *                  ├─ canEditTenant   → true for the assigned tenant only
+ *                  └─ canAdministerTenant → true for the assigned tenant only
+ *                       (NOT for any other tenant)
+ *
+ *   Tenant viewer  memberships row with role='viewer' (or legacy 'editor',
+ *                  which is now treated identically to 'viewer')
+ *                  ├─ canAccessTenant → true for the assigned tenant only
+ *                  ├─ canEditTenant   → false
+ *                  └─ canAdministerTenant → false
+ *
+ * The level is set explicitly at invite time. There's no implicit
+ * elevation via "admin tenant" membership any more — that pattern was
+ * surprising enough that we replaced it with the per-user model above.
  */
 
 export function canAccessTenant(cu: CurrentUser | null, tenantId: string): boolean {
@@ -410,19 +400,18 @@ export function canAccessTenant(cu: CurrentUser | null, tenantId: string): boole
   return cu.memberships.some((m) => m.tenant_id === tenantId);
 }
 
-export function canEditTenant(cu: CurrentUser | null, _tenantId: string): boolean {
+export function canEditTenant(cu: CurrentUser | null, tenantId: string): boolean {
   if (!cu) return false;
-  // Platform-admin-only. Tenant memberships grant read via canAccessTenant
-  // but never write. The _tenantId param is retained for API symmetry —
-  // callers were already passing it and we may want per-tenant write
-  // restrictions back later. Suppress the unused-var lint with the
-  // leading underscore prefix.
-  return !!cu.user.is_platform_admin;
+  if (cu.user.is_platform_admin) return true;
+  // Tenant admin (role='admin' on THIS tenant) gets edit on this tenant
+  // and only this tenant. role='editor' and role='viewer' are read-only
+  // — the legacy 'editor' role is intentionally NOT promoted to edit here.
+  return cu.memberships.some((m) => m.tenant_id === tenantId && m.role === 'admin');
 }
 
-/** Same as canEditTenant today — administering a tenant (inviting users,
- *  managing settings) is platform-admin-only and happens at the hub. If a
- *  future "tenant admin" tier lands, change this to also accept that role. */
+/** Administering a tenant (inviting users to it, managing tenant settings)
+ *  collapses to the same set as edit access today. If a future "tenant
+ *  owner" tier lands, change this to gate on a separate role. */
 export function canAdministerTenant(cu: CurrentUser | null, tenantId: string): boolean {
   return canEditTenant(cu, tenantId);
 }

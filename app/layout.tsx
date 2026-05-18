@@ -58,14 +58,20 @@ export default async function RootLayout({
     if (!allowed) redirect('/auth/change-password');
   }
 
-  // Access model: editing is platform-admin-only. Tenant memberships
-  // (editor OR viewer) grant read access via canAccessTenant, but the
-  // edit path is reserved for the operator (platform admin via the per-
-  // user flag OR via membership in an is_admin_tenant=true tenant, both
-  // of which roll up into currentUser.user.is_platform_admin upstream in
-  // lib/auth.ts#getCurrentUserByToken).
+  // Three-level access model (see lib/auth.ts for the canonical description):
+  //   global admin  → edit everywhere (profiles.is_platform_admin)
+  //   tenant admin  → edit THIS tenant (memberships.role='admin' for this tenant.id)
+  //   tenant viewer → read-only (any other membership, or legacy 'editor')
+  //
+  // Read-only mode flips on when the user has access but isn't a global
+  // admin and isn't a tenant admin for the current tenant. That drives
+  // the ReadOnlyEnforcer + the data-readonly attribute + the
+  // ReadOnlyBanner.
   const isPlatformAdmin = !!currentUser?.user.is_platform_admin;
-  const canEdit = isPlatformAdmin;
+  const isTenantAdmin = !!tenant && !!currentUser?.memberships.some(
+    (m) => m.tenant_id === tenant.id && m.role === 'admin',
+  );
+  const canEdit = isPlatformAdmin || isTenantAdmin;
   const canAdminister = canEdit;
 
   // Read-only mode: signed-in user who can't edit. Drives the
