@@ -44,32 +44,41 @@ export async function GET(request: NextRequest) {
   const supabase = createServiceRoleClient();
   const token_hash = hashToken(token);
 
-  const { data: row } = await supabase
+  // Atomic burn: read+write in a single UPDATE filtered on (token_hash
+  // matches AND used_at is still null AND not expired AND tenant matches).
+  // If two GETs race, only one will get a row back here — the second sees
+  // empty data and bounces to /auth/signin with reason=token_already_used.
+  // The previous read-then-write pattern allowed both concurrent callers
+  // to pass the validate-then-burn check before either UPDATE landed.
+  const nowIso = new Date().toISOString();
+  const { data: burned } = await supabase
     .from('sso_tokens')
-    .select('id, user_id, tenant_id, target_path, expires_at, used_at')
+    .update({ used_at: nowIso })
     .eq('token_hash', token_hash)
+    .eq('tenant_id', tenant.id)
+    .is('used_at', null)
+    .gt('expires_at', nowIso)
+    .select('id, user_id, target_path')
     .maybeSingle();
-  if (!row) return fail(request, 'invalid_token');
-  if (row.used_at) return fail(request, 'token_already_used');
-  if (new Date(row.expires_at).getTime() < Date.now()) return fail(request, 'token_expired');
-  if (row.tenant_id !== tenant.id) return fail(request, 'tenant_mismatch');
 
-  // Confirm the user is still active before minting a session — a disabled
-  // account shouldn't be re-authenticated even if a fresh token is in flight.
+  if (!burned) {
+    // We don't know which precondition failed (token unknown, already used,
+    // expired, or wrong tenant) without a second query, but for SSO failure
+    // surface a single bucket — the user just needs to sign in again. Avoid
+    // a fingerprinting query that would tell an attacker whether the token
+    // existed at all.
+    return fail(request, 'sso_token_invalid');
+  }
+
+  // Confirm the user is still active. Disabled accounts shouldn't be
+  // re-authenticated even with a freshly-burnt valid token.
   const { data: user } = await supabase
     .from('profiles')
     .select('id, status, password_must_change')
-    .eq('id', row.user_id)
+    .eq('id', burned.user_id)
     .maybeSingle();
   if (!user) return fail(request, 'user_not_found');
   if (user.status !== 'active') return fail(request, 'user_disabled');
-
-  // Burn the token first so a network retry or back-button can't reuse it.
-  // We're inside the service role so a fast double-tap will see used_at set.
-  await supabase
-    .from('sso_tokens')
-    .update({ used_at: new Date().toISOString() })
-    .eq('id', row.id);
 
   const ip = request.headers.get('x-forwarded-for') ?? null;
   const ua = request.headers.get('user-agent') ?? null;
@@ -83,13 +92,18 @@ export async function GET(request: NextRequest) {
   await audit({
     actor_id: user.id, target_id: user.id, tenant_id: tenant.id,
     action: 'sso_login',
-    detail: { tenant_slug: tenant.slug, target_path: row.target_path },
+    detail: { tenant_slug: tenant.slug, target_path: burned.target_path },
     ip, user_agent: ua,
   });
 
-  // If the user is in "must change password" state, route them to the
-  // change-password page first; middleware would do this anyway on the
-  // next request, but a direct redirect saves the round-trip.
-  const target = user.password_must_change ? '/auth/change-password' : (row.target_path ?? '/');
+  // Re-validate target_path on consume. It was sanitized on issue, but
+  // defense-in-depth: reject anything that isn't a same-origin path
+  // (starts with "/" but not "//", which would be a protocol-relative URL
+  // that could redirect to an attacker domain).
+  let target = burned.target_path ?? '/';
+  if (typeof target !== 'string' || !target.startsWith('/') || target.startsWith('//')) {
+    target = '/';
+  }
+  if (user.password_must_change) target = '/auth/change-password';
   return NextResponse.redirect(new URL(target, request.url));
 }

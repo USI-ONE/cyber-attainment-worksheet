@@ -9,6 +9,8 @@ import ReadOnlyEnforcer from '@/components/ReadOnlyEnforcer';
 import { resolveTenant } from '@/lib/tenant';
 import { getCurrentUser } from '@/lib/auth';
 import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { MUST_CHANGE_ALLOWED_PREFIXES } from '@/lib/auth-shared';
 
 export async function generateMetadata(): Promise<Metadata> {
   // Operator deploy gets a generic Portfolio Hub title; tenant deploys
@@ -37,11 +39,24 @@ export default async function RootLayout({
     resolveTenant(host),
     getCurrentUser(),
   ]);
-  // Forced password change is enforced via cookie + middleware. The
-  // /api/auth/login route sets caw_must_change=1 when the user logs in
-  // with a temp-password invite; middleware then redirects every request
-  // outside the allow-list to /auth/change-password. /api/me/password
-  // clears the cookie when the user picks a real password.
+
+  // Forced password change — server-side gate, defense-in-depth on top of
+  // the cookie-based middleware gate. The cookie can be cleared in
+  // DevTools, but re-checking the AUTHORITATIVE profiles.password_must_change
+  // column here (read via getCurrentUser → DB) makes sure a cleared cookie
+  // can't bypass the requirement.
+  //
+  // Pathname comes from the `x-pathname` header that middleware injects
+  // (see middleware.ts). Server components can't read request URLs
+  // directly in Next 14 App Router, so the middleware-set header is the
+  // canonical way. Allow-list mirrors MUST_CHANGE_ALLOWED_PREFIXES so the
+  // user can still reach the change-password page, sign out, and hit the
+  // API routes that move them off the flag.
+  if (currentUser?.user.password_must_change) {
+    const pathname = headers().get('x-pathname') ?? '/';
+    const allowed = MUST_CHANGE_ALLOWED_PREFIXES.some((p) => pathname.startsWith(p));
+    if (!allowed) redirect('/auth/change-password');
+  }
 
   // Access model: editing is platform-admin-only. Tenant memberships
   // (editor OR viewer) grant read access via canAccessTenant, but the

@@ -30,3 +30,25 @@ export const SESSION_TTL_DAYS = 14;
  * can't sneak past the requirement.
  */
 export const MUST_CHANGE_COOKIE_NAME = 'caw_must_change';
+
+/**
+ * Paths a user with profiles.password_must_change=true is still allowed
+ * to reach. They need to hit the change-password page, sign out, and call
+ * the password-change API. Both middleware (cookie-gated) and the server
+ * layout (DB-gated) consult this same list so the two gates can't drift.
+ */
+export const MUST_CHANGE_ALLOWED_PREFIXES = [
+  '/auth/change-password',
+  '/auth/signout',
+  '/api/auth/',          // login, logout, forgot-password, accept-invite, sso
+  '/api/me/password',    // the actual change endpoint
+  '/_next/',             // never block bundles or static assets
+] as const;
+
+/**
+ * Request header name set by middleware so server components can read the
+ * current pathname. Next 14 App Router doesn't expose request URLs to
+ * server components otherwise. Used by app/layout.tsx for the
+ * password_must_change defense-in-depth check.
+ */
+export const PATHNAME_HEADER = 'x-pathname';

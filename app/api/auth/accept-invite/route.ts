@@ -114,7 +114,24 @@ export async function POST(request: NextRequest) {
     .update({ accepted_at: new Date().toISOString(), accepted_by: userId })
     .eq('token_hash', hashToken(token));
 
-  // 5. Start a session.
+  // 5. Revoke all existing sessions for this user BEFORE minting a new
+  //    one. Two scenarios where this matters:
+  //      a) Reset flow — the user's old password just got replaced; any
+  //         pre-reset session is no longer trusted.
+  //      b) Invite hijack — if a reset link was intercepted, the
+  //         attacker shouldn't get to coexist with the legitimate user's
+  //         session indefinitely. Revoking forces every other device to
+  //         re-authenticate with the new credential.
+  //    The new session created on line below is still valid because
+  //    sessions are filtered on token_hash + revoked_at IS NULL by
+  //    getCurrentUserByToken, and we revoke BEFORE create.
+  await supabase
+    .from('sessions')
+    .update({ revoked_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .is('revoked_at', null);
+
+  // 6. Start a session for the user who just consumed the invite.
   await createSessionForUser(userId, { user_agent: ua, ip }, supabase);
 
   await audit({

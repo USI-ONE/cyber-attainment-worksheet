@@ -235,7 +235,11 @@ export async function createSessionForUser(
       name: SESSION_COOKIE_NAME,
       value: token,
       httpOnly: true,
-      secure: isProduction(),
+      // Always Secure. Browsers exempt localhost from the Secure flag, so
+      // local dev still works; deployed environments are always HTTPS-only.
+      // The previous `isProduction()` check left a window where a dev build
+      // running over HTTP could set a non-Secure session cookie.
+      secure: true,
       sameSite: 'lax',
       path: '/',
       maxAge: COOKIE_TTL_SECONDS,
@@ -271,7 +275,11 @@ export async function destroyCurrentSession(): Promise<void> {
       name: SESSION_COOKIE_NAME,
       value: '',
       httpOnly: true,
-      secure: isProduction(),
+      // Always Secure. Browsers exempt localhost from the Secure flag, so
+      // local dev still works; deployed environments are always HTTPS-only.
+      // The previous `isProduction()` check left a window where a dev build
+      // running over HTTP could set a non-Secure session cookie.
+      secure: true,
       sameSite: 'lax',
       path: '/',
       maxAge: 0,

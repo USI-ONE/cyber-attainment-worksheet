@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
-import { audit, issueInvite } from '@/lib/auth';
+import { audit, hashToken, issueInvite } from '@/lib/auth';
 import { sendEmail, isEmailConfigured } from '@/lib/email';
 import { renderPasswordResetEmail } from '@/lib/email-templates';
 
@@ -61,7 +61,8 @@ export async function POST(request: NextRequest) {
     return ok();
   }
 
-  // 1. Revoke any pending invites for this email.
+  // 1. Revoke any pending invites for this email. Issuing a new one below
+  //    supersedes them anyway, but explicit revoke keeps user_invites tidy.
   await supabase
     .from('user_invites')
     .update({ revoked_at: new Date().toISOString() })
@@ -69,19 +70,13 @@ export async function POST(request: NextRequest) {
     .is('accepted_at', null)
     .is('revoked_at', null);
 
-  // 2. Clear the password + revoke sessions. The user is locked out until
-  //    they consume the new invite.
-  await supabase
-    .from('profiles')
-    .update({ password_hash: null, status: 'invited' })
-    .eq('id', profile.id);
-  await supabase
-    .from('sessions')
-    .update({ revoked_at: new Date().toISOString() })
-    .eq('user_id', profile.id)
-    .is('revoked_at', null);
-
-  // 3. Issue the fresh invite, preserving the platform-admin grant.
+  // 2. Issue the reset token. NOTE: we do NOT clear the current
+  //    password_hash here. Previously this route would null the hash +
+  //    revoke sessions immediately on request — that turned the endpoint
+  //    into a lockout primitive (anyone who knows your email could lock
+  //    you out repeatedly). The hash is now cleared and sessions revoked
+  //    only when the user actually consumes the reset link in
+  //    /api/auth/accept-invite, proving they control the inbox.
   const { token } = await issueInvite({
     email: profile.email,
     invited_by: null,           // self-service, no inviter
@@ -106,9 +101,10 @@ export async function POST(request: NextRequest) {
       tags: [{ name: 'kind', value: 'password_reset' }],
     });
   } else {
-    // Configuration not present. Log the URL so an admin reviewing logs
-    // can hand-deliver it. Plain console.log to make it easy to grep.
-    console.warn(`[forgot-password] no email integration; reset URL for ${profile.email}: ${resetUrl}`);
+    // Configuration not present. Log only that we'd-have-sent and the token
+    // hash, NOT the cleartext URL — anyone with deploy log access could
+    // otherwise hijack a reset by reading the log line.
+    console.warn(`[forgot-password] no email integration; reset queued for ${profile.email} (token_hash=${hashToken(token).slice(0, 12)})`);
   }
 
   await audit({

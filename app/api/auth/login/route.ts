@@ -68,8 +68,19 @@ export async function POST(request: NextRequest) {
   //     they originally tried to reach. The page itself bounces back to
   //     `redirect` after a successful change.
   //   - Otherwise, honor the redirect they passed in (defaulting to /).
-  const requestedRedirect = body.redirect && body.redirect.startsWith('/')
-    ? body.redirect : '/';
+  // Open-redirect guard. body.redirect.startsWith('/') is necessary but not
+  // sufficient — '//evil.com' also starts with '/' and would resolve as a
+  // protocol-relative URL to an external host. Reject anything that isn't
+  // an unambiguous same-origin path: starts with '/', but NOT '//' and NOT
+  // '/\\' (the latter is how some browsers normalize backslashes into
+  // protocol-relative). Also enforce a sane length cap.
+  const rawRedirect = typeof body.redirect === 'string' ? body.redirect : '';
+  const requestedRedirect = (
+    rawRedirect.startsWith('/') &&
+    !rawRedirect.startsWith('//') &&
+    !rawRedirect.startsWith('/\\') &&
+    rawRedirect.length <= 1024
+  ) ? rawRedirect : '/';
   const mustChange = !!user.password_must_change;
   const redirect = mustChange
     ? `/auth/change-password?next=${encodeURIComponent(requestedRedirect)}`
