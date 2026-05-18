@@ -4,13 +4,17 @@ import { audit, getCurrentUser, isPlatformAdmin } from '@/lib/auth';
 
 /**
  * POST   /api/admin/users/[id]/memberships
- *   Body: { tenant_id, role: 'editor' | 'viewer' }
- *   Upserts a membership row. Platform admin only.
+ *   Body: { tenant_id, role: 'editor' | 'viewer' | 'admin' }
+ *   Upserts a membership row. Platform admin only. Note: role='admin' on
+ *   a tenant flagged is_admin_tenant=true grants platform-wide admin to
+ *   the user via lib/auth.ts elevation logic — use deliberately.
  *
  * DELETE /api/admin/users/[id]/memberships?tenant_id=…
  *   Removes the membership for (user, tenant). Platform admin only.
  */
 export const dynamic = 'force-dynamic';
+
+const VALID_ROLES = new Set(['editor', 'viewer', 'admin']);
 
 function bad(msg: string, code = 400) { return NextResponse.json({ error: msg }, { status: code }); }
 
@@ -21,7 +25,9 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   let body: { tenant_id?: string; role?: string };
   try { body = await request.json(); } catch { return bad('invalid JSON'); }
   if (!body.tenant_id) return bad('tenant_id required');
-  if (body.role !== 'editor' && body.role !== 'viewer') return bad('role must be editor or viewer');
+  if (!body.role || !VALID_ROLES.has(body.role)) {
+    return bad('role must be editor, viewer, or admin');
+  }
 
   const supabase = createServiceRoleClient();
 

@@ -19,7 +19,7 @@ export interface AdminProfile {
 export interface AdminMembership {
   user_id: string;
   tenant_id: string;
-  role: 'editor' | 'viewer';
+  role: 'editor' | 'viewer' | 'admin';
   created_at: string;
 }
 export interface AdminTenant {
@@ -31,7 +31,7 @@ export interface AdminInvite {
   id: string;
   email: string;
   tenant_id: string | null;
-  role: 'editor' | 'viewer' | null;
+  role: 'editor' | 'viewer' | 'admin' | null;
   grant_platform_admin: boolean;
   expires_at: string;
   created_at: string;
@@ -92,7 +92,7 @@ export default function UserAdminClient({
     email: string; display_name?: string;
     grant_platform_admin: boolean;
     tenant_id?: string | null;
-    role?: 'editor' | 'viewer';
+    role?: 'editor' | 'viewer' | 'admin';
   }) {
     const res = await fetch('/api/admin/users', {
       method: 'POST',
@@ -152,7 +152,7 @@ export default function UserAdminClient({
     }
   }
 
-  async function addMembership(user: AdminProfile, tenant_id: string, role: 'editor' | 'viewer') {
+  async function addMembership(user: AdminProfile, tenant_id: string, role: 'editor' | 'viewer' | 'admin') {
     const res = await fetch(`/api/admin/users/${user.id}/memberships`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -561,14 +561,14 @@ function InviteForm({
   tenants, onSubmit, onCancel,
 }: {
   tenants: AdminTenant[];
-  onSubmit: (payload: { email: string; display_name?: string; grant_platform_admin: boolean; tenant_id?: string | null; role?: 'editor' | 'viewer' }) => void;
+  onSubmit: (payload: { email: string; display_name?: string; grant_platform_admin: boolean; tenant_id?: string | null; role?: 'editor' | 'viewer' | 'admin' }) => void;
   onCancel: () => void;
 }) {
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [grantPlatform, setGrantPlatform] = useState(false);
   const [tenantId, setTenantId] = useState('');
-  const [role, setRole] = useState<'editor' | 'viewer'>('viewer');
+  const [role, setRole] = useState<'editor' | 'viewer' | 'admin'>('viewer');
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -615,12 +615,13 @@ function InviteForm({
           {tenants.map((t) => <option key={t.id} value={t.id}>{t.display_name}</option>)}
         </select>
       </Field>
-      <Field label="Role in tenant" hint="Recorded for future use — both grant read-only access today.">
+      <Field label="Role in tenant" hint="Viewer/Editor are read-only today. Admin on an admin-tenant (e.g., USI) grants platform-wide admin to this user.">
         <select className="score-select" value={role}
           disabled={!tenantId}
-          onChange={(e) => setRole(e.target.value as 'editor' | 'viewer')}>
+          onChange={(e) => setRole(e.target.value as 'editor' | 'viewer' | 'admin')}>
           <option value="viewer">Viewer (read-only)</option>
           <option value="editor">Editor (read-only today)</option>
+          <option value="admin">Admin (platform-wide if admin tenant)</option>
         </select>
       </Field>
       <div style={{ gridColumn: 'span 4', display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
@@ -638,12 +639,12 @@ function MembershipsCell({
   memberships: AdminMembership[];
   tenantsById: Record<string, AdminTenant>;
   allTenants: AdminTenant[];
-  onAdd: (tenant_id: string, role: 'editor' | 'viewer') => void;
+  onAdd: (tenant_id: string, role: 'editor' | 'viewer' | 'admin') => void;
   onRemove: (tenant_id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [tid, setTid] = useState('');
-  const [role, setRole] = useState<'editor' | 'viewer'>('viewer');
+  const [role, setRole] = useState<'editor' | 'viewer' | 'admin'>('viewer');
 
   const heldTenantIds = new Set(memberships.map((m) => m.tenant_id));
   const available = allTenants.filter((t) => !heldTenantIds.has(t.id));
@@ -657,7 +658,7 @@ function MembershipsCell({
       ) : memberships.map((m) => (
         <div key={m.tenant_id} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
           <span style={{ fontWeight: 600 }}>{tenantsById[m.tenant_id]?.display_name ?? m.tenant_id}</span>
-          <Pill color={m.role === 'editor' ? '#2563EB' : '#64748B'} style={{ fontSize: 10 }}>{m.role}</Pill>
+          <Pill color={m.role === 'admin' ? '#1E40AF' : m.role === 'editor' ? '#2563EB' : '#64748B'} style={{ fontSize: 10 }}>{m.role}</Pill>
           <button className="action-btn danger" style={{ padding: '0 6px', fontSize: 11, lineHeight: 1.4 }}
             onClick={() => onRemove(m.tenant_id)}>×</button>
         </div>
@@ -669,9 +670,11 @@ function MembershipsCell({
             <option value="">tenant…</option>
             {available.map((t) => <option key={t.id} value={t.id}>{t.display_name}</option>)}
           </select>
-          <select className="score-select" value={role} onChange={(e) => setRole(e.target.value as 'editor' | 'viewer')} style={{ fontSize: 11 }}>
+          <select className="score-select" value={role} onChange={(e) => setRole(e.target.value as 'editor' | 'viewer' | 'admin')} style={{ fontSize: 11 }}
+            title="Admin on an admin-flagged tenant grants platform-wide admin access">
             <option value="viewer">viewer</option>
             <option value="editor">editor</option>
+            <option value="admin">admin</option>
           </select>
           <button className="action-btn" disabled={!tid}
             onClick={() => { onAdd(tid, role); setTid(''); setOpen(false); }}>OK</button>

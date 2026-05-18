@@ -94,7 +94,7 @@ export interface CawUser {
 export interface CawMembership {
   user_id: string;
   tenant_id: string;
-  role: 'editor' | 'viewer';
+  role: 'editor' | 'viewer' | 'admin';
   created_at: string;
 }
 
@@ -328,22 +328,29 @@ export async function getCurrentUserByToken(token: string): Promise<CurrentUser 
     .eq('user_id', user.id);
   const memList = (memberships ?? []) as CawMembership[];
 
-  // Admin-tenant elevation. Membership in ANY tenant flagged
-  // is_admin_tenant=true confers effective platform-admin status — this is
-  // how the operator adds admins by "inviting them to the USI tenant"
-  // instead of poking the per-user profiles.is_platform_admin flag.
-  // We resolve the elevation here so the rest of the codebase keeps using
-  // a single is_platform_admin boolean and doesn't need to know about
-  // admin-tenant memberships.
+  // Admin-tenant elevation. Membership with role='admin' in a tenant
+  // flagged is_admin_tenant=true confers effective platform-admin status.
+  // Editor/viewer memberships in an admin tenant grant ONLY read access
+  // to that tenant's data, not platform-wide admin — that's the bug-fix
+  // that prompted migration 0023. Before this, ANY membership on the
+  // admin tenant elevated; that turned out too coarse and surprised
+  // operators who added a user as a viewer expecting read-only behavior.
+  //
+  // Non-admin tenants ignore role='admin' — it has no special meaning
+  // outside an is_admin_tenant=true tenant today. The role exists as a
+  // forward-compat slot for a future per-tenant admin tier.
   let effectiveIsPlatformAdmin = !!user.is_platform_admin;
   if (!effectiveIsPlatformAdmin && memList.length > 0) {
-    const tenantIds = memList.map((m) => m.tenant_id);
-    const { data: adminTenants } = await supabase
-      .from('tenants')
-      .select('id')
-      .eq('is_admin_tenant', true)
-      .in('id', tenantIds);
-    if ((adminTenants ?? []).length > 0) effectiveIsPlatformAdmin = true;
+    const adminMems = memList.filter((m) => m.role === 'admin');
+    if (adminMems.length > 0) {
+      const tenantIds = adminMems.map((m) => m.tenant_id);
+      const { data: adminTenants } = await supabase
+        .from('tenants')
+        .select('id')
+        .eq('is_admin_tenant', true)
+        .in('id', tenantIds);
+      if ((adminTenants ?? []).length > 0) effectiveIsPlatformAdmin = true;
+    }
   }
 
   // Sliding refresh: touch last_seen_at + slide expires_at forward by the
@@ -432,7 +439,7 @@ export interface InviteRecord {
   id: string;
   email: string;
   tenant_id: string | null;
-  role: 'editor' | 'viewer' | null;
+  role: 'editor' | 'viewer' | 'admin' | null;
   grant_platform_admin: boolean;
   expires_at: string;
   accepted_at: string | null;
@@ -448,7 +455,7 @@ export async function issueInvite(args: {
   email: string;
   invited_by: string | null;
   tenant_id: string | null;
-  role: 'editor' | 'viewer' | null;
+  role: 'editor' | 'viewer' | 'admin' | null;
   grant_platform_admin: boolean;
   ttl_days?: number;
   supabase?: SupabaseClient;

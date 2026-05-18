@@ -58,7 +58,7 @@ export default async function MyTenantsPage() {
 
   // Annotate each tenant with the user's role on it so the picker can
   // show "platform admin / editor / viewer" next to the display name.
-  const memByTenant = new Map<string, 'editor' | 'viewer'>();
+  const memByTenant = new Map<string, 'editor' | 'viewer' | 'admin'>();
   for (const m of cu.memberships) memByTenant.set(m.tenant_id, m.role);
 
   type Row = {

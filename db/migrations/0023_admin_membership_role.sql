@@ -1,0 +1,27 @@
+-- 0023_admin_membership_role.sql
+--
+-- Add 'admin' to the public.membership_role enum and tighten the
+-- admin-elevation rule.
+--
+-- Before this migration, ANY membership in a tenant flagged
+-- is_admin_tenant=true (today: Universal Systems) was elevated to
+-- effective platform-admin in lib/auth.ts. That turned out too coarse —
+-- a "viewer of USI" who was meant to be read-only on USI's portal got
+-- treated as a platform admin everywhere. The fix: introduce an explicit
+-- 'admin' role on memberships. Only role='admin' on an is_admin_tenant
+-- tenant grants platform-admin elevation. 'editor' and 'viewer' on the
+-- admin tenant behave like ordinary read-only memberships.
+--
+-- 'admin' on a non-admin tenant has NO special meaning today — it's
+-- reserved for a future per-tenant admin tier (e.g., letting a tenant
+-- editor manage their tenant's users). Treated as read-only for now,
+-- same as editor and viewer.
+--
+-- The application-side code (lib/auth.ts elevation, InviteForm,
+-- MembershipsCell, the role pickers in /admin/users and the membership
+-- API routes) is updated in the same commit so the new role value is
+-- usable from the UI immediately.
+
+-- 1. Extend the enum. Postgres enum-add is non-transactional in older
+--    versions but works in 12+. IF NOT EXISTS makes the migration idempotent.
+alter type public.membership_role add value if not exists 'admin';

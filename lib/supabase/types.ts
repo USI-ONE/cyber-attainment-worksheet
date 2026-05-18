@@ -1,6 +1,18 @@
 // Hand-written DB types for the tables we use. Replace with `supabase gen types` later if desired.
 
-export type MembershipRole = 'editor' | 'viewer';
+/**
+ * Mirrors the Postgres `membership_role` enum (see migrations 0015 + 0023).
+ *
+ *   editor  — historical role. Today behaves the same as `viewer` (read-only)
+ *             because edit privileges are platform-admin-only. Preserved
+ *             for forward-compat with a possible future per-tenant
+ *             admin tier.
+ *   viewer  — read access to that tenant's data.
+ *   admin   — on a tenant flagged is_admin_tenant=true, confers effective
+ *             platform-admin (see lib/auth.ts elevation logic). On any
+ *             non-admin tenant, treated the same as editor/viewer.
+ */
+export type MembershipRole = 'editor' | 'viewer' | 'admin';
 
 export interface Tenant {
   id: string;

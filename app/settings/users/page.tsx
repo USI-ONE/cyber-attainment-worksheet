@@ -40,7 +40,7 @@ export default async function SettingsUsersPage() {
     const usersById = new Map<string, NonNullable<typeof us>[number]>();
     for (const u of (us ?? [])) usersById.set((u as { id: string }).id, u);
     members = (mems ?? []).map((m) => {
-      const mm = m as { user_id: string; role: 'editor' | 'viewer'; created_at: string };
+      const mm = m as { user_id: string; role: 'editor' | 'viewer' | 'admin'; created_at: string };
       const user = usersById.get(mm.user_id);
       return {
         ...mm,

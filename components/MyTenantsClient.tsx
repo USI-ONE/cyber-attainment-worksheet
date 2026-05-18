@@ -23,7 +23,7 @@ interface TenantRow {
   hostname: string | null;
   primary_color: string | null;
   logo_url: string | null;
-  role: 'editor' | 'viewer' | null;
+  role: 'editor' | 'viewer' | 'admin' | null;
 }
 
 export default function MyTenantsClient({

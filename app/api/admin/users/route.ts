@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     email?: string; display_name?: string;
     grant_platform_admin?: boolean;
     tenant_id?: string | null;
-    role?: 'editor' | 'viewer';
+    role?: 'editor' | 'viewer' | 'admin';
   };
   try { body = await request.json(); } catch { return bad('invalid JSON'); }
 
@@ -66,8 +66,9 @@ export async function POST(request: NextRequest) {
 
   const grantPlatform = !!body.grant_platform_admin;
   const tenantId = body.tenant_id || null;
-  const role: 'editor' | 'viewer' | null =
-    body.role === 'editor' || body.role === 'viewer' ? body.role : null;
+  const role: 'editor' | 'viewer' | 'admin' | null =
+    body.role === 'editor' || body.role === 'viewer' || body.role === 'admin'
+      ? body.role : null;
 
   if (tenantId && !role) return bad('role required when tenant_id is set');
   if (!tenantId && !grantPlatform) return bad('must grant platform_admin or assign a tenant + role');

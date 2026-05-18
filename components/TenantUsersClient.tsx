@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 export interface TenantMember {
   user_id: string;
-  role: 'editor' | 'viewer';
+  role: 'editor' | 'viewer' | 'admin';
   created_at: string;
   user: {
     id: string;
@@ -19,7 +19,7 @@ export interface TenantMember {
 export interface TenantPendingInvite {
   id: string;
   email: string;
-  role: 'editor' | 'viewer' | null;
+  role: 'editor' | 'viewer' | 'admin' | null;
   expires_at: string;
   created_at: string;
 }
@@ -44,7 +44,7 @@ export default function TenantUsersClient({
     email: string; url: string; emailSent: boolean;
   } | null>(null);
 
-  async function invite(payload: { email: string; role: 'editor' | 'viewer'; display_name?: string }) {
+  async function invite(payload: { email: string; role: 'editor' | 'viewer' | 'admin'; display_name?: string }) {
     const res = await fetch('/api/settings/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -114,7 +114,7 @@ export default function TenantUsersClient({
     }
   }
 
-  async function changeRole(user_id: string, role: 'editor' | 'viewer') {
+  async function changeRole(user_id: string, role: 'editor' | 'viewer' | 'admin') {
     setMembers((s) => s.map((m) => m.user_id === user_id ? { ...m, role } : m));
     const res = await fetch(`/api/settings/users/${user_id}`, {
       method: 'PATCH',
@@ -217,9 +217,11 @@ export default function TenantUsersClient({
                   <td><StatusPill status={u.status} /></td>
                   <td>
                     <select className="score-select" value={m.role}
-                      onChange={(e) => changeRole(m.user_id, e.target.value as 'editor' | 'viewer')}>
+                      onChange={(e) => changeRole(m.user_id, e.target.value as 'editor' | 'viewer' | 'admin')}
+                      title="Admin on an admin-flagged tenant grants platform-wide admin access">
                       <option value="viewer">Viewer</option>
                       <option value="editor">Editor</option>
+                      <option value="admin">Admin</option>
                     </select>
                   </td>
                   <td style={{ fontSize: 11, color: 'var(--text-mid)' }}>
@@ -358,10 +360,10 @@ function StatusPill({ status }: { status: 'active' | 'disabled' | 'invited' }) {
 
 function InviteForm({
   onSubmit, onCancel,
-}: { onSubmit: (payload: { email: string; role: 'editor' | 'viewer'; display_name?: string }) => void; onCancel: () => void }) {
+}: { onSubmit: (payload: { email: string; role: 'editor' | 'viewer' | 'admin'; display_name?: string }) => void; onCancel: () => void }) {
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [role, setRole] = useState<'editor' | 'viewer'>('viewer');
+  const [role, setRole] = useState<'editor' | 'viewer' | 'admin'>('viewer');
 
   return (
     <form
@@ -380,9 +382,11 @@ function InviteForm({
         <input className="score-select" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Name" />
       </Field>
       <Field label="Role">
-        <select className="score-select" value={role} onChange={(e) => setRole(e.target.value as 'editor' | 'viewer')}>
+        <select className="score-select" value={role} onChange={(e) => setRole(e.target.value as 'editor' | 'viewer' | 'admin')}
+          title="Admin on an admin-flagged tenant grants platform-wide admin access">
           <option value="viewer">Viewer</option>
           <option value="editor">Editor</option>
+          <option value="admin">Admin</option>
         </select>
       </Field>
       <button type="submit" className="action-btn primary" disabled={!email.includes('@')}>Issue invite</button>
