@@ -43,14 +43,17 @@ export default async function RootLayout({
   // outside the allow-list to /auth/change-password. /api/me/password
   // clears the cookie when the user picks a real password.
 
-  // Determine whether the signed-in user can administer THIS tenant (editor
-  // OR platform admin). Drives the conditional Nav groups (Settings, Admin).
+  // Access model: editing is platform-admin-only. Tenant memberships
+  // (editor OR viewer) grant read access via canAccessTenant, but the
+  // edit path is reserved for the operator (platform admin via the per-
+  // user flag OR via membership in an is_admin_tenant=true tenant, both
+  // of which roll up into currentUser.user.is_platform_admin upstream in
+  // lib/auth.ts#getCurrentUserByToken).
   const isPlatformAdmin = !!currentUser?.user.is_platform_admin;
-  const canEdit = isPlatformAdmin
-    || (!!tenant && !!currentUser?.memberships.some((m) => m.tenant_id === tenant.id && m.role === 'editor'));
+  const canEdit = isPlatformAdmin;
   const canAdminister = canEdit;
 
-  // Read-only mode: signed-in user who CAN'T edit this tenant. Drives the
+  // Read-only mode: signed-in user who can't edit. Drives the
   // ReadOnlyBanner above main content and a body[data-readonly] attribute
   // that disables editable inputs via CSS in globals.css. Anonymous browsing
   // (no currentUser) is NOT read-only mode — the user simply hasn't signed

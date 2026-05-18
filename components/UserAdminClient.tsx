@@ -603,24 +603,24 @@ function InviteForm({
           value={displayName} onChange={(e) => setDisplayName(e.target.value)}
           placeholder="Name" />
       </Field>
-      <Field label="Platform admin" hint="Grants access to /admin and every tenant.">
+      <Field label="Platform admin" hint="Edits everything across every tenant.">
         <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, paddingTop: 8, fontSize: 13 }}>
           <input type="checkbox" checked={grantPlatform} onChange={(e) => setGrantPlatform(e.target.checked)} />
           Grant platform-admin role
         </label>
       </Field>
-      <Field label="Assign to tenant">
+      <Field label="Assign to tenant" hint="Read-only access to this tenant's data. Editing remains platform-admin-only.">
         <select className="score-select" value={tenantId} onChange={(e) => setTenantId(e.target.value)}>
           <option value="">— none —</option>
           {tenants.map((t) => <option key={t.id} value={t.id}>{t.display_name}</option>)}
         </select>
       </Field>
-      <Field label="Role in tenant">
+      <Field label="Role in tenant" hint="Recorded for future use — both grant read-only access today.">
         <select className="score-select" value={role}
           disabled={!tenantId}
           onChange={(e) => setRole(e.target.value as 'editor' | 'viewer')}>
-          <option value="viewer">Viewer</option>
-          <option value="editor">Editor</option>
+          <option value="viewer">Viewer (read-only)</option>
+          <option value="editor">Editor (read-only today)</option>
         </select>
       </Field>
       <div style={{ gridColumn: 'span 4', display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>

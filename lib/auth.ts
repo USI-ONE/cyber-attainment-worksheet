@@ -363,21 +363,51 @@ export async function getCurrentUserByToken(token: string): Promise<CurrentUser 
 // Guards / authorization helpers
 // =============================================================================
 
+/**
+ * Access model (current):
+ *   - canAccessTenant — read access. Granted by any membership on that
+ *     tenant (editor OR viewer) or by platform-admin status.
+ *   - canEditTenant   — write access. Granted ONLY by platform-admin status.
+ *     Tenant memberships do not confer edit. The 'editor' role still exists
+ *     in the schema for future use (e.g., a per-tenant admin tier), but as
+ *     of this commit it grants the same access as 'viewer': read-only.
+ *   - canAdministerTenant — same as canEditTenant for now. User management
+ *     remains platform-admin-only at the hub.
+ *
+ * Why the simplification: the platform is operated by a single MSP (USI).
+ * Customers and their tenant users should be able to see their data, run
+ * the assessment, view dashboards, and download reports — but the MSP
+ * remains the editor of record. This avoids the surprise of one customer
+ * accidentally rewriting another's scores or policies, and keeps the
+ * blast radius of a compromised tenant credential tightly limited.
+ *
+ * A user becomes a "full admin" via either path:
+ *   - profiles.is_platform_admin = true (per-user flag), OR
+ *   - membership to any tenant flagged is_admin_tenant=true (e.g., USI)
+ * Both paths are checked by isPlatformAdmin/getCurrentUserByToken and
+ * collapse into the single cu.user.is_platform_admin boolean by the
+ * time anything calls these helpers.
+ */
+
 export function canAccessTenant(cu: CurrentUser | null, tenantId: string): boolean {
   if (!cu) return false;
   if (cu.user.is_platform_admin) return true;
   return cu.memberships.some((m) => m.tenant_id === tenantId);
 }
 
-export function canEditTenant(cu: CurrentUser | null, tenantId: string): boolean {
+export function canEditTenant(cu: CurrentUser | null, _tenantId: string): boolean {
   if (!cu) return false;
-  if (cu.user.is_platform_admin) return true;
-  return cu.memberships.some((m) => m.tenant_id === tenantId && m.role === 'editor');
+  // Platform-admin-only. Tenant memberships grant read via canAccessTenant
+  // but never write. The _tenantId param is retained for API symmetry —
+  // callers were already passing it and we may want per-tenant write
+  // restrictions back later. Suppress the unused-var lint with the
+  // leading underscore prefix.
+  return !!cu.user.is_platform_admin;
 }
 
-/** Editors are also tenant admins for v1 — they can invite users to their
- *  tenant. If we later split admin from editor, change this to also check
- *  membership.role === 'admin'. */
+/** Same as canEditTenant today — administering a tenant (inviting users,
+ *  managing settings) is platform-admin-only and happens at the hub. If a
+ *  future "tenant admin" tier lands, change this to also accept that role. */
 export function canAdministerTenant(cu: CurrentUser | null, tenantId: string): boolean {
   return canEditTenant(cu, tenantId);
 }
