@@ -101,19 +101,43 @@ export default function UserAdminClient({
     });
     const j = await res.json();
     if (!res.ok || !j.ok) { alert(j.error ?? 'invite failed'); return; }
-    // Prefer the server-built URL — it knows the tenant's hostname so a
-    // tenant-scoped invite issued from the operator hub still produces a
-    // URL pointed at the tenant deploy (where the invitee's session needs
-    // to live). Fall back to origin+path for platform-admin invites where
-    // the server returns accept_url = null.
-    setAcceptUrl(j.accept_url ?? (window.location.origin + j.accept_url_path));
-    setInvites((s) => [
-      { id: j.invite.id, email: j.invite.email, tenant_id: j.invite.tenant_id,
-        role: j.invite.role, grant_platform_admin: j.invite.grant_platform_admin,
-        expires_at: j.invite.expires_at, created_at: new Date().toISOString() },
-      ...s,
-    ]);
+
+    // The temp-password invite flow returns the shape:
+    //   { ok, email, user_id, role, temp_password, sign_in_url, email_sent }
+    // The previous link-based invite flow returned:
+    //   { ok, invite: { id, email, tenant_id, role, … }, accept_url, accept_url_path }
+    // Reading j.invite.id under the new shape threw the "Cannot read
+    // properties of undefined (reading 'id')" crash that surfaced in
+    // user testing. Now we surface the temp password in a banner and
+    // optimistically refresh the user list — the invitee is created
+    // immediately as an active profile + membership, not as a pending
+    // invite. Pending-invite rows only show up for forgot-password /
+    // email-link resets, which is the correct place for them.
+    setTempPasswordBanner({
+      email: j.email,
+      password: j.temp_password,
+      emailSent: !!j.email_sent,
+    });
     setOpenInvite(false);
+    void refreshUserList();
+  }
+
+  /**
+   * Re-fetch the platform-wide user + membership data after an invite
+   * lands, so the new user appears in the table without a hard refresh.
+   * Best-effort — if the fetch fails we leave the in-memory list alone.
+   */
+  async function refreshUserList() {
+    try {
+      const res = await fetch('/api/admin/users', { cache: 'no-store' });
+      if (!res.ok) return;
+      const j = await res.json();
+      if (Array.isArray(j.users)) setUserList(j.users as AdminProfile[]);
+      if (Array.isArray(j.memberships)) setMemList(j.memberships as AdminMembership[]);
+      if (Array.isArray(j.pending_invites)) setInvites(j.pending_invites as AdminInvite[]);
+    } catch {
+      /* noop — the new user will appear on next page load */
+    }
   }
 
   async function togglePlatformAdmin(user: AdminProfile) {
