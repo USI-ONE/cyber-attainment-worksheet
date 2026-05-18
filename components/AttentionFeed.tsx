@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { AttentionItem, AttentionSeverity, AttentionKind } from '@/lib/attention';
 
 /**
@@ -9,7 +9,13 @@ import type { AttentionItem, AttentionSeverity, AttentionKind } from '@/lib/atte
  * Renders as a single elevated card with severity tabs at the top and the
  * filtered list below. Each row links straight to the page where the user
  * can act on the item.
+ *
+ * Collapsible. The user can hide the row list while keeping the
+ * severity counters visible — useful for a returning visitor who's
+ * already triaged. Preference is stashed in localStorage so the
+ * collapsed state persists across page loads on this device.
  */
+const COLLAPSED_STORAGE_KEY = 'caw_attention_feed_collapsed';
 
 const SEV_META: Record<AttentionSeverity, { color: string; label: string; bg: string }> = {
   critical: { color: '#991B1B', label: 'Critical', bg: 'rgba(153,27,27,0.08)' },
@@ -60,6 +66,29 @@ const KIND_ICON: Record<AttentionKind, string> = {
 
 export default function AttentionFeed({ items }: { items: AttentionItem[] }) {
   const [filter, setFilter] = useState<'ALL' | AttentionSeverity>('ALL');
+  // Collapsed defaults to false so first-time visitors see the feed. The
+  // initial render on both server and client uses this default, then a
+  // useEffect on mount overrides from localStorage. The two-step
+  // assignment avoids hydration mismatch warnings.
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(COLLAPSED_STORAGE_KEY) === '1') {
+        setCollapsed(true);
+      }
+    } catch {
+      /* localStorage unavailable (private mode, SSR) — fall back to expanded */
+    }
+  }, []);
+
+  function toggleCollapsed() {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try { window.localStorage.setItem(COLLAPSED_STORAGE_KEY, next ? '1' : '0'); } catch { /* noop */ }
+      return next;
+    });
+  }
+
   const counts = {
     critical: items.filter((i) => i.severity === 'critical').length,
     high:     items.filter((i) => i.severity === 'high').length,
@@ -71,14 +100,41 @@ export default function AttentionFeed({ items }: { items: AttentionItem[] }) {
   return (
     <section className="scorecard" style={{ marginBottom: 18 }}>
       <div className="scorecard-header" style={{ flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <div className="scorecard-title">Needs Attention</div>
-          <div className="scorecard-tag" style={{ marginTop: 4 }}>
-            {items.length === 0
-              ? 'Nothing requires action right now — clean dashboard.'
-              : `${items.length} item${items.length === 1 ? '' : 's'} across risks, DR, IR, incidents, and priorities`}
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? 'Expand needs-attention feed' : 'Collapse needs-attention feed'}
+          title={collapsed ? 'Show notifications' : 'Hide notifications'}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            background: 'transparent', border: 'none', padding: 0,
+            cursor: 'pointer', textAlign: 'left', flex: '1 1 auto', minWidth: 0,
+          }}
+        >
+          <svg
+            width="14" height="14" viewBox="0 0 14 14"
+            aria-hidden="true"
+            style={{
+              flexShrink: 0,
+              transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+              transition: 'transform .15s ease',
+              color: 'var(--text-mid)',
+            }}
+          >
+            <path d="M3 5L7 9L11 5" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <div style={{ minWidth: 0 }}>
+            <div className="scorecard-title">Needs Attention</div>
+            <div className="scorecard-tag" style={{ marginTop: 4 }}>
+              {items.length === 0
+                ? 'Nothing requires action right now — clean dashboard.'
+                : collapsed
+                  ? `${items.length} item${items.length === 1 ? '' : 's'} hidden — click to expand`
+                  : `${items.length} item${items.length === 1 ? '' : 's'} across risks, DR, IR, incidents, and priorities`}
+            </div>
           </div>
-        </div>
+        </button>
 
         {items.length > 0 && (
           <div className="fn-filters">
@@ -103,24 +159,29 @@ export default function AttentionFeed({ items }: { items: AttentionItem[] }) {
         )}
       </div>
 
-      {items.length === 0 ? (
-        <div style={{
-          padding: '20px 0', textAlign: 'center', color: 'var(--text-mid)', fontSize: 13,
-        }}>
-          <span style={{ fontSize: 22, marginRight: 8, color: '#10B981' }}>✓</span>
-          No risks, DR tests, playbooks, incidents, priorities, or tasks need attention right now.
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {visible.map((it, idx) => (
-            <AttentionRow key={idx} item={it} />
-          ))}
-          {visible.length === 0 && (
-            <div style={{ padding: '16px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
-              No {filter} items.
-            </div>
-          )}
-        </div>
+      {/* Body is hidden when the user has collapsed the card. The
+          counters/filter chips above stay visible so the user still sees
+          at-a-glance severity totals even while collapsed. */}
+      {!collapsed && (
+        items.length === 0 ? (
+          <div style={{
+            padding: '20px 0', textAlign: 'center', color: 'var(--text-mid)', fontSize: 13,
+          }}>
+            <span style={{ fontSize: 22, marginRight: 8, color: '#10B981' }}>✓</span>
+            No risks, DR tests, playbooks, incidents, priorities, or tasks need attention right now.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {visible.map((it, idx) => (
+              <AttentionRow key={idx} item={it} />
+            ))}
+            {visible.length === 0 && (
+              <div style={{ padding: '16px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
+                No {filter} items.
+              </div>
+            )}
+          </div>
+        )
       )}
     </section>
   );
