@@ -190,6 +190,39 @@ export default function UserAdminClient({
     });
   }
 
+  async function deletePermanently(user: AdminProfile) {
+    if (user.id === currentUserId) {
+      alert("You can't delete your own account.");
+      return;
+    }
+    // Two-confirm gate: hard delete is irreversible, so we want a
+    // deliberate pause + verbatim-name typing for the most destructive
+    // path. The first confirm is the standard "are you sure" check; the
+    // second prompts the admin to type the email to prove they meant it.
+    if (!confirm(
+      `PERMANENTLY DELETE ${user.email}?\n\n` +
+      `This removes the profile row entirely and clears the user from ` +
+      `all memberships and active sessions. Audit history is preserved ` +
+      `(the user pointer becomes null) but cannot be undone.`,
+    )) return;
+    const typed = prompt(`Type the user's email to confirm: ${user.email}`);
+    if (typed?.trim().toLowerCase() !== user.email.toLowerCase()) {
+      alert('Email did not match. Deletion cancelled.');
+      return;
+    }
+    const res = await fetch(`/api/admin/users/${user.id}/permanent`, { method: 'DELETE' });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      alert(j.error ?? 'delete failed');
+      return;
+    }
+    // Drop the user from every piece of local state. Memberships for
+    // that user CASCADE on the server side, so we mirror by removing
+    // them from memList here too.
+    setUserList((s) => s.filter((u) => u.id !== user.id));
+    setMemList((s) => s.filter((m) => m.user_id !== user.id));
+  }
+
   async function removeMembership(user_id: string, tenant_id: string) {
     setMemList((s) => s.filter((m) => !(m.user_id === user_id && m.tenant_id === tenant_id)));
     await fetch(`/api/admin/users/${user_id}/memberships?tenant_id=${encodeURIComponent(tenant_id)}`,
@@ -345,7 +378,15 @@ export default function UserAdminClient({
                   <td onClick={(e) => e.stopPropagation()}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
                       {u.status === 'disabled' ? (
-                        <button className="action-btn" onClick={() => setStatus(u, 'active')}>Re-enable</button>
+                        <>
+                          <button className="action-btn" onClick={() => setStatus(u, 'active')}>Re-enable</button>
+                          <button
+                            className="action-btn danger"
+                            style={{ fontSize: 11 }}
+                            title="Permanently remove this user. Audit history is preserved with the user pointer set to null."
+                            onClick={() => deletePermanently(u)}
+                          >Delete permanently</button>
+                        </>
                       ) : u.id === currentUserId ? (
                         <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>(you)</span>
                       ) : (
