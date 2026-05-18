@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 
 export interface AdminTenantRow {
@@ -21,19 +22,11 @@ export default function TenantAdminClient({
   memberCounts: Record<string, { editors: number; viewers: number }>;
 }) {
   const [list, setList] = useState<AdminTenantRow[]>(tenants);
-  const [creating, setCreating] = useState(false);
 
-  async function createTenant(payload: { slug: string; display_name: string; hostname?: string }) {
-    const res = await fetch('/api/admin/tenants', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const j = await res.json();
-    if (!res.ok || !j.ok) { alert(j.error ?? 'create failed'); return; }
-    setList((s) => [...s, j.tenant as AdminTenantRow].sort((a, b) => a.display_name.localeCompare(b.display_name)));
-    setCreating(false);
-  }
+  // Tenant creation moved to a dedicated wizard at /admin/tenants/new
+  // that also handles framework assignment + baseline-score seeding.
+  // The inline NewTenantForm + createTenant helper below are no longer
+  // wired up but kept around in case we want a quick-create path back.
 
   async function patchTenant(id: string, fields: Partial<AdminTenantRow>) {
     setList((s) => s.map((t) => t.id === id ? { ...t, ...fields } : t));
@@ -66,12 +59,10 @@ export default function TenantAdminClient({
               {' '}<strong>Admin tenant</strong> grants every member of that tenant platform-wide access.
             </div>
           </div>
-          <button className="action-btn primary" onClick={() => setCreating((v) => !v)}>
-            {creating ? 'Cancel' : '+ New Tenant'}
-          </button>
+          <Link href="/admin/tenants/new" className="action-btn primary">
+            + New Tenant
+          </Link>
         </div>
-
-        {creating && <NewTenantForm onSubmit={createTenant} onCancel={() => setCreating(false)} />}
 
         <table className="score-table" style={{ marginTop: 12 }}>
           <thead>
