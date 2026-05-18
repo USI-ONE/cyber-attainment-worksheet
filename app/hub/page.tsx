@@ -1,5 +1,6 @@
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { computeAttention, summarize, type AttentionItem, type AttentionSummary } from '@/lib/attention';
+import PortfolioWatchlist, { type WatchlistEntry } from '@/components/PortfolioWatchlist';
 
 /**
  * Portfolio Hub — operator-only landing page that lists every tenant portal
@@ -126,11 +127,19 @@ export default async function HubPage() {
     portfolio.low      += c.attention.low;
   }
 
-  // Watchlist = critical-and-high items only, grouped by tenant.
-  const watchlist: { tenant: TenantCard; item: AttentionItem }[] = [];
+  // Watchlist = critical-and-high items only, grouped by tenant. Shape
+  // chosen to match the PortfolioWatchlist client-component's expected
+  // WatchlistEntry props (tenant: { id, display_name, url } + item) so
+  // the data crosses the server/client boundary cleanly.
+  const watchlist: WatchlistEntry[] = [];
   for (const c of cards) {
     for (const it of c.top_attention) {
-      if (it.severity === 'critical' || it.severity === 'high') watchlist.push({ tenant: c, item: it });
+      if (it.severity === 'critical' || it.severity === 'high') {
+        watchlist.push({
+          tenant: { id: c.id, display_name: c.display_name, url: c.url },
+          item: it,
+        });
+      }
     }
   }
 
@@ -145,74 +154,10 @@ export default async function HubPage() {
         <KpiTile label="Low"      value={portfolio.low.toString()}      sub="items across portfolio" accent="#64748B" />
       </div>
 
-      {/* Watchlist */}
-      <section className="scorecard">
-        <div className="scorecard-header">
-          <div>
-            <div className="scorecard-title">Portfolio Watchlist</div>
-            <div className="scorecard-tag" style={{ marginTop: 4 }}>
-              {watchlist.length === 0
-                ? 'No critical or high items across the portfolio right now — clean board.'
-                : `${watchlist.length} critical / high item${watchlist.length === 1 ? '' : 's'} across ${
-                    new Set(watchlist.map((w) => w.tenant.id)).size
-                  } tenant${new Set(watchlist.map((w) => w.tenant.id)).size === 1 ? '' : 's'}`}
-            </div>
-          </div>
-        </div>
-
-        {watchlist.length === 0 ? (
-          <div style={{ padding: '16px 0', textAlign: 'center', color: 'var(--text-mid)', fontSize: 13 }}>
-            <span style={{ fontSize: 22, marginRight: 8, color: '#10B981' }}>✓</span>
-            Nothing critical or high across all tenants.
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {watchlist.map((w, idx) => {
-              const sevColor = w.item.severity === 'critical' ? '#991B1B' : '#DC2626';
-              const sevBg    = w.item.severity === 'critical' ? 'rgba(153,27,27,0.08)' : 'rgba(220,38,38,0.08)';
-              return (
-                <a
-                  key={idx}
-                  href={w.tenant.url + w.item.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    display: 'grid', gridTemplateColumns: '4px 1fr auto auto', gap: 12, alignItems: 'center',
-                    padding: '10px 12px', background: sevBg,
-                    borderRadius: 'var(--r-md)', textDecoration: 'none', color: 'var(--text)',
-                  }}
-                >
-                  <span style={{ width: 4, height: 28, background: sevColor, borderRadius: 999 }} />
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{
-                      fontSize: 10, fontWeight: 700, color: sevColor,
-                      textTransform: 'uppercase', letterSpacing: '.04em',
-                    }}>
-                      {w.tenant.display_name}
-                    </div>
-                    <div style={{ fontWeight: 600, fontSize: 13, marginTop: 1,
-                                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {w.item.title}
-                    </div>
-                    <div style={{ fontSize: 11.5, color: 'var(--text-mid)', marginTop: 2 }}>
-                      {w.item.detail}
-                    </div>
-                  </div>
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, color: sevColor,
-                    textTransform: 'uppercase', letterSpacing: '.04em',
-                  }}>
-                    {w.item.severity}
-                  </span>
-                  <span style={{ color: sevColor, fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}>
-                    Open →
-                  </span>
-                </a>
-              );
-            })}
-          </div>
-        )}
-      </section>
+      {/* Watchlist — client component for collapse/expand interactivity.
+          Data is gathered server-side above and handed in as a plain
+          serializable array. */}
+      <PortfolioWatchlist items={watchlist} />
 
       {/* Tenant cards header */}
       <section className="scorecard" style={{ marginBottom: 0, paddingBottom: 12 }}>
