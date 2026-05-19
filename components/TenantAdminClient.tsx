@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 export interface AdminTenantRow {
   id: string;
@@ -41,6 +41,27 @@ export default function TenantAdminClient({
     }
   }
 
+  // Logo upload — multipart POST to /api/admin/tenants/[id]/logo.
+  // On success the server returns the canonical (cache-free) public URL.
+  // We splice that into the row's brand_config so the preview updates
+  // immediately. (`?v=<ts>` is appended on the IMG src only — not stored —
+  // to bypass the browser cache when the same extension is re-uploaded.)
+  async function uploadLogo(id: string, file: File): Promise<string | null> {
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetch(`/api/admin/tenants/${id}/logo`, { method: 'POST', body: form });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(j.error ?? 'logo upload failed');
+      return null;
+    }
+    const newUrl: string = j.logo_url;
+    setList((s) => s.map((t) => t.id === id
+      ? { ...t, brand_config: { ...(t.brand_config ?? {}), logo_url: newUrl } }
+      : t));
+    return newUrl;
+  }
+
   return (
     <>
       <div className="kpi-row" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
@@ -66,6 +87,7 @@ export default function TenantAdminClient({
         <table className="score-table" style={{ marginTop: 12 }}>
           <thead>
             <tr>
+              <th>Logo</th>
               <th>Display name</th>
               <th>Slug</th>
               <th>Hostname</th>
@@ -77,8 +99,16 @@ export default function TenantAdminClient({
           <tbody>
             {list.map((t) => {
               const counts = memberCounts[t.id] ?? { editors: 0, viewers: 0 };
+              const logoUrl = (t.brand_config as { logo_url?: string } | null)?.logo_url ?? null;
               return (
                 <tr key={t.id}>
+                  <td>
+                    <LogoCell
+                      tenantId={t.id}
+                      logoUrl={logoUrl}
+                      onUpload={(file) => uploadLogo(t.id, file)}
+                    />
+                  </td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <input className="score-select" defaultValue={t.display_name}
@@ -107,6 +137,75 @@ export default function TenantAdminClient({
         </table>
       </section>
     </>
+  );
+}
+
+/**
+ * Logo thumbnail + "Change…" button for a single tenant row.
+ * Hidden file input is per-row (cheap, simpler than juggling shared refs)
+ * and accepts the same MIME set the bucket allows.
+ *
+ * After upload, `previewBust` is bumped so the <img> reloads even when the
+ * canonical URL is unchanged (same extension overwrite — browsers would
+ * otherwise serve the cached version).
+ */
+function LogoCell({
+  tenantId, logoUrl, onUpload,
+}: {
+  tenantId: string;
+  logoUrl: string | null;
+  onUpload: (file: File) => Promise<string | null>;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [previewBust, setPreviewBust] = useState(0);
+
+  const previewSrc = logoUrl
+    ? `${logoUrl}${logoUrl.includes('?') ? '&' : '?'}v=${previewBust}`
+    : null;
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div
+        style={{
+          width: 36, height: 36, borderRadius: 6,
+          background: previewSrc ? `#fff center/contain no-repeat url("${previewSrc}")` : 'var(--bg-surface)',
+          border: '1px solid var(--bg-border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 9, color: 'var(--text-muted)', flexShrink: 0,
+        }}
+        aria-label={previewSrc ? 'Current tenant logo' : 'No logo set'}
+      >
+        {previewSrc ? null : 'none'}
+      </div>
+      <button
+        type="button"
+        className="action-btn"
+        style={{ padding: '4px 10px', fontSize: 11 }}
+        disabled={busy}
+        onClick={() => inputRef.current?.click()}
+      >
+        {busy ? 'Uploading…' : (logoUrl ? 'Change' : 'Upload')}
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/svg+xml,image/webp,image/avif"
+        style={{ display: 'none' }}
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          // Clear the input first so re-selecting the same filename later
+          // still triggers onChange.
+          e.target.value = '';
+          if (!file) return;
+          setBusy(true);
+          const newUrl = await onUpload(file);
+          setBusy(false);
+          if (newUrl) setPreviewBust((n) => n + 1);
+        }}
+        data-tenant-id={tenantId}
+      />
+    </div>
   );
 }
 
