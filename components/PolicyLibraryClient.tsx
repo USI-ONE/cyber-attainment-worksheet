@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 /**
  * Single row in the policy library: catalog metadata + optional per-tenant
@@ -96,6 +96,40 @@ export default function PolicyLibraryClient({
       .filter((g) => g.rows.length > 0);
   }, [items]);
 
+  /**
+   * Upload a new version of the document for one policy. The server
+   * archives the prior doc (status='archived', file preserved) and
+   * repoints tenant_policies at the new one. Returns the new
+   * policy_document_id on success so the row can update its state.
+   */
+  async function replaceDocument(code: string, file: File, version?: string): Promise<string | null> {
+    const form = new FormData();
+    form.append('file', file);
+    if (version) form.append('version', version);
+    const res = await fetch(`/api/policy-library/${code}/document`, { method: 'POST', body: form });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(j.error ?? 'document upload failed');
+      return null;
+    }
+    const newDocId: string = j.document.id;
+    const newVersion: string = j.document.version;
+    const today = new Date().toISOString().slice(0, 10);
+    setItems((cur) => cur.map((it) => it.code === code
+      ? {
+          ...it,
+          state: {
+            ...(it.state ?? makeBlankState()),
+            policy_document_id: newDocId,
+            version: newVersion,
+            last_reviewed_at: today,
+            status: 'active',
+          },
+        }
+      : it));
+    return newDocId;
+  }
+
   async function patch(code: string, fields: Record<string, unknown>) {
     // Optimistic update — merge into state immediately, then reconcile
     // with the server response (which fills in computed fields like
@@ -156,10 +190,11 @@ export default function PolicyLibraryClient({
                   <th>Version</th>
                   <th>Last reviewed</th>
                   <th>Next due</th>
+                  <th>Document</th>
                 </tr>
               </thead>
               <tbody>
-                {g.rows.map((it) => <PolicyRow key={it.code} item={it} canEdit={canEdit} onChange={patch} />)}
+                {g.rows.map((it) => <PolicyRow key={it.code} item={it} canEdit={canEdit} onChange={patch} onReplaced={replaceDocument} />)}
               </tbody>
             </table>
           </div>
@@ -170,11 +205,12 @@ export default function PolicyLibraryClient({
 }
 
 function PolicyRow({
-  item, canEdit, onChange,
+  item, canEdit, onChange, onReplaced,
 }: {
   item: PolicyLibraryItem;
   canEdit: boolean;
   onChange: (code: string, fields: Record<string, unknown>) => void;
+  onReplaced: (code: string, file: File, version?: string) => Promise<string | null>;
 }) {
   const st = effectiveStatus(item);
   const style = STATUS_STYLES[st];
@@ -272,7 +308,108 @@ function PolicyRow({
           dueLabel
         )}
       </td>
+      <td>
+        <DocumentCell
+          code={item.code}
+          docId={item.state?.policy_document_id ?? null}
+          canEdit={canEdit}
+          onReplaced={onReplaced}
+        />
+      </td>
     </tr>
+  );
+}
+
+/**
+ * Document actions for one policy library row.
+ *   - If a document is attached: Download (signed URL) + Replace (canEdit only).
+ *   - If no document: Upload (canEdit only) / "—" for read-only.
+ *
+ * Download flow: hits the existing GET /api/policy-documents/{id} which
+ * returns a 60-second signed URL. The signed URL is opened in a new tab
+ * and the bucket's download disposition header forces a save dialog.
+ *
+ * Replace flow: hidden file input → POST multipart to
+ * /api/policy-library/{code}/document. Server archives the prior doc and
+ * repoints tenant_policies.
+ */
+function DocumentCell({
+  code, docId, canEdit, onReplaced,
+}: {
+  code: string;
+  docId: string | null;
+  canEdit: boolean;
+  onReplaced: (code: string, file: File, version?: string) => Promise<string | null>;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState<'idle' | 'downloading' | 'uploading'>('idle');
+
+  async function download() {
+    if (!docId) return;
+    setBusy('downloading');
+    try {
+      const res = await fetch(`/api/policy-documents/${docId}`);
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || !j.download_url) {
+        alert(j.error ?? 'download failed');
+        return;
+      }
+      window.open(j.download_url, '_blank', 'noopener');
+    } finally {
+      setBusy('idle');
+    }
+  }
+
+  async function pickFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-uploading the same filename later
+    if (!file) return;
+    const version = window.prompt(
+      'Version label for this upload (e.g. 1.1, 2026-Q2). Leave blank for today\'s date.',
+      '',
+    );
+    if (version === null) return; // user cancelled
+    setBusy('uploading');
+    await onReplaced(code, file, version.trim() || undefined);
+    setBusy('idle');
+  }
+
+  if (busy !== 'idle') {
+    return <span style={{ fontSize: 11, color: 'var(--text-mid)' }}>{busy === 'downloading' ? 'Preparing…' : 'Uploading…'}</span>;
+  }
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      {docId && (
+        <button
+          type="button"
+          className="action-btn"
+          style={{ padding: '3px 9px', fontSize: 11 }}
+          onClick={download}
+        >
+          Download
+        </button>
+      )}
+      {canEdit && (
+        <button
+          type="button"
+          className="action-btn"
+          style={{ padding: '3px 9px', fontSize: 11 }}
+          onClick={() => fileRef.current?.click()}
+        >
+          {docId ? 'Replace' : 'Upload'}
+        </button>
+      )}
+      {!docId && !canEdit && (
+        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>—</span>
+      )}
+      <input
+        ref={fileRef}
+        type="file"
+        style={{ display: 'none' }}
+        onChange={pickFile}
+      />
+    </div>
   );
 }
 
