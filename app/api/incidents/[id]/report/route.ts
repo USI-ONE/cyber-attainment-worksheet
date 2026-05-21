@@ -40,6 +40,36 @@ function asArray<T>(v: unknown): T[] {
   return Array.isArray(v) ? (v as T[]) : [];
 }
 
+/**
+ * Cap timeline rendering so a runaway timeline (e.g. a full incident
+ * write-up pasted into the field, where every line becomes a row) does
+ * not blow past Vercel's serverless function timeout. @react-pdf is a
+ * Node-side layout engine and its per-row cost is non-trivial; in
+ * practice anything past ~150 rows starts to risk a 60-second cap.
+ *
+ * Strategy: keep the first HALF and the last HALF, with a gap marker
+ * in the middle. Executives reading the PDF still see the early signal
+ * AND the closure events, which is what matters for board reporting.
+ * The full timeline remains available on the incident page in TrustOS.
+ */
+const TIMELINE_MAX_ROWS = 120;
+type TimelineEntry = { at: string; event: string };
+function capTimeline(entries: TimelineEntry[]): TimelineEntry[] {
+  if (entries.length <= TIMELINE_MAX_ROWS) return entries;
+  const half = Math.floor(TIMELINE_MAX_ROWS / 2);
+  const omitted = entries.length - TIMELINE_MAX_ROWS;
+  return [
+    ...entries.slice(0, half),
+    {
+      at: '',
+      event:
+        `… ${omitted} middle entries omitted to keep the executive PDF under render limits. ` +
+        `The complete timeline is available on the incident page in TrustOS.`,
+    },
+    ...entries.slice(-half),
+  ];
+}
+
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const host = request.headers.get('host') ?? undefined;
   const tenant = await resolveTenant(host);
@@ -72,7 +102,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     actions:            asArray<string>(incident.actions),
     recommendations:    asArray<string>(incident.recommendations),
     linked_control_ids: asArray<string>(incident.linked_control_ids),
-    timeline:           asArray((incident as { timeline?: unknown }).timeline),
+    timeline:           capTimeline(asArray<TimelineEntry>((incident as { timeline?: unknown }).timeline)),
   };
 
   const preparedBy = incident.reported_by || tenant.display_name;
