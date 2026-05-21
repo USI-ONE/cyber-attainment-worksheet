@@ -13,6 +13,23 @@ import { textToTimeline, timelineToText } from '@/lib/incidents/timeline';
 const STATUSES: IncidentStatus[] = ['open', 'contained', 'closed'];
 const SEVERITIES: IncidentSeverity[] = ['low', 'medium', 'high', 'critical'];
 
+/** One row in the bulk-upload progress list. `error` populated on failure. */
+type UploadItem = {
+  id: string;
+  filename: string;
+  size: number;
+  status: 'queued' | 'uploading' | 'done' | 'failed';
+  error?: string;
+};
+
+/**
+ * Run uploads with a max-concurrency cap so a 20-file batch neither stalls
+ * (sequential is slow) nor hammers the server (all-at-once can exhaust
+ * the Supabase Storage rate limit on small projects). Three is empirically
+ * a comfortable spot for the project's serverless function quotas.
+ */
+const UPLOAD_CONCURRENCY = 3;
+
 /** Convert an ISO string to the value a <input type="datetime-local"> expects. */
 function toLocalInput(iso: string | null): string {
   if (!iso) return '';
@@ -54,6 +71,10 @@ export default function IncidentEditor({
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  // Per-file progress for bulk uploads. The list is cleared on the next
+  // upload kick-off, so failed items stay visible until the user retries.
+  const [uploadQueue, setUploadQueue] = useState<UploadItem[]>([]);
+  const [draggingOver, setDraggingOver] = useState(false);
   const fileInput = useRef<HTMLInputElement | null>(null);
 
   // Inline string state for the textarea-backed array fields. We mirror the
@@ -109,23 +130,67 @@ export default function IncidentEditor({
     }
   }
 
-  async function uploadFile(file: File) {
-    setUploading(true); setUploadError(null);
-    try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const res = await fetch(`/api/incidents/${inc.id}/documents`, { method: 'POST', body: fd });
-      const json = await res.json();
-      if (!res.ok || !json.ok) {
-        setUploadError(json.error ?? `HTTP ${res.status}`);
-      } else {
-        setDocs((d) => [json.document as IncidentDocument, ...d]);
+  /**
+   * Bulk upload entry point. Works for one file or many — the file picker
+   * (with `multiple`) and the drop zone both funnel here. Drives the
+   * per-file progress list while running at most UPLOAD_CONCURRENCY
+   * uploads in flight at a time.
+   */
+  async function uploadFiles(files: File[]) {
+    if (files.length === 0) return;
+    setUploading(true);
+    setUploadError(null);
+
+    const queue: UploadItem[] = files.map((f) => ({
+      id: crypto.randomUUID(),
+      filename: f.name,
+      size: f.size,
+      status: 'queued',
+    }));
+    setUploadQueue(queue);
+
+    let cursor = 0;
+    let failures = 0;
+
+    async function worker() {
+      while (cursor < files.length) {
+        const idx = cursor++;
+        const file = files[idx];
+        const itemId = queue[idx].id;
+        setUploadQueue((q) => q.map((x) => x.id === itemId ? { ...x, status: 'uploading' } : x));
+        try {
+          const fd = new FormData();
+          fd.append('file', file);
+          const res = await fetch(`/api/incidents/${inc.id}/documents`, { method: 'POST', body: fd });
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok || !json.ok) {
+            failures++;
+            setUploadQueue((q) => q.map((x) => x.id === itemId
+              ? { ...x, status: 'failed', error: json.error ?? `HTTP ${res.status}` }
+              : x));
+          } else {
+            setUploadQueue((q) => q.map((x) => x.id === itemId ? { ...x, status: 'done' } : x));
+            setDocs((d) => [json.document as IncidentDocument, ...d]);
+          }
+        } catch (err) {
+          failures++;
+          setUploadQueue((q) => q.map((x) => x.id === itemId
+            ? { ...x, status: 'failed', error: err instanceof Error ? err.message : 'upload failed' }
+            : x));
+        }
       }
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'upload failed');
-    } finally {
-      setUploading(false);
-      if (fileInput.current) fileInput.current.value = '';
+    }
+
+    // Spin up workers up to the concurrency cap (or as many as there are
+    // files, whichever is smaller).
+    await Promise.all(
+      Array.from({ length: Math.min(UPLOAD_CONCURRENCY, files.length) }, () => worker()),
+    );
+
+    setUploading(false);
+    if (fileInput.current) fileInput.current.value = '';
+    if (failures > 0) {
+      setUploadError(`${failures} of ${files.length} upload${failures > 1 ? 's' : ''} failed — see the list below.`);
     }
   }
 
@@ -257,25 +322,61 @@ export default function IncidentEditor({
         </div>
       </section>
 
-      <section className="scorecard">
+      <section
+        className="scorecard"
+        // Drop zone: drag a folder's worth of files onto the section to
+        // queue them all. The visual feedback while dragging is a 2px
+        // accent outline; we use a CSS-variable fallback so themed
+        // tenants get a sensible color.
+        onDragOver={(e) => {
+          if (uploading) return;
+          // Without preventDefault the browser will navigate to the file.
+          e.preventDefault();
+          if (!draggingOver) setDraggingOver(true);
+        }}
+        onDragLeave={(e) => {
+          // Only clear when the drag actually leaves the section, not when
+          // it crosses into a child element.
+          if (e.currentTarget === e.target) setDraggingOver(false);
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDraggingOver(false);
+          if (uploading) return;
+          const dropped = Array.from(e.dataTransfer.files);
+          if (dropped.length) uploadFiles(dropped);
+        }}
+        style={draggingOver ? { outline: '2px dashed var(--gold, #2563EB)', outlineOffset: -4 } : undefined}
+      >
         <div className="scorecard-header">
           <div>
             <div className="scorecard-title">Documents</div>
             <div className="scorecard-tag" style={{ marginTop: 4 }}>
               Incident reports, screenshots, log exports. Files are stored privately and downloaded via short-lived signed URLs.
+              {' '}<em>Drag multiple files onto this card or use the button to select several at once.</em>
             </div>
           </div>
           <div>
-            <input ref={fileInput} type="file"
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFile(f); }}
+            <input ref={fileInput} type="file" multiple
+              onChange={(e) => {
+                const files = Array.from(e.target.files ?? []);
+                if (files.length) uploadFiles(files);
+              }}
               disabled={uploading} style={{ display: 'none' }} />
             <button className="action-btn primary"
               onClick={() => fileInput.current?.click()} disabled={uploading}>
-              {uploading ? 'Uploading…' : 'Upload file'}
+              {uploading ? 'Uploading…' : 'Upload files'}
             </button>
           </div>
         </div>
         {uploadError && <div className="banner error">{uploadError}</div>}
+        {uploadQueue.length > 0 && (
+          <UploadProgressList
+            items={uploadQueue}
+            onDismiss={() => setUploadQueue([])}
+            uploading={uploading}
+          />
+        )}
         <table className="score-table" style={{ marginTop: 0 }}>
           <thead>
             <tr><th>Filename</th><th>Type</th><th>Size</th><th>Uploaded</th><th></th></tr>
@@ -336,6 +437,79 @@ function FieldRow({ label, hint, children }: { label: string; hint?: string; chi
       </label>
       {children}
       {hint && <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{hint}</span>}
+    </div>
+  );
+}
+
+const STATUS_COLOR: Record<UploadItem['status'], string> = {
+  queued:    'var(--text-muted)',
+  uploading: '#F59E0B', // amber
+  done:      '#10B981', // emerald
+  failed:    '#DC2626', // red
+};
+
+const STATUS_LABEL: Record<UploadItem['status'], string> = {
+  queued:    'Queued',
+  uploading: 'Uploading…',
+  done:      'Done',
+  failed:    'Failed',
+};
+
+/**
+ * Compact per-file progress list for a bulk upload. Stays visible after
+ * the batch finishes so the user can see which files failed and what
+ * went wrong; a "Clear" button dismisses it once they've read the result.
+ */
+function UploadProgressList({
+  items, onDismiss, uploading,
+}: {
+  items: UploadItem[];
+  onDismiss: () => void;
+  uploading: boolean;
+}) {
+  const counts = items.reduce(
+    (acc, it) => { acc[it.status]++; return acc; },
+    { queued: 0, uploading: 0, done: 0, failed: 0 } as Record<UploadItem['status'], number>,
+  );
+  return (
+    <div style={{
+      marginTop: 10, marginBottom: 8,
+      padding: 10, border: '1px solid var(--bg-border)',
+      borderRadius: 4, background: 'var(--bg-card)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+        <strong style={{ fontSize: 12 }}>
+          Bulk upload — {counts.done} done · {counts.uploading} uploading · {counts.queued} queued
+          {counts.failed > 0 && <span style={{ color: STATUS_COLOR.failed }}> · {counts.failed} failed</span>}
+        </strong>
+        {!uploading && (
+          <button className="action-btn" style={{ fontSize: 11, padding: '3px 9px' }} onClick={onDismiss}>
+            Clear
+          </button>
+        )}
+      </div>
+      <div style={{ maxHeight: 220, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {items.map((it) => (
+          <div key={it.id} style={{
+            display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 8,
+            fontSize: 11, padding: '3px 6px',
+            borderBottom: '1px dotted var(--bg-border)',
+          }}>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={it.filename}>
+              {it.filename}
+            </span>
+            <span style={{ color: 'var(--text-muted)' }}>{formatBytes(it.size)}</span>
+            <span style={{ color: STATUS_COLOR[it.status], fontWeight: 600 }}>
+              {STATUS_LABEL[it.status]}
+            </span>
+            {it.error && (
+              <span style={{ gridColumn: '1 / -1', color: STATUS_COLOR.failed, fontSize: 10 }}>
+                {it.error}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
