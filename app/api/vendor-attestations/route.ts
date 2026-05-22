@@ -16,7 +16,9 @@ export const dynamic = 'force-dynamic';
 const TYPES: readonly AttestationType[] = [
   'soc2_type1','soc2_type2','iso_27001','iso_27017','iso_27018','iso_27701',
   'pci_dss','hipaa_baa','fedramp_high','fedramp_moderate','cmmc',
-  'cyber_insurance','penetration_test','vulnerability_scan','other',
+  'cyber_insurance','penetration_test','vulnerability_scan',
+  'tpsa','ddq',
+  'other',
 ];
 const STATS: readonly AttestationStatus[] = ['pending','current','expired','superseded','archived'];
 

@@ -49,7 +49,9 @@ const STATUS_META: Record<VendorStatus, { color: string; label: string }> = {
 const ATTESTATION_TYPES: AttestationType[] = [
   'soc2_type1','soc2_type2','iso_27001','iso_27017','iso_27018','iso_27701',
   'pci_dss','hipaa_baa','fedramp_high','fedramp_moderate','cmmc',
-  'cyber_insurance','penetration_test','vulnerability_scan','other',
+  'cyber_insurance','penetration_test','vulnerability_scan',
+  'tpsa','ddq',
+  'other',
 ];
 const ATTESTATION_LABELS: Record<AttestationType, string> = {
   soc2_type1:       'SOC 2 Type I',
@@ -66,6 +68,8 @@ const ATTESTATION_LABELS: Record<AttestationType, string> = {
   cyber_insurance:  'Cyber Insurance',
   penetration_test: 'Penetration Test',
   vulnerability_scan: 'Vulnerability Scan',
+  tpsa:             'TPSA (annual)',
+  ddq:              'Vendor DDQ',
   other:            'Other',
 };
 
@@ -260,6 +264,16 @@ export default function VendorRiskClient({
               onChange={(e) => setSearch(e.target.value)}
               style={{ minWidth: 240 }}
             />
+            <a
+              className="action-btn"
+              href="/api/report/vendor-attestations"
+              title="Generate a board-ready PDF: portfolio summary, vendors requiring attention, critical-vendor detail, and full inventory."
+              // download attr is a hint; the Content-Disposition header on
+              // the route is what actually drives the filename + save dialog.
+              download
+            >
+              Generate report
+            </a>
             <button className="action-btn primary" onClick={() => setCreating((v) => !v)}>
               {creating ? 'Cancel' : '+ New Vendor'}
             </button>

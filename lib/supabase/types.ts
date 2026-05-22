@@ -392,7 +392,9 @@ export type AttestationType =
   | 'iso_27001' | 'iso_27017' | 'iso_27018' | 'iso_27701'
   | 'pci_dss' | 'hipaa_baa'
   | 'fedramp_high' | 'fedramp_moderate' | 'cmmc'
-  | 'cyber_insurance' | 'penetration_test' | 'vulnerability_scan' | 'other';
+  | 'cyber_insurance' | 'penetration_test' | 'vulnerability_scan'
+  | 'tpsa' | 'ddq'
+  | 'other';
 export type AttestationStatus = 'pending' | 'current' | 'expired' | 'superseded' | 'archived';
 
 export interface VendorAttestation {
