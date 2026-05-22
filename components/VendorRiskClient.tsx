@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type {
   Vendor, VendorAttestation,
   VendorCriticality, VendorDataSensitivity, VendorType, VendorStatus,
@@ -184,6 +184,54 @@ export default function VendorRiskClient({
     await fetch(`/api/vendor-attestations?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
   }
 
+  /**
+   * Attach a file (TPSA PDF, SOC 2 report, BAA scan, etc.) to one
+   * attestation in a single click. We piggyback on the Evidence Library:
+   *   1. POST /api/evidence — uploads the file as a new evidence_artifact
+   *      tagged category='vendor_attestation' so it surfaces both on the
+   *      vendor page and in /evidence.
+   *   2. PATCH /api/vendor-attestations — links the new artifact's id to
+   *      the attestation via evidence_artifact_id.
+   * On success the attestation row in local state gets the linked artifact
+   * id back so the Download button replaces the Upload button immediately.
+   */
+  async function uploadAttestationFile(attestationId: string, file: File) {
+    const att = attestations.find((a) => a.id === attestationId);
+    const vendor = att ? vendors.find((v) => v.id === att.vendor_id) : null;
+    if (!att || !vendor) return alert('attestation or vendor not found');
+
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('title', `${vendor.name} — ${att.title}`);
+    fd.append('category', 'vendor_attestation');
+    fd.append('status', 'current');
+    if (att.issued_on)  fd.append('collected_date',  att.issued_on);
+    if (att.expires_on) fd.append('retention_until', att.expires_on);
+
+    const upRes = await fetch('/api/evidence', { method: 'POST', body: fd });
+    const upJson = await upRes.json().catch(() => ({}));
+    if (!upRes.ok || !upJson.ok) return alert(upJson.error ?? 'upload failed');
+
+    const artifactId: string = upJson.artifact.id;
+    // patchAttestation already optimistic-updates local state, so the row
+    // re-renders with the new evidence_artifact_id immediately.
+    await patchAttestation(attestationId, { evidence_artifact_id: artifactId });
+  }
+
+  /**
+   * Open the attached file in a new tab via a short-lived signed URL.
+   * Bucket is private; the URL expires in 60 seconds.
+   */
+  async function downloadAttestationFile(evidenceArtifactId: string) {
+    const res = await fetch(`/api/evidence/${evidenceArtifactId}`);
+    const j = await res.json().catch(() => ({}));
+    if (j.download_url) {
+      window.open(j.download_url, '_blank', 'noopener');
+    } else {
+      alert(j.error ?? 'no download URL returned');
+    }
+  }
+
   const open = openId ? vendors.find((v) => v.id === openId) ?? null : null;
   const openAtt = open ? attestationsByVendor.get(open.id) ?? [] : [];
 
@@ -297,6 +345,8 @@ export default function VendorRiskClient({
           onAddAttestation={(payload) => addAttestation(open.id, payload)}
           onPatchAttestation={patchAttestation}
           onRemoveAttestation={removeAttestation}
+          onUploadAttestationFile={uploadAttestationFile}
+          onDownloadAttestationFile={downloadAttestationFile}
         />
       )}
     </>
@@ -377,6 +427,7 @@ function VendorEditor({
   vendor, attestations,
   onClose, onPatch, onDelete,
   onAddAttestation, onPatchAttestation, onRemoveAttestation,
+  onUploadAttestationFile, onDownloadAttestationFile,
 }: {
   vendor: Vendor;
   attestations: VendorAttestation[];
@@ -386,6 +437,8 @@ function VendorEditor({
   onAddAttestation: (payload: Partial<VendorAttestation>) => void;
   onPatchAttestation: (id: string, fields: Partial<VendorAttestation>) => void;
   onRemoveAttestation: (id: string) => void;
+  onUploadAttestationFile: (id: string, file: File) => Promise<void>;
+  onDownloadAttestationFile: (evidenceArtifactId: string) => Promise<void>;
 }) {
   const [newType, setNewType] = useState<AttestationType>('soc2_type2');
   const [newTitle, setNewTitle] = useState('');
@@ -524,6 +577,7 @@ function VendorEditor({
                 <th>Expires</th>
                 <th>Findings</th>
                 <th>Status</th>
+                <th>File</th>
                 <th></th>
               </tr>
             </thead>
@@ -563,6 +617,13 @@ function VendorEditor({
                         {(['pending','current','expired','superseded','archived'] as AttestationStatus[]).map((s) =>
                           <option key={s} value={s}>{s}</option>)}
                       </select>
+                    </td>
+                    <td>
+                      <AttestationFileCell
+                        evidenceArtifactId={a.evidence_artifact_id ?? null}
+                        onUpload={(file) => onUploadAttestationFile(a.id, file)}
+                        onDownload={() => a.evidence_artifact_id && onDownloadAttestationFile(a.evidence_artifact_id)}
+                      />
                     </td>
                     <td><button className="action-btn danger" onClick={() => onRemoveAttestation(a.id)}>×</button></td>
                   </tr>
@@ -607,5 +668,70 @@ function VendorEditor({
         </form>
       </div>
     </section>
+  );
+}
+
+/**
+ * File controls for one attestation row.
+ *
+ *   no file linked  →  [Upload]            (file picker)
+ *   file linked     →  [Download] [Replace] (download = 60s signed URL;
+ *                                            replace = upload a new artifact
+ *                                            and re-link)
+ *
+ * Each row owns its own hidden <input type="file"> via a ref — keeps the
+ * picker isolated per row so re-selecting the same filename on a different
+ * row still fires onChange.
+ */
+function AttestationFileCell({
+  evidenceArtifactId, onUpload, onDownload,
+}: {
+  evidenceArtifactId: string | null;
+  onUpload: (file: File) => Promise<void>;
+  onDownload: () => void;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState<'idle' | 'uploading'>('idle');
+
+  async function pickFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setBusy('uploading');
+    try { await onUpload(file); }
+    finally { setBusy('idle'); }
+  }
+
+  if (busy === 'uploading') {
+    return <span style={{ fontSize: 11, color: 'var(--text-mid)' }}>Uploading…</span>;
+  }
+
+  return (
+    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+      {evidenceArtifactId && (
+        <button
+          type="button"
+          className="action-btn"
+          style={{ padding: '3px 9px', fontSize: 11 }}
+          onClick={onDownload}
+        >
+          Download
+        </button>
+      )}
+      <button
+        type="button"
+        className="action-btn"
+        style={{ padding: '3px 9px', fontSize: 11 }}
+        onClick={() => fileRef.current?.click()}
+      >
+        {evidenceArtifactId ? 'Replace' : 'Upload'}
+      </button>
+      <input
+        ref={fileRef}
+        type="file"
+        style={{ display: 'none' }}
+        onChange={pickFile}
+      />
+    </div>
   );
 }
