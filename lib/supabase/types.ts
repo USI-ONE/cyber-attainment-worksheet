@@ -164,14 +164,34 @@ export type PolicyDocumentStatus = 'draft' | 'published' | 'archived';
 
 export type AssessmentAnswer = 'no' | 'partial' | 'yes';
 
+/**
+ * One answered item inside an assessment response. `id` corresponds to
+ * the AssessmentItem.id in lib/assessment-questions.ts. Notes are
+ * optional per-item assessor commentary that doesn't affect score.
+ */
+export interface ItemAnswer {
+  id: string;
+  answer: AssessmentAnswer | null;
+  notes?: string | null;
+}
+
 export interface AssessmentResponse {
   tenant_id: string;
   framework_version_id: string;
   control_id: string;
+  // New primary shape — variable-length list of answered items.
+  items_answered: ItemAnswer[];
+  // Evidence narrative (text). Distinct from per-item notes; this is the
+  // "describe an improvement / example" prompt that earns the Optimizing
+  // tier when filled and every item is Yes.
+  q4_improvement: string | null;
+  // Legacy fixed-shape fields. Backfilled by migration 0029 from the
+  // first three items so existing readers (recommendations, audit
+  // binder) keep working. Write-path mirrors the first three items
+  // back into these columns. New code should read items_answered.
   q1_documented: AssessmentAnswer | null;
   q2_followed:   AssessmentAnswer | null;
   q3_measured:   AssessmentAnswer | null;
-  q4_improvement: string | null;
   notes: string | null;
   computed_score: number | null;
   responded_by: string | null;

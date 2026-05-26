@@ -3,23 +3,22 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import type { AssessmentAnswer, AssessmentResponse, PolicyDocument } from '@/lib/supabase/types';
+import type { AssessmentAnswer, AssessmentResponse, ItemAnswer, PolicyDocument } from '@/lib/supabase/types';
 import { GROUP_COLORS } from '@/lib/scoring';
-import { computePracticeScore, isComplete, tierForScore } from '@/lib/assessment';
-import { CONTROL_QUESTIONS } from '@/lib/assessment-questions';
+import { computePracticeScore, isComplete, tierForScore, itemsFromResponse } from '@/lib/assessment';
+import { CONTROL_QUESTIONS, type ControlQuestionnaire } from '@/lib/assessment-questions';
 
 // Generic CMM-ladder fallback used when a control is missing from the
 // hand-authored CONTROL_QUESTIONS map. Identical to the original v1 wording
 // so existing reviewers see the same generic fallback for any uncovered
 // control rather than nothing.
-const GENERIC_QUESTIONS = {
-  q1: 'Is there a documented process or standard for this control?',
-  q1_hint: 'Look for: written policy, runbook, SOP, or other artifact that clearly defines what we do.',
-  q2: 'Is the process consistently followed across all relevant teams or systems?',
-  q2_hint: 'Look for: real-world adoption — not just on paper. Are exceptions rare and tracked?',
-  q3: 'Is the process measured, audited, and continuously improved?',
-  q3_hint: 'Look for: metrics, periodic review, evidence of changes over time.',
-  q4_prompt: 'Describe one specific improvement made in the last 12 months for this control.',
+const GENERIC_QUESTIONS: ControlQuestionnaire = {
+  items: [
+    { id: 'q1', prompt: 'Is there a documented process or standard for this control?', hint: 'Look for: written policy, runbook, SOP, or other artifact that clearly defines what we do.' },
+    { id: 'q2', prompt: 'Is the process consistently followed across all relevant teams or systems?', hint: 'Look for: real-world adoption — not just on paper. Are exceptions rare and tracked?' },
+    { id: 'q3', prompt: 'Is the process measured, audited, and continuously improved?', hint: 'Look for: metrics, periodic review, evidence of changes over time.' },
+  ],
+  evidence_narrative_prompt: 'Describe one specific improvement made in the last 12 months for this control.',
 };
 
 type LinkedPolicy = Pick<PolicyDocument, 'id' | 'title' | 'version' | 'owner' | 'filename' | 'linked_control_ids' | 'status'>;
@@ -60,40 +59,53 @@ export default function AssessmentWizard({
   const router = useRouter();
   const accent = GROUP_COLORS[functionId]?.accent ?? '#475569';
 
-  const [q1, setQ1] = useState<AssessmentAnswer | null>(initialResponse?.q1_documented ?? null);
-  const [q2, setQ2] = useState<AssessmentAnswer | null>(initialResponse?.q2_followed ?? null);
-  const [q3, setQ3] = useState<AssessmentAnswer | null>(initialResponse?.q3_measured ?? null);
+  // Pull the hand-authored questionnaire for this specific control. Falls
+  // back to the generic CMM-ladder questions if the control is missing.
+  const questions = CONTROL_QUESTIONS[controlId] ?? GENERIC_QUESTIONS;
+
+  // Hydrate per-item answers from whatever shape the server returned.
+  // itemsFromResponse prefers items_answered (new) and falls back to the
+  // legacy q1/q2/q3 columns. We then re-key by the questionnaire's item
+  // ids so an item that doesn't yet have a saved answer is null rather
+  // than undefined.
+  const initialItemAnswers = initialResponse ? itemsFromResponse(initialResponse) : [];
+  const initialAnswersById: Record<string, AssessmentAnswer | null> =
+    Object.fromEntries(questions.items.map((it) => {
+      const saved = initialItemAnswers.find((a) => a.id === it.id);
+      return [it.id, saved?.answer ?? null];
+    }));
+
+  const [answers, setAnswers] = useState<Record<string, AssessmentAnswer | null>>(initialAnswersById);
   const [q4, setQ4] = useState(initialResponse?.q4_improvement ?? '');
   const [notes, setNotes] = useState(initialResponse?.notes ?? '');
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const computedScore = computePracticeScore({ q1, q2, q3, q4_improvement: q4 });
-  const complete = isComplete({ q1_documented: q1, q2_followed: q2, q3_measured: q3 });
+  // Materialize the answers map into an ordered ItemAnswer[] matching the
+  // questionnaire's item order. This is the canonical shape for both the
+  // score calculator and the save payload.
+  const itemsAnswered: ItemAnswer[] = questions.items.map((it) => ({
+    id: it.id,
+    answer: answers[it.id] ?? null,
+  }));
 
-  // Pull the hand-authored questionnaire for this specific control. Falls
-  // back to the generic CMM-ladder questions if the control is missing.
-  const questions = CONTROL_QUESTIONS[controlId] ?? GENERIC_QUESTIONS;
+  const computedScore = computePracticeScore({ items: itemsAnswered, evidence_narrative: q4 });
+  const complete = isComplete(itemsAnswered, questions.items.length);
 
-  // Auto-save with a 300 ms debounce — user changes a radio button, the
-  // request fires once they pause. Avoids the API getting hammered for every
-  // keystroke in the textarea fields.
+  // Auto-save with a 300 ms debounce. Compare against the hydrated initial
+  // map so the user's first render doesn't immediately fire a redundant save.
   useEffect(() => {
-    // Skip the very first render so we don't immediately re-save what we
-    // just loaded from the server.
-    if (
-      q1 === (initialResponse?.q1_documented ?? null) &&
-      q2 === (initialResponse?.q2_followed ?? null) &&
-      q3 === (initialResponse?.q3_measured ?? null) &&
+    const unchanged =
+      questions.items.every((it) => (answers[it.id] ?? null) === (initialAnswersById[it.id] ?? null)) &&
       q4 === (initialResponse?.q4_improvement ?? '') &&
-      notes === (initialResponse?.notes ?? '')
-    ) return;
+      notes === (initialResponse?.notes ?? '');
+    if (unchanged) return;
 
     const t = setTimeout(() => { void save(); }, 300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q1, q2, q3, q4, notes]);
+  }, [answers, q4, notes]);
 
   async function save() {
     setSaving(true); setError(null);
@@ -102,9 +114,7 @@ export default function AssessmentWizard({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          q1_documented: q1,
-          q2_followed:   q2,
-          q3_measured:   q3,
+          items_answered: itemsAnswered,
           q4_improvement: q4 || null,
           notes: notes || null,
         }),
@@ -121,6 +131,11 @@ export default function AssessmentWizard({
     } finally {
       setSaving(false);
     }
+  }
+
+  // Lazy setter used by the dynamic Question rendering.
+  function setAnswer(id: string, v: AssessmentAnswer) {
+    setAnswers((cur) => ({ ...cur, [id]: v }));
   }
 
   function goToNext() {
@@ -181,26 +196,34 @@ export default function AssessmentWizard({
 
       {/* Questions — pulled per-control from lib/assessment-questions.ts so
           each NIST CSF 2.0 sub-control gets specific, evidence-grounded
-          wording rather than generic CMM-ladder text. */}
+          wording rather than generic CMM-ladder text. Number of items
+          varies per control; this maps over the dynamic list. */}
       <section className="scorecard">
-        <Question number={1} question={questions.q1} help={questions.q1_hint} value={q1} onChange={setQ1} />
-        <Question number={2} question={questions.q2} help={questions.q2_hint} value={q2} onChange={setQ2} />
-        <Question number={3} question={questions.q3} help={questions.q3_hint} value={q3} onChange={setQ3} />
+        {questions.items.map((item, idx) => (
+          <Question
+            key={item.id}
+            number={idx + 1}
+            question={item.prompt}
+            help={item.hint}
+            value={answers[item.id] ?? null}
+            onChange={(v) => setAnswer(item.id, v)}
+          />
+        ))}
 
         <div style={{ marginTop: 12 }}>
           <label style={{
             fontFamily: 'Inter, sans-serif', fontWeight: 500, fontSize: 11,
             letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-mid)',
           }}>
-            Q4 (optional) — Improvement in the last 12 months
+            Evidence narrative (optional) — Improvement in the last 12 months
           </label>
           <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}>
-            If filled in <em>and</em> Q1-3 are all Yes, score reaches 5 (Optimizing).
+            If filled in <em>and</em> every question is Yes, score reaches 5 (Optimizing).
           </div>
           <textarea
             value={q4}
             onChange={(e) => setQ4(e.target.value)}
-            placeholder={questions.q4_prompt}
+            placeholder={questions.evidence_narrative_prompt}
             rows={3}
             style={{
               width: '100%', padding: '8px 10px',
@@ -274,7 +297,7 @@ export default function AssessmentWizard({
               className="action-btn primary"
               onClick={async () => { await save(); goToNext(); }}
               disabled={!complete && !initialResponse}
-              title={!complete ? 'Answer Q1-Q3 to save a score' : undefined}
+              title={!complete ? `Answer all ${questions.items.length} questions to save a score` : undefined}
             >
               {nextControlId ? 'Save & Next →' : 'Save & Done'}
             </button>

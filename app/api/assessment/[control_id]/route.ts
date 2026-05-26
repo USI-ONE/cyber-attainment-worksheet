@@ -4,7 +4,7 @@ import { resolveTenant } from '@/lib/tenant';
 import { requireEditAccess } from '@/lib/auth-api';
 import { loadActiveFramework } from '@/lib/framework';
 import { computePracticeScore } from '@/lib/assessment';
-import type { AssessmentAnswer, AssessmentResponse } from '@/lib/supabase/types';
+import type { AssessmentAnswer, AssessmentResponse, ItemAnswer } from '@/lib/supabase/types';
 
 /**
  * GET /api/assessment/[control_id] — fetch the saved response for one control.
@@ -61,27 +61,55 @@ export async function POST(request: NextRequest, { params }: { params: { control
   let body: Partial<AssessmentResponse>;
   try { body = await request.json(); } catch { return bad('invalid JSON'); }
 
-  const q1 = asAnswer(body.q1_documented);
-  const q2 = asAnswer(body.q2_followed);
-  const q3 = asAnswer(body.q3_measured);
+  // Accept the new items_answered shape preferentially. Older clients
+  // that still send q1_documented / q2_followed / q3_measured fall
+  // through to a legacy mapping so we don't break in-flight saves on
+  // the way over.
+  let items: ItemAnswer[] = [];
+  if (Array.isArray(body.items_answered)) {
+    items = body.items_answered
+      .filter((x): x is ItemAnswer => !!x && typeof x === 'object' && typeof (x as ItemAnswer).id === 'string')
+      .map((x) => ({
+        id: x.id,
+        answer: asAnswer(x.answer),
+        notes: typeof x.notes === 'string' && x.notes.trim() ? x.notes : null,
+      }));
+  } else {
+    items = [
+      { id: 'q1', answer: asAnswer(body.q1_documented) },
+      { id: 'q2', answer: asAnswer(body.q2_followed) },
+      { id: 'q3', answer: asAnswer(body.q3_measured) },
+    ];
+  }
+
+  // Mirror the first three answers into the legacy columns so readers
+  // that haven't moved to items_answered yet (recommendations.ts, audit
+  // binder PDF) keep working until they're cut over too. Once every
+  // reader is on items_answered we drop the columns.
+  const find = (id: string) => items.find((x) => x.id === id)?.answer ?? null;
+  const q1 = find('q1');
+  const q2 = find('q2');
+  const q3 = find('q3');
+
   const q4 = body.q4_improvement?.toString() ?? null;
   const notes = body.notes?.toString() ?? null;
   const responded_by = body.responded_by?.toString() ?? null;
 
   const computed = computePracticeScore({
-    q1, q2, q3,
-    q4_improvement: q4,
+    items,
+    evidence_narrative: q4,
   });
 
   const supabase = createServiceRoleClient();
 
-  // Upsert the response row.
+  // Upsert the response row — write both new and legacy shapes.
   const { data: row, error: upErr } = await supabase
     .from('assessment_responses')
     .upsert({
       tenant_id: tenant.id,
       framework_version_id: fw.version.id,
       control_id: params.control_id,
+      items_answered: items,
       q1_documented:  q1,
       q2_followed:    q2,
       q3_measured:    q3,

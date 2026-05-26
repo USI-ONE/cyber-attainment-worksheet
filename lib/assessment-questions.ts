@@ -24,14 +24,30 @@
  * in the same component.
  */
 
+/**
+ * One question item inside a control's questionnaire. The id is stable
+ * across schema versions ('q1', 'q2', 'q3', 'q4', ...) so existing
+ * saved responses line up after the migration to variable items.
+ */
+export interface AssessmentItem {
+  id: string;
+  prompt: string;
+  hint: string;
+}
+
+/**
+ * Variable-length question list per NIST CSF control. Number of items
+ * is determined by the control's substance — minimum 2, typical 3-4,
+ * up to 6 for dense areas (MFA coverage, monitoring sources). The
+ * Yes/Partial/No score model still applies: average answer * 3 + 1
+ * gives the CMM tier (1-4), and +1 to 5 when every item is Yes and
+ * the evidence narrative is filled.
+ */
 export interface ControlQuestionnaire {
-  q1: string;
-  q1_hint: string;
-  q2: string;
-  q2_hint: string;
-  q3: string;
-  q3_hint: string;
-  q4_prompt: string;
+  items: AssessmentItem[];
+  /** The Q4 / evidence-narrative prompt — free text, not scored,
+   *  earns the Optimizing tier when filled in. */
+  evidence_narrative_prompt: string;
 }
 
 export const CONTROL_QUESTIONS: Record<string, ControlQuestionnaire> = {
@@ -39,1002 +55,2271 @@ export const CONTROL_QUESTIONS: Record<string, ControlQuestionnaire> = {
   // GV — GOVERN
   // ===========================================================================
 
+
   'GV.OC-01': {
-    q1: 'Quote the organization\'s written mission or vision statement verbatim. Does it explicitly mention any of: customer trust, service availability, data protection, regulatory compliance, employee safety, or business continuity?',
-    q1_hint: 'Yes = mission text contains at least one of these elements explicitly. Partial = implied but not stated. No = mission text doesn\'t address security-relevant values, or no written mission exists.',
-    q2: 'Open the most recent Risk Register and pick a High or Critical risk at random. Read the impact narrative — does it cite a specific mission element (e.g., "this would degrade our ability to deliver service availability for clients") or only technical impact (CVSS, blast radius)?',
-    q2_hint: 'Yes = mission framing is explicit in the narrative. Partial = mission mentioned but not central to the narrative. No = pure technical impact only.',
-    q3: 'When was cybersecurity last on the executive leadership meeting agenda? Pull the minutes. Did the discussion include any reference to organizational mission or strategic direction?',
-    q3_hint: 'Yes = within last 90 days WITH explicit mission framing in the minutes. Partial = within 12 months OR mission framing weak. No = >12 months or no mission framing.',
-    q4_prompt: 'Describe a specific cybersecurity decision in the past 12 months where mission considerations changed the technical answer. What was the technical recommendation, what was decided instead, and why?',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Quote the organization\'s written mission or vision statement verbatim. Does it explicitly mention any of: customer trust, service availability, data protection, regulatory compliance, employee safety, or business continuity?',
+        hint: 'Yes = mission text contains at least one of these elements explicitly. Partial = implied but not stated. No = mission text doesn\'t address security-relevant values, or no written mission exists.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Open the most recent Risk Register and pick a High or Critical risk at random. Read the impact narrative — does it cite a specific mission element (e.g., "this would degrade our ability to deliver service availability for clients") or only technical impact (CVSS, blast radius)?',
+        hint: 'Yes = mission framing is explicit in the narrative. Partial = mission mentioned but not central to the narrative. No = pure technical impact only.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was cybersecurity last on the executive leadership meeting agenda? Pull the minutes. Did the discussion include any reference to organizational mission or strategic direction?',
+        hint: 'Yes = within last 90 days WITH explicit mission framing in the minutes. Partial = within 12 months OR mission framing weak. No = >12 months or no mission framing.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a specific cybersecurity decision in the past 12 months where mission considerations changed the technical answer. What was the technical recommendation, what was decided instead, and why?',
   },
+
   'GV.OC-02': {
-    q1: 'Pull the Stakeholder Register (or equivalent). How many internal stakeholders are listed? How many external? Pick three external stakeholders and name one specific cybersecurity expectation each has of the organization.',
-    q1_hint: 'Yes = register exists with ≥10 internal AND ≥5 external stakeholders, and you can readily name expectations for any three. Partial = register exists but expectations are generic or stakeholders incomplete. No = no register, or only a list of names without expectations.',
-    q2: 'For each stakeholder marked Critical or Tier-1 in the register, identify the contract clause, MSA addendum, internal SLA, or written commitment that operationalizes their cybersecurity expectations. Sample three.',
-    q2_hint: 'Yes = all three sampled critical stakeholders have a specific contract/SLA artifact you can produce. Partial = some have contractual operationalization, others rely on policy text alone. No = contractual operationalization is missing or generic boilerplate.',
-    q3: 'When was the Stakeholder Register last reviewed? Cross-check the current customer/vendor list against the register — are there active stakeholders in the business who are NOT in the register?',
-    q3_hint: 'Yes = reviewed within last 12 months AND reconciled — no untracked stakeholders. Partial = reviewed but reconciliation gap exists. No = >12 months since review or material gaps found.',
-    q4_prompt: 'Describe a specific stakeholder expectation that drove a change to the security program in the past year (e.g., a customer audit requirement that triggered a new control, an insurer condition that prompted a tooling investment).',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the Stakeholder Register (or equivalent). How many internal stakeholders are listed? How many external? Pick three external stakeholders and name one specific cybersecurity expectation each has of the organization.',
+        hint: 'Yes = register exists with ≥10 internal AND ≥5 external stakeholders, and you can readily name expectations for any three. Partial = register exists but expectations are generic or stakeholders incomplete. No = no register, or only a list of names without expectations.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For each stakeholder marked Critical or Tier-1 in the register, identify the contract clause, MSA addendum, internal SLA, or written commitment that operationalizes their cybersecurity expectations. Sample three.',
+        hint: 'Yes = all three sampled critical stakeholders have a specific contract/SLA artifact you can produce. Partial = some have contractual operationalization, others rely on policy text alone. No = contractual operationalization is missing or generic boilerplate.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the Stakeholder Register last reviewed? Cross-check the current customer/vendor list against the register — are there active stakeholders in the business who are NOT in the register?',
+        hint: 'Yes = reviewed within last 12 months AND reconciled — no untracked stakeholders. Partial = reviewed but reconciliation gap exists. No = >12 months since review or material gaps found.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a specific stakeholder expectation that drove a change to the security program in the past year (e.g., a customer audit requirement that triggered a new control, an insurer condition that prompted a tooling investment).',
   },
+
   'GV.OC-03': {
-    q1: 'List five specific statutes, regulations, or contractual cybersecurity requirements applicable to this organization (e.g., HIPAA 45 CFR 164.308, GLBA Safeguards Rule, Utah § 78B-4-704, a specific client BAA, PCI DSS 4.0). For each, name the policy section or control that satisfies it.',
-    q1_hint: 'Yes = can name 5+ specific items WITH their satisfying control mapping. Partial = can name 3-4, or naming is generic ("we follow HIPAA" without the specific subpart). No = vague references only or fewer than 3 named.',
-    q2: 'Open the Legal & Regulatory Requirements Register. Pull a random entry. Does it have: an owner, a "last reviewed" date within the last 12 months, and a documented mapping to satisfying controls?',
-    q2_hint: 'Yes = sampled entry has all three (owner, recent date, control map). Partial = has 1-2 of the three. No = none of these or no register exists.',
-    q3: 'Is there a documented process to detect changes to laws, regulations, or contracts that affect cybersecurity, and was it exercised in the past 12 months?',
-    q3_hint: 'Yes = process exists AND was exercised — either a change was detected and the program adjusted with documentation, OR counsel signed a no-change attestation within 12 months. Partial = process exists but was not exercised, or a change happened and the program response is still lagging. No = no change-detection process.',
-    q4_prompt: 'Describe one specific regulatory or contractual change in the past year (Utah AI Policy Act, a new client BAA, an insurer requirement) and exactly how the program was adjusted in response.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'List five specific statutes, regulations, or contractual cybersecurity requirements applicable to this organization (e.g., HIPAA 45 CFR 164.308, GLBA Safeguards Rule, Utah § 78B-4-704, a specific client BAA, PCI DSS 4.0). For each, name the policy section or control that satisfies it.',
+        hint: 'Yes = can name 5+ specific items WITH their satisfying control mapping. Partial = can name 3-4, or naming is generic ("we follow HIPAA" without the specific subpart). No = vague references only or fewer than 3 named.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Open the Legal & Regulatory Requirements Register. Pull a random entry. Does it have: an owner, a "last reviewed" date within the last 12 months, and a documented mapping to satisfying controls?',
+        hint: 'Yes = sampled entry has all three (owner, recent date, control map). Partial = has 1-2 of the three. No = none of these or no register exists.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Is there a documented process to detect changes to laws, regulations, or contracts that affect cybersecurity, and was it exercised in the past 12 months?',
+        hint: 'Yes = process exists AND was exercised — either a change was detected and the program adjusted with documentation, OR counsel signed a no-change attestation within 12 months. Partial = process exists but was not exercised, or a change happened and the program response is still lagging. No = no change-detection process.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe one specific regulatory or contractual change in the past year (Utah AI Policy Act, a new client BAA, an insurer requirement) and exactly how the program was adjusted in response.',
   },
+
   'GV.OC-04': {
-    q1: 'What is the published service availability target on the customer-facing status page or standard SLA? Pull the actual number (e.g., "99.9% monthly uptime").',
-    q1_hint: 'Yes = a specific numeric availability target exists in customer-facing materials. Partial = qualitative commitment only ("we aim for high availability"). No = no externally-published commitment.',
-    q2: 'Pull actual achieved availability for Tier-1 customer-facing services for the last 90 days (from monitoring tools or vendor reports). Compare to the published target.',
-    q2_hint: 'Yes = actual ≥ target for at least 80 of last 90 days, AND a documented process exists to flag misses. Partial = some misses without documented response. No = not measured, or significant unmeasured deviation.',
-    q3: 'When were customer-facing service commitments last reviewed against actual delivered service? Were any commitments revised, retired, or strengthened in the past 12 months?',
-    q3_hint: 'Yes = formal review within 12 months AND at least one commitment was deliberately confirmed or revised. Partial = informal review only. No = commitments static / unreviewed.',
-    q4_prompt: 'Describe an externally-facing service commitment that was added, refined, or retired in the past year, and the operational reason for the change.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'What is the published service availability target on the customer-facing status page or standard SLA? Pull the actual number (e.g., "99.9% monthly uptime").',
+        hint: 'Yes = a specific numeric availability target exists in customer-facing materials. Partial = qualitative commitment only ("we aim for high availability"). No = no externally-published commitment.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Pull actual achieved availability for Tier-1 customer-facing services for the last 90 days (from monitoring tools or vendor reports). Compare to the published target.',
+        hint: 'Yes = actual ≥ target for at least 80 of last 90 days, AND a documented process exists to flag misses. Partial = some misses without documented response. No = not measured, or significant unmeasured deviation.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When were customer-facing service commitments last reviewed against actual delivered service? Were any commitments revised, retired, or strengthened in the past 12 months?',
+        hint: 'Yes = formal review within 12 months AND at least one commitment was deliberately confirmed or revised. Partial = informal review only. No = commitments static / unreviewed.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an externally-facing service commitment that was added, refined, or retired in the past year, and the operational reason for the change.',
   },
+
   'GV.OC-05': {
-    q1: 'List five external services, suppliers, or utilities the organization itself depends on to deliver its own services (e.g., M365, Microsoft Entra ID, ISP, RMM platform, payment processor, cloud IaaS). For each, name the criticality tier and the single biggest exposure if it failed.',
-    q1_hint: 'Yes = can readily name 5+ specific dependencies WITH tier and exposure. Partial = list exists but tiers or exposures are vague. No = no documented dependency map.',
-    q2: 'For each Tier-1 dependency, where is the documented contingency plan (e.g., "if M365 is down: we shift to backup mail relay X for Y hours")? Has the plan been tested in the past 12 months?',
-    q2_hint: 'Yes = all Tier-1 dependencies have a written, tested contingency plan. Partial = plans exist for most but some untested or stale. No = no contingency plans or only verbal "we\'d figure it out".',
-    q3: 'In the past 12 months, has at least one Tier-1 dependency contingency been exercised — either by a real outage or a tabletop test — with documented after-action notes?',
-    q3_hint: 'Yes = real outage handled per plan, or tabletop test conducted, with after-action notes on file. Partial = outage occurred but response was ad-hoc; no notes. No = no real or simulated exercises in the past 12 months.',
-    q4_prompt: 'Describe a critical dependency that was identified, reclassified, or whose risk treatment changed in the past year — and the operational consequence.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'List five external services, suppliers, or utilities the organization itself depends on to deliver its own services (e.g., M365, Microsoft Entra ID, ISP, RMM platform, payment processor, cloud IaaS). For each, name the criticality tier and the single biggest exposure if it failed.',
+        hint: 'Yes = can readily name 5+ specific dependencies WITH tier and exposure. Partial = list exists but tiers or exposures are vague. No = no documented dependency map.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For each Tier-1 dependency, where is the documented contingency plan (e.g., "if M365 is down: we shift to backup mail relay X for Y hours")? Has the plan been tested in the past 12 months?',
+        hint: 'Yes = all Tier-1 dependencies have a written, tested contingency plan. Partial = plans exist for most but some untested or stale. No = no contingency plans or only verbal "we\'d figure it out".',
+      },
+      {
+        id: 'q3',
+        prompt: 'In the past 12 months, has at least one Tier-1 dependency contingency been exercised — either by a real outage or a tabletop test — with documented after-action notes?',
+        hint: 'Yes = real outage handled per plan, or tabletop test conducted, with after-action notes on file. Partial = outage occurred but response was ad-hoc; no notes. No = no real or simulated exercises in the past 12 months.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a critical dependency that was identified, reclassified, or whose risk treatment changed in the past year — and the operational consequence.',
   },
+
 
   'GV.RM-01': {
-    q1: 'Quote the written cybersecurity risk management objectives. Are they signed or attested by an executive sponsor (President, CIO, CEO)? When was the most recent signature dated?',
-    q1_hint: 'Yes = written objectives exist with executive signature dated within the last 12 months. Partial = objectives exist but signature is older or absent. No = no written objectives.',
-    q2: 'For each objective, identify a measurable indicator that proves whether the objective is being met. List the actual current value AND the target.',
-    q2_hint: 'Yes = every objective has a measurable indicator with current value and target. Partial = some objectives are measurable, others aspirational. No = objectives are aspirational only.',
-    q3: 'At the most recent executive review, were the objectives confirmed, revised, or retired? Pull the meeting minutes or briefing artifact.',
-    q3_hint: 'Yes = a documented review within last 12 months explicitly addressed objectives. Partial = informal discussion only. No = no documented executive review of objectives.',
-    q4_prompt: 'Describe a risk management objective that was raised, lowered, added, or retired in the past 12 months and what drove the change.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Quote the written cybersecurity risk management objectives. Are they signed or attested by an executive sponsor (President, CIO, CEO)? When was the most recent signature dated?',
+        hint: 'Yes = written objectives exist with executive signature dated within the last 12 months. Partial = objectives exist but signature is older or absent. No = no written objectives.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For each objective, identify a measurable indicator that proves whether the objective is being met. List the actual current value AND the target.',
+        hint: 'Yes = every objective has a measurable indicator with current value and target. Partial = some objectives are measurable, others aspirational. No = objectives are aspirational only.',
+      },
+      {
+        id: 'q3',
+        prompt: 'At the most recent executive review, were the objectives confirmed, revised, or retired? Pull the meeting minutes or briefing artifact.',
+        hint: 'Yes = a documented review within last 12 months explicitly addressed objectives. Partial = informal discussion only. No = no documented executive review of objectives.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a risk management objective that was raised, lowered, added, or retired in the past 12 months and what drove the change.',
   },
+
   'GV.RM-02': {
-    q1: 'Quote the risk appetite statement. Does it explicitly state which risk levels are unacceptable, with a named threshold (e.g., "no high or critical residual risk accepted")?',
-    q1_hint: 'Yes = explicit threshold language in writing. Partial = qualitative language ("we manage risk responsibly"). No = no appetite statement.',
-    q2: 'Quote the risk tolerance for each of confidentiality, integrity, and availability. Are there numeric or specific qualitative thresholds for each?',
-    q2_hint: 'Yes = all three CIA dimensions have explicit tolerance language with thresholds. Partial = some dimensions covered, others not. No = no per-dimension tolerance.',
-    q3: 'Pull a sample of the most recent five risks reviewed. Does each one cite the appetite or tolerance when justifying the acceptance/treatment decision?',
-    q3_hint: 'Yes = all five sampled risks reference the appetite explicitly. Partial = some do, some are silent. No = appetite/tolerance not referenced in actual decisions.',
-    q4_prompt: 'Describe a specific risk that was accepted, transferred, avoided, or mitigated in the past year specifically because of the documented appetite.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Quote the risk appetite statement. Does it explicitly state which risk levels are unacceptable, with a named threshold (e.g., "no high or critical residual risk accepted")?',
+        hint: 'Yes = explicit threshold language in writing. Partial = qualitative language ("we manage risk responsibly"). No = no appetite statement.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Quote the risk tolerance for each of confidentiality, integrity, and availability. Are there numeric or specific qualitative thresholds for each?',
+        hint: 'Yes = all three CIA dimensions have explicit tolerance language with thresholds. Partial = some dimensions covered, others not. No = no per-dimension tolerance.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Pull a sample of the most recent five risks reviewed. Does each one cite the appetite or tolerance when justifying the acceptance/treatment decision?',
+        hint: 'Yes = all five sampled risks reference the appetite explicitly. Partial = some do, some are silent. No = appetite/tolerance not referenced in actual decisions.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a specific risk that was accepted, transferred, avoided, or mitigated in the past year specifically because of the documented appetite.',
   },
+
   'GV.RM-03': {
-    q1: 'Open the Enterprise Risk Register (or whatever the organization calls its top-level risk list). Are cybersecurity risks listed alongside operational, financial, legal, and reputational risks — using the same scoring scale?',
-    q1_hint: 'Yes = single register, single scale, cyber-and-other risks intermingled. Partial = separate cyber register but linked into ERM. No = cyber risks live entirely separate from other ERM activity.',
-    q2: 'Which executive forum (board, risk committee, exec leadership team) reviews cybersecurity risks? Pull the agenda from the most recent meeting — was a cyber risk on it?',
-    q2_hint: 'Yes = same forum that reviews other ERM topics, with cyber items appearing in recent meetings. Partial = cyber discussed but at a different/lower forum. No = cyber doesn\'t reach exec/board.',
-    q3: 'When was the last time a cyber risk was formally accepted, transferred, or escalated through the ERM process? Show the artifact (acceptance letter, treatment decision, escalation record).',
-    q3_hint: 'Yes = a documented ERM-process artifact for a cyber risk in the last 12 months. Partial = informal acceptance only. No = no formal cyber-through-ERM artifacts.',
-    q4_prompt: 'Describe a cyber risk that moved through the enterprise risk process in the past 12 months — and what made it different from purely operational handling.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Open the Enterprise Risk Register (or whatever the organization calls its top-level risk list). Are cybersecurity risks listed alongside operational, financial, legal, and reputational risks — using the same scoring scale?',
+        hint: 'Yes = single register, single scale, cyber-and-other risks intermingled. Partial = separate cyber register but linked into ERM. No = cyber risks live entirely separate from other ERM activity.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Which executive forum (board, risk committee, exec leadership team) reviews cybersecurity risks? Pull the agenda from the most recent meeting — was a cyber risk on it?',
+        hint: 'Yes = same forum that reviews other ERM topics, with cyber items appearing in recent meetings. Partial = cyber discussed but at a different/lower forum. No = cyber doesn\'t reach exec/board.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the last time a cyber risk was formally accepted, transferred, or escalated through the ERM process? Show the artifact (acceptance letter, treatment decision, escalation record).',
+        hint: 'Yes = a documented ERM-process artifact for a cyber risk in the last 12 months. Partial = informal acceptance only. No = no formal cyber-through-ERM artifacts.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a cyber risk that moved through the enterprise risk process in the past 12 months — and what made it different from purely operational handling.',
   },
+
   'GV.RM-04': {
-    q1: 'Name the organization\'s recognized risk response options (Accept, Transfer, Avoid, Mitigate, or any custom additions). For each, quote the specific criteria from policy that determine when to use it.',
-    q1_hint: 'Yes = all standard options named with explicit criteria in policy. Partial = options named but criteria vague. No = options not formally enumerated.',
-    q2: 'Pick three risks from the current Risk Register at random. For each, does the entry name the chosen response AND cite the criteria used to pick it?',
-    q2_hint: 'Yes = all three sampled risks document chosen response with explicit criteria reference. Partial = response named but criteria implicit. No = response choices not justified.',
-    q3: 'When was the response taxonomy and criteria last reviewed and reconfirmed by the executive sponsor? Was a new option added or an existing option refined?',
-    q3_hint: 'Yes = a dated review within 12 months and at least one deliberate confirm/revise action. Partial = older review. No = no review process.',
-    q4_prompt: 'Describe a specific risk where the choice between two response options (e.g., transfer vs. mitigate) was deliberately weighed and documented.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Name the organization\'s recognized risk response options (Accept, Transfer, Avoid, Mitigate, or any custom additions). For each, quote the specific criteria from policy that determine when to use it.',
+        hint: 'Yes = all standard options named with explicit criteria in policy. Partial = options named but criteria vague. No = options not formally enumerated.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Pick three risks from the current Risk Register at random. For each, does the entry name the chosen response AND cite the criteria used to pick it?',
+        hint: 'Yes = all three sampled risks document chosen response with explicit criteria reference. Partial = response named but criteria implicit. No = response choices not justified.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the response taxonomy and criteria last reviewed and reconfirmed by the executive sponsor? Was a new option added or an existing option refined?',
+        hint: 'Yes = a dated review within 12 months and at least one deliberate confirm/revise action. Partial = older review. No = no review process.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a specific risk where the choice between two response options (e.g., transfer vs. mitigate) was deliberately weighed and documented.',
   },
+
   'GV.RM-05': {
-    q1: 'Draw or describe the cybersecurity risk reporting chain: from analyst → IT lead → CIO → executive → board. Are recipients NAMED at each level (not just role)?',
-    q1_hint: 'Yes = a written escalation chart with named individuals at each level. Partial = roles named but individuals not specified. No = no documented escalation chain.',
-    q2: 'When was the risk-communication path last actually exercised — a real or simulated cyber risk reported up the chain? Show the email, escalation record, or briefing.',
-    q2_hint: 'Yes = an actual exercise within last 12 months. Partial = simulated exercise only, or one node skipped. No = chain is theoretical, never used.',
-    q3: 'Cross-check the named individuals against the current org chart — are any names stale (the person no longer in that role)? When was the path last updated?',
-    q3_hint: 'Yes = updated within last 12 months AND no stale names. Partial = some stale names. No = chain has multiple stale entries.',
-    q4_prompt: 'Describe a cybersecurity risk communication that crossed organizational boundaries (to/from a supplier, customer, regulator) in the past year.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Draw or describe the cybersecurity risk reporting chain: from analyst → IT lead → CIO → executive → board. Are recipients NAMED at each level (not just role)?',
+        hint: 'Yes = a written escalation chart with named individuals at each level. Partial = roles named but individuals not specified. No = no documented escalation chain.',
+      },
+      {
+        id: 'q2',
+        prompt: 'When was the risk-communication path last actually exercised — a real or simulated cyber risk reported up the chain? Show the email, escalation record, or briefing.',
+        hint: 'Yes = an actual exercise within last 12 months. Partial = simulated exercise only, or one node skipped. No = chain is theoretical, never used.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Cross-check the named individuals against the current org chart — are any names stale (the person no longer in that role)? When was the path last updated?',
+        hint: 'Yes = updated within last 12 months AND no stale names. Partial = some stale names. No = chain has multiple stale entries.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a cybersecurity risk communication that crossed organizational boundaries (to/from a supplier, customer, regulator) in the past year.',
   },
+
   'GV.RM-06': {
-    q1: 'Does the Risk Register use an explicitly documented likelihood scale, impact scale, and combination rule (matrix or formula)?',
-    q1_hint: 'Yes = all three are defined in writing — e.g., 1-5 frequency-based likelihood, 1-5 financial-impact, multiplicative matrix or expected-loss formula. Partial = one or two are documented; others are informal. No = ad-hoc scoring with no documented method.',
-    q2: 'Pull all current Risk Register entries. Do they all use the same scale and combination rule, or do some use a different (older) approach?',
-    q2_hint: 'Yes = uniform application of one method. Partial = method evolved and not all entries migrated. No = inconsistent scoring across entries.',
-    q3: 'When was the methodology last calibrated (peer review, sample rescore exercise, comparison against incidents)? What was the outcome?',
-    q3_hint: 'Yes = a documented calibration exercise within 12 months. Partial = informal sanity-checking only. No = no calibration ever performed.',
-    q4_prompt: 'Describe a calibration finding or methodology refinement made in the past year (e.g., "we discovered we systematically under-estimated impact for client-data risks").',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Does the Risk Register use an explicitly documented likelihood scale, impact scale, and combination rule (matrix or formula)?',
+        hint: 'Yes = all three are defined in writing — e.g., 1-5 frequency-based likelihood, 1-5 financial-impact, multiplicative matrix or expected-loss formula. Partial = one or two are documented; others are informal. No = ad-hoc scoring with no documented method.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Pull all current Risk Register entries. Do they all use the same scale and combination rule, or do some use a different (older) approach?',
+        hint: 'Yes = uniform application of one method. Partial = method evolved and not all entries migrated. No = inconsistent scoring across entries.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the methodology last calibrated (peer review, sample rescore exercise, comparison against incidents)? What was the outcome?',
+        hint: 'Yes = a documented calibration exercise within 12 months. Partial = informal sanity-checking only. No = no calibration ever performed.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a calibration finding or methodology refinement made in the past year (e.g., "we discovered we systematically under-estimated impact for client-data risks").',
   },
+
   'GV.RM-07': {
-    q1: 'Find an entry in the Risk Register, strategy document, or executive briefing where a strategic OPPORTUNITY (not a threat) was characterized. Name the opportunity (e.g., "investing in MDR opens a new MSP service tier").',
-    q1_hint: 'Yes = at least one documented positive-risk entry exists. Partial = opportunity discussed informally but not formally captured. No = no positive-risk thinking in artifacts.',
-    q2: 'Was the opportunity formally evaluated (benefits, risks, decision)? Pull the artifact.',
-    q2_hint: 'Yes = a documented opportunity assessment with benefits, risks, decision, and rationale. Partial = unstructured discussion. No = no artifact.',
-    q3: 'Does the risk methodology document explicitly include positive-risk thinking, or is it implicit only? Quote the section if explicit.',
-    q3_hint: 'Yes = explicit treatment of positive risk in methodology. Partial = mentioned but not operationalized. No = methodology covers threats only.',
-    q4_prompt: 'Describe a strategic cybersecurity opportunity that was characterized and discussed in the past year — and whether it was pursued.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Find an entry in the Risk Register, strategy document, or executive briefing where a strategic OPPORTUNITY (not a threat) was characterized. Name the opportunity (e.g., "investing in MDR opens a new MSP service tier").',
+        hint: 'Yes = at least one documented positive-risk entry exists. Partial = opportunity discussed informally but not formally captured. No = no positive-risk thinking in artifacts.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Was the opportunity formally evaluated (benefits, risks, decision)? Pull the artifact.',
+        hint: 'Yes = a documented opportunity assessment with benefits, risks, decision, and rationale. Partial = unstructured discussion. No = no artifact.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Does the risk methodology document explicitly include positive-risk thinking, or is it implicit only? Quote the section if explicit.',
+        hint: 'Yes = explicit treatment of positive risk in methodology. Partial = mentioned but not operationalized. No = methodology covers threats only.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a strategic cybersecurity opportunity that was characterized and discussed in the past year — and whether it was pursued.',
   },
+
 
   'GV.RR-01': {
-    q1: 'Has the executive sponsor (President or equivalent) personally signed a written commitment to cybersecurity accountability in the past 12 months? Pull the signed document.',
-    q1_hint: 'Yes = a signed commitment artifact dated within 12 months. Partial = older signature still in force. No = no executive signature on cyber accountability.',
-    q2: 'Did the executive sponsor complete the same security awareness training as employees in the most recent annual cycle? Show the LMS completion record.',
-    q2_hint: 'Yes = completion record on file for the current cycle. Partial = exec is exempted but other executives complete. No = exec didn\'t complete.',
-    q3: 'In the past 12 months, did the executive take a public action that demonstrated cybersecurity accountability (approved budget increase, sanctioned a violation, commissioned an external review, sponsored remediation of a high risk)? Name the specific action.',
-    q3_hint: 'Yes = a tangible action the workforce can point to as "leadership took cyber seriously." Partial = action existed but quiet/internal only. No = no visible action.',
-    q4_prompt: 'Describe an executive action in the past year that visibly reinforced cybersecurity culture across the organization.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Has the executive sponsor (President or equivalent) personally signed a written commitment to cybersecurity accountability in the past 12 months? Pull the signed document.',
+        hint: 'Yes = a signed commitment artifact dated within 12 months. Partial = older signature still in force. No = no executive signature on cyber accountability.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Did the executive sponsor complete the same security awareness training as employees in the most recent annual cycle? Show the LMS completion record.',
+        hint: 'Yes = completion record on file for the current cycle. Partial = exec is exempted but other executives complete. No = exec didn\'t complete.',
+      },
+      {
+        id: 'q3',
+        prompt: 'In the past 12 months, did the executive take a public action that demonstrated cybersecurity accountability (approved budget increase, sanctioned a violation, commissioned an external review, sponsored remediation of a high risk)? Name the specific action.',
+        hint: 'Yes = a tangible action the workforce can point to as "leadership took cyber seriously." Partial = action existed but quiet/internal only. No = no visible action.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an executive action in the past year that visibly reinforced cybersecurity culture across the organization.',
   },
+
   'GV.RR-02': {
-    q1: 'Pull the cybersecurity RACI or role matrix. Are the following roles explicitly named with assigned cybersecurity responsibilities: Executive Sponsor, CIO, IT Leadership, HR, All Personnel, Vendors?',
-    q1_hint: 'Yes = all six roles assigned with specific cyber duties. Partial = some roles covered, others missing. No = no RACI exists.',
-    q2: 'Pick three roles at random from the matrix. For each, does the actual job description or onboarding paperwork mention the cybersecurity responsibility?',
-    q2_hint: 'Yes = all three sampled roles have cyber duties in their JD. Partial = duties surface in some HR documents but not others. No = duties live only in policy text.',
-    q3: 'Cross-check the named individuals against the current org chart. How many stale assignments are there (people no longer holding the role they\'re assigned)? When was the RACI last updated?',
-    q3_hint: 'Yes = reviewed within 12 months AND no stale assignments. Partial = some stale assignments. No = significant drift.',
-    q4_prompt: 'Describe a role or authority that was clarified, reassigned, or expanded in the past year (e.g., "we created a Privacy Officer role accountable for UCPA compliance").',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the cybersecurity RACI or role matrix. Are the following roles explicitly named with assigned cybersecurity responsibilities: Executive Sponsor, CIO, IT Leadership, HR, All Personnel, Vendors?',
+        hint: 'Yes = all six roles assigned with specific cyber duties. Partial = some roles covered, others missing. No = no RACI exists.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Pick three roles at random from the matrix. For each, does the actual job description or onboarding paperwork mention the cybersecurity responsibility?',
+        hint: 'Yes = all three sampled roles have cyber duties in their JD. Partial = duties surface in some HR documents but not others. No = duties live only in policy text.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Cross-check the named individuals against the current org chart. How many stale assignments are there (people no longer holding the role they\'re assigned)? When was the RACI last updated?',
+        hint: 'Yes = reviewed within 12 months AND no stale assignments. Partial = some stale assignments. No = significant drift.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a role or authority that was clarified, reassigned, or expanded in the past year (e.g., "we created a Privacy Officer role accountable for UCPA compliance").',
   },
+
   'GV.RR-03': {
-    q1: 'What is the current cybersecurity budget? What categories does it cover (people, tools, training, audit, insurance)? Pull the actual line items.',
-    q1_hint: 'Yes = a cybersecurity-specific budget exists with categorized line items. Partial = cyber spend exists but mixed into general IT. No = no separate cyber budget.',
-    q2: 'For the top three cybersecurity strategy commitments (e.g., MFA-everywhere, monthly vuln scans, annual pen test), is each one funded in the current budget? Show the line item.',
-    q2_hint: 'Yes = all three commitments have funded line items. Partial = some funded, some unfunded gaps. No = strategy commitments aren\'t reflected in budget.',
-    q3: 'At the most recent executive budget review, was cybersecurity discussed against actual delivery? Were funds increased, decreased, or reallocated for the next cycle?',
-    q3_hint: 'Yes = documented exec review with deliberate budget decisions for cyber. Partial = budget approved without explicit cyber discussion. No = no exec-level review of cyber budget.',
-    q4_prompt: 'Describe a resource-allocation decision in the past year that was driven specifically by cybersecurity risk.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'What is the current cybersecurity budget? What categories does it cover (people, tools, training, audit, insurance)? Pull the actual line items.',
+        hint: 'Yes = a cybersecurity-specific budget exists with categorized line items. Partial = cyber spend exists but mixed into general IT. No = no separate cyber budget.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For the top three cybersecurity strategy commitments (e.g., MFA-everywhere, monthly vuln scans, annual pen test), is each one funded in the current budget? Show the line item.',
+        hint: 'Yes = all three commitments have funded line items. Partial = some funded, some unfunded gaps. No = strategy commitments aren\'t reflected in budget.',
+      },
+      {
+        id: 'q3',
+        prompt: 'At the most recent executive budget review, was cybersecurity discussed against actual delivery? Were funds increased, decreased, or reallocated for the next cycle?',
+        hint: 'Yes = documented exec review with deliberate budget decisions for cyber. Partial = budget approved without explicit cyber discussion. No = no exec-level review of cyber budget.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a resource-allocation decision in the past year that was driven specifically by cybersecurity risk.',
   },
+
   'GV.RR-04': {
-    q1: 'For the past three new-hire onboardings, was cybersecurity training, NDA signature, AND AUP acknowledgement completed BEFORE the user got production access? Pull the records.',
-    q1_hint: 'Yes = all three artifacts dated before access provisioning for all three sampled hires. Partial = mixed (some met, some missed). No = no documented gating.',
-    q2: 'For the past three personnel terminations, was access revoked within the documented timeframe (typically same day)? Pull the de-provisioning logs.',
-    q2_hint: 'Yes = all three terminations meet the SLA. Partial = SLA met for most. No = significant delays in revocation.',
-    q3: 'In the past 12 months, has at least one cybersecurity-related sanction been applied through HR (warning, retraining, termination)? If none warranted, has the absence been attested?',
-    q3_hint: 'Yes = at least one documented sanction OR a signed "no qualifying violations" attestation. Partial = informal sanctions without HR documentation. No = HR-cyber link broken.',
-    q4_prompt: 'Describe an HR-cyber integration improvement made in the past year (e.g., "we added a cyber-attestation step to manager change-of-status workflow").',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'For the past three new-hire onboardings, was cybersecurity training, NDA signature, AND AUP acknowledgement completed BEFORE the user got production access? Pull the records.',
+        hint: 'Yes = all three artifacts dated before access provisioning for all three sampled hires. Partial = mixed (some met, some missed). No = no documented gating.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For the past three personnel terminations, was access revoked within the documented timeframe (typically same day)? Pull the de-provisioning logs.',
+        hint: 'Yes = all three terminations meet the SLA. Partial = SLA met for most. No = significant delays in revocation.',
+      },
+      {
+        id: 'q3',
+        prompt: 'In the past 12 months, has at least one cybersecurity-related sanction been applied through HR (warning, retraining, termination)? If none warranted, has the absence been attested?',
+        hint: 'Yes = at least one documented sanction OR a signed "no qualifying violations" attestation. Partial = informal sanctions without HR documentation. No = HR-cyber link broken.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an HR-cyber integration improvement made in the past year (e.g., "we added a cyber-attestation step to manager change-of-status workflow").',
   },
+
 
   'GV.PO-01': {
-    q1: 'What is the version number, date of last approval, and approver of the current cybersecurity policy?',
-    q1_hint: 'Yes = current version with executive approval signature dated within 12 months. Partial = approval older than 12 months. No = no approved version on file.',
-    q2: 'Where is the policy published? What % of current employees have acknowledged it within the past 12 months? Pull the LMS report.',
-    q2_hint: 'Yes = policy is centrally accessible AND ≥95% acknowledgement in last 12 months. Partial = published but acknowledgement <95%. No = policy not centrally available or acknowledgement broken.',
-    q3: 'Has the policy been used to enforce a sanction, justify an exception denial, or close an audit finding in the past 12 months? Show one specific example.',
-    q3_hint: 'Yes = at least one documented enforcement event in last 12 months. Partial = informal references only. No = policy is shelfware.',
-    q4_prompt: 'Describe a specific example of policy enforcement in the past 12 months — what happened, what the policy said, and what the consequence was.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'What is the version number, date of last approval, and approver of the current cybersecurity policy?',
+        hint: 'Yes = current version with executive approval signature dated within 12 months. Partial = approval older than 12 months. No = no approved version on file.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Where is the policy published? What % of current employees have acknowledged it within the past 12 months? Pull the LMS report.',
+        hint: 'Yes = policy is centrally accessible AND ≥95% acknowledgement in last 12 months. Partial = published but acknowledgement <95%. No = policy not centrally available or acknowledgement broken.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Has the policy been used to enforce a sanction, justify an exception denial, or close an audit finding in the past 12 months? Show one specific example.',
+        hint: 'Yes = at least one documented enforcement event in last 12 months. Partial = informal references only. No = policy is shelfware.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a specific example of policy enforcement in the past 12 months — what happened, what the policy said, and what the consequence was.',
   },
+
   'GV.PO-02': {
-    q1: 'Open the policy\'s revision history. What\'s the date of the most recent review or update? What was the change?',
-    q1_hint: 'Yes = revision history shows a dated review within last 12 months with described change (or "no material change" attestation). Partial = revision happened but undocumented. No = no revision history or stale.',
-    q2: 'For the most recent material change, was re-acknowledgement collected from affected personnel? What % completed it?',
-    q2_hint: 'Yes = re-ack collected from ≥95% of affected personnel. Partial = re-ack pursued but completion <95%. No = changes pushed silently without re-ack.',
-    q3: 'In the past 12 months, did any of the documented review triggers (regulatory change, major incident, threat landscape shift) actually fire? If yes, was it acted on within the documented timeframe?',
-    q3_hint: 'Yes = trigger fired and was acted on within timeframe, OR no triggers fired (documented). Partial = trigger fired but response slow. No = trigger detection process broken.',
-    q4_prompt: 'Describe the most significant policy change in the past year — what triggered it, what was changed, and how it was rolled out.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Open the policy\'s revision history. What\'s the date of the most recent review or update? What was the change?',
+        hint: 'Yes = revision history shows a dated review within last 12 months with described change (or "no material change" attestation). Partial = revision happened but undocumented. No = no revision history or stale.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For the most recent material change, was re-acknowledgement collected from affected personnel? What % completed it?',
+        hint: 'Yes = re-ack collected from ≥95% of affected personnel. Partial = re-ack pursued but completion <95%. No = changes pushed silently without re-ack.',
+      },
+      {
+        id: 'q3',
+        prompt: 'In the past 12 months, did any of the documented review triggers (regulatory change, major incident, threat landscape shift) actually fire? If yes, was it acted on within the documented timeframe?',
+        hint: 'Yes = trigger fired and was acted on within timeframe, OR no triggers fired (documented). Partial = trigger fired but response slow. No = trigger detection process broken.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe the most significant policy change in the past year — what triggered it, what was changed, and how it was rolled out.',
   },
+
 
   'GV.OV-01': {
-    q1: 'Quote the documented cadence for executive review of cybersecurity strategy outcomes (quarterly? semiannually? at every board meeting?).',
-    q1_hint: 'Yes = explicit cadence in policy or program charter. Partial = cadence implied. No = no documented cadence.',
-    q2: 'Do the minutes from the most recent oversight review document all three of: KPIs presented, strategy outcomes discussed (risks closed, incidents handled), and explicit decisions taken?',
-    q2_hint: 'Yes = recent (within last quarter) minutes show all three elements. Partial = minutes within the quarter but missing one of the three elements, or older minutes that contain all three. No = no documented review within 6 months.',
-    q3: 'At the most recent review, was at least one strategy adjustment made (priority change, new initiative, explicit confirmation to stay the course)?',
-    q3_hint: 'Yes = explicit adjustment or confirmation documented. Partial = discussion but no decision recorded. No = review is purely informational.',
-    q4_prompt: 'Describe a strategy adjustment that came directly out of an oversight review in the past year.',
-  },
-  'GV.OV-02': {
-    q1: 'Does a coverage matrix exist that maps each cybersecurity strategy element to its driving risks, regulations, threats, and stakeholder expectations, with gaps explicitly flagged?',
-    q1_hint: 'Yes = matrix has ≥6 strategy elements as rows × ≥4 input columns (risks, regs, threats, stakeholders) and gaps are explicitly marked. Partial = matrix exists but is thinner than that, OR gaps are not flagged. No = no coverage matrix.',
-    q2: 'When was the matrix last completed? How many gaps were identified?',
-    q2_hint: 'Yes = completed within last 12 months with documented gaps and resolutions. Partial = older or partial check. No = never completed.',
-    q3: 'For each gap identified, is there a tracked initiative with owner and target date? Show the tracker.',
-    q3_hint: 'Yes = all identified gaps tracked with owners and dates. Partial = some tracked, others orphaned. No = gaps are noted but not tracked.',
-    q4_prompt: 'Describe a specific coverage gap identified in the past year and how it was closed.',
-  },
-  'GV.OV-03': {
-    q1: 'Quote the cybersecurity KPIs the organization tracks, with their numeric targets. Examples: MFA coverage, patch compliance, training completion, MTTD/MTTR, phishing click rate, backup success rate.',
-    q1_hint: 'Yes = ≥6 KPIs with numeric targets explicitly defined. Partial = some KPIs but targets vague. No = no formal KPI dashboard.',
-    q2: 'Pull the most recent KPI dashboard. For each KPI, what\'s the actual current value vs. the target?',
-    q2_hint: 'Yes = recent dashboard with current values vs. targets visible. Partial = dashboard exists but stale or incomplete. No = no actual measurement happening.',
-    q3: 'For each KPI currently below target, is there a documented action plan, owner, and target date for closing the gap?',
-    q3_hint: 'Yes = every below-target KPI has an active remediation plan. Partial = some have plans, others orphaned. No = misses are noted but not acted on.',
-    q4_prompt: 'Describe a specific performance issue surfaced by a KPI in the past year and the resulting action.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Quote the documented cadence for executive review of cybersecurity strategy outcomes (quarterly? semiannually? at every board meeting?).',
+        hint: 'Yes = explicit cadence in policy or program charter. Partial = cadence implied. No = no documented cadence.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Do the minutes from the most recent oversight review document all three of: KPIs presented, strategy outcomes discussed (risks closed, incidents handled), and explicit decisions taken?',
+        hint: 'Yes = recent (within last quarter) minutes show all three elements. Partial = minutes within the quarter but missing one of the three elements, or older minutes that contain all three. No = no documented review within 6 months.',
+      },
+      {
+        id: 'q3',
+        prompt: 'At the most recent review, was at least one strategy adjustment made (priority change, new initiative, explicit confirmation to stay the course)?',
+        hint: 'Yes = explicit adjustment or confirmation documented. Partial = discussion but no decision recorded. No = review is purely informational.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a strategy adjustment that came directly out of an oversight review in the past year.',
   },
 
+  'GV.OV-02': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Does a coverage matrix exist that maps each cybersecurity strategy element to its driving risks, regulations, threats, and stakeholder expectations, with gaps explicitly flagged?',
+        hint: 'Yes = matrix has ≥6 strategy elements as rows × ≥4 input columns (risks, regs, threats, stakeholders) and gaps are explicitly marked. Partial = matrix exists but is thinner than that, OR gaps are not flagged. No = no coverage matrix.',
+      },
+      {
+        id: 'q2',
+        prompt: 'When was the matrix last completed? How many gaps were identified?',
+        hint: 'Yes = completed within last 12 months with documented gaps and resolutions. Partial = older or partial check. No = never completed.',
+      },
+      {
+        id: 'q3',
+        prompt: 'For each gap identified, is there a tracked initiative with owner and target date? Show the tracker.',
+        hint: 'Yes = all identified gaps tracked with owners and dates. Partial = some tracked, others orphaned. No = gaps are noted but not tracked.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a specific coverage gap identified in the past year and how it was closed.',
+  },
+
+  'GV.OV-03': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Quote the cybersecurity KPIs the organization tracks, with their numeric targets. Examples: MFA coverage, patch compliance, training completion, MTTD/MTTR, phishing click rate, backup success rate.',
+        hint: 'Yes = ≥6 KPIs with numeric targets explicitly defined. Partial = some KPIs but targets vague. No = no formal KPI dashboard.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Pull the most recent KPI dashboard. For each KPI, what\'s the actual current value vs. the target?',
+        hint: 'Yes = recent dashboard with current values vs. targets visible. Partial = dashboard exists but stale or incomplete. No = no actual measurement happening.',
+      },
+      {
+        id: 'q3',
+        prompt: 'For each KPI currently below target, is there a documented action plan, owner, and target date for closing the gap?',
+        hint: 'Yes = every below-target KPI has an active remediation plan. Partial = some have plans, others orphaned. No = misses are noted but not acted on.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a specific performance issue surfaced by a KPI in the past year and the resulting action.',
+  },
+
+
   'GV.SC-01': {
-    q1: 'Quote the title, version, and approval date of the written Supply Chain (or Third-Party) Risk Management policy or program document.',
-    q1_hint: 'Yes = a current SCRM/TPRM policy with executive signature within 12 months. Partial = older or unsigned. No = no policy.',
-    q2: 'List the operational artifacts the program produces and confirm each exists: vendor inventory, due-diligence template, risk-tier criteria, contract clause library, ongoing monitoring procedure.',
-    q2_hint: 'Yes = all five artifacts exist and are populated. Partial = 2-4 exist. No = 0-1 exist.',
-    q3: 'When was the program last reviewed? Was at least one improvement made (new control, expanded scope, revised cadence)?',
-    q3_hint: 'Yes = reviewed within 12 months with at least one deliberate change. Partial = review without change. No = unreviewed.',
-    q4_prompt: 'Describe an improvement made to the supply chain risk program in the past year and what triggered it.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Quote the title, version, and approval date of the written Supply Chain (or Third-Party) Risk Management policy or program document.',
+        hint: 'Yes = a current SCRM/TPRM policy with executive signature within 12 months. Partial = older or unsigned. No = no policy.',
+      },
+      {
+        id: 'q2',
+        prompt: 'List the operational artifacts the program produces and confirm each exists: vendor inventory, due-diligence template, risk-tier criteria, contract clause library, ongoing monitoring procedure.',
+        hint: 'Yes = all five artifacts exist and are populated. Partial = 2-4 exist. No = 0-1 exist.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the program last reviewed? Was at least one improvement made (new control, expanded scope, revised cadence)?',
+        hint: 'Yes = reviewed within 12 months with at least one deliberate change. Partial = review without change. No = unreviewed.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an improvement made to the supply chain risk program in the past year and what triggered it.',
   },
+
   'GV.SC-02': {
-    q1: 'Quote at least three specific cybersecurity obligations required of suppliers per the contract template (e.g., 24-hour breach notification, sub-processor disclosure, no-offshoring without consent, audit rights, data return on termination).',
-    q1_hint: 'Yes = at least three specific clauses quoted from contract template. Partial = generic "follow security best practices" language. No = no standard clauses.',
-    q2: 'Pull two recently executed supplier contracts at random. Do BOTH contain those obligations as written?',
-    q2_hint: 'Yes = both sampled contracts contain the standard clauses. Partial = one contract has them, one doesn\'t. No = clauses inconsistent across contracts.',
-    q3: 'When were supplier role assignments (internal owners) last reviewed and updated against the current org chart and current vendors?',
-    q3_hint: 'Yes = reviewed within 12 months with documented updates. Partial = informal review. No = stale assignments.',
-    q4_prompt: 'Describe a third-party role or obligation that was clarified, added, or removed in the past year.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Quote at least three specific cybersecurity obligations required of suppliers per the contract template (e.g., 24-hour breach notification, sub-processor disclosure, no-offshoring without consent, audit rights, data return on termination).',
+        hint: 'Yes = at least three specific clauses quoted from contract template. Partial = generic "follow security best practices" language. No = no standard clauses.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Pull two recently executed supplier contracts at random. Do BOTH contain those obligations as written?',
+        hint: 'Yes = both sampled contracts contain the standard clauses. Partial = one contract has them, one doesn\'t. No = clauses inconsistent across contracts.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When were supplier role assignments (internal owners) last reviewed and updated against the current org chart and current vendors?',
+        hint: 'Yes = reviewed within 12 months with documented updates. Partial = informal review. No = stale assignments.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a third-party role or obligation that was clarified, added, or removed in the past year.',
   },
+
   'GV.SC-03': {
-    q1: 'Open the Risk Register. Are third-party risks listed alongside internal risks using the same scale, or are they tracked in a separate process?',
-    q1_hint: 'Yes = unified register with same scoring scale. Partial = separate but linked. No = third-party risks live entirely separately.',
-    q2: 'When did a vendor finding last drive an internal control change? Show the connection (vendor finding → internal action).',
-    q2_hint: 'Yes = at least one documented vendor-to-internal change in last 12 months. Partial = vendor findings recorded but no internal action. No = vendor findings disconnected from internal program.',
-    q3: 'When was the integration last audited (sample of vendor risks confirmed to have been treated through standard process)?',
-    q3_hint: 'Yes = audit within 12 months confirming consistency. Partial = informal sampling. No = no audit.',
-    q4_prompt: 'Describe a supply chain finding that improved an internal control in the past year.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Open the Risk Register. Are third-party risks listed alongside internal risks using the same scale, or are they tracked in a separate process?',
+        hint: 'Yes = unified register with same scoring scale. Partial = separate but linked. No = third-party risks live entirely separately.',
+      },
+      {
+        id: 'q2',
+        prompt: 'When did a vendor finding last drive an internal control change? Show the connection (vendor finding → internal action).',
+        hint: 'Yes = at least one documented vendor-to-internal change in last 12 months. Partial = vendor findings recorded but no internal action. No = vendor findings disconnected from internal program.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the integration last audited (sample of vendor risks confirmed to have been treated through standard process)?',
+        hint: 'Yes = audit within 12 months confirming consistency. Partial = informal sampling. No = no audit.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a supply chain finding that improved an internal control in the past year.',
   },
+
   'GV.SC-04': {
-    q1: 'Open the vendor inventory. How many vendors are listed total? How many are in each tier (Tier 1, Tier 2, Tier 3, Tier 4)?',
-    q1_hint: 'Yes = full inventory with explicit tier counts. Partial = inventory exists but tiering incomplete. No = no inventory or no tiering.',
-    q2: 'Pull the criteria document defining what makes a vendor Tier 1 vs Tier 2. Quote the tiering rubric.',
-    q2_hint: 'Yes = explicit, written tiering criteria. Partial = informal "we know it when we see it." No = no rubric.',
-    q3: 'When was the vendor inventory and tiering last reconciled against actual contracts and accounts payable? How many vendors were found in AP that weren\'t in the register?',
-    q3_hint: 'Yes = reconciliation within 12 months AND no AP-only vendors. Partial = reconciliation but gaps found. No = no reconciliation process.',
-    q4_prompt: 'Describe a vendor whose criticality was changed in the past year, and why.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Open the vendor inventory. How many vendors are listed total? How many are in each tier (Tier 1, Tier 2, Tier 3, Tier 4)?',
+        hint: 'Yes = full inventory with explicit tier counts. Partial = inventory exists but tiering incomplete. No = no inventory or no tiering.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Pull the criteria document defining what makes a vendor Tier 1 vs Tier 2. Quote the tiering rubric.',
+        hint: 'Yes = explicit, written tiering criteria. Partial = informal "we know it when we see it." No = no rubric.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the vendor inventory and tiering last reconciled against actual contracts and accounts payable? How many vendors were found in AP that weren\'t in the register?',
+        hint: 'Yes = reconciliation within 12 months AND no AP-only vendors. Partial = reconciliation but gaps found. No = no reconciliation process.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a vendor whose criticality was changed in the past year, and why.',
   },
+
   'GV.SC-05': {
-    q1: 'Pull the cybersecurity contract clause library or master vendor agreement template. Quote the title or storage location.',
-    q1_hint: 'Yes = a centralized clause library exists. Partial = some standard language but not centralized. No = ad-hoc per-deal language.',
-    q2: 'For Tier 1 and Tier 2 vendors, audit a random sample of three contracts. Do they all contain: data handling, breach notification timeline, sub-processor disclosure, audit rights, data return/destruction, no-offshoring (default), regulatory compliance?',
-    q2_hint: 'Yes = all three sampled contracts contain all listed clauses. Partial = most clauses present, some gaps. No = clause coverage inconsistent or missing.',
-    q3: 'When was the contract clause library last reviewed by legal? What was added (e.g., AI-vendor language, new breach timeframes)?',
-    q3_hint: 'Yes = legal review within 12 months with documented updates. Partial = informal updates. No = stale library.',
-    q4_prompt: 'Describe a contract clause that was added or strengthened in the past year and why.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the cybersecurity contract clause library or master vendor agreement template. Quote the title or storage location.',
+        hint: 'Yes = a centralized clause library exists. Partial = some standard language but not centralized. No = ad-hoc per-deal language.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For Tier 1 and Tier 2 vendors, audit a random sample of three contracts. Do they all contain: data handling, breach notification timeline, sub-processor disclosure, audit rights, data return/destruction, no-offshoring (default), regulatory compliance?',
+        hint: 'Yes = all three sampled contracts contain all listed clauses. Partial = most clauses present, some gaps. No = clause coverage inconsistent or missing.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the contract clause library last reviewed by legal? What was added (e.g., AI-vendor language, new breach timeframes)?',
+        hint: 'Yes = legal review within 12 months with documented updates. Partial = informal updates. No = stale library.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a contract clause that was added or strengthened in the past year and why.',
   },
+
   'GV.SC-06': {
-    q1: 'Pull the vendor onboarding workflow or checklist. Does it include: security questionnaire, certification check (SOC 2, ISO 27001, HITRUST as applicable), risk-tier assignment, contract clauses verified before execution?',
-    q1_hint: 'Yes = all four steps explicit in workflow. Partial = some steps explicit, others optional. No = no workflow.',
-    q2: 'For every Tier-1 vendor onboarded in the past 12 months, is the completed due-diligence package on file? Sample three.',
-    q2_hint: 'Yes = all three sampled vendors have complete packages. Partial = packages exist but missing components. No = packages missing or never produced.',
-    q3: 'When was the due-diligence template last refined based on a lesson learned (e.g., a vendor incident exposed a missing question)?',
-    q3_hint: 'Yes = at least one lesson-learned-driven update within 12 months. Partial = generic refresh only. No = template static.',
-    q4_prompt: 'Describe a vendor that failed initial due diligence in the past year and was either rejected or had remediations required before onboarding.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the vendor onboarding workflow or checklist. Does it include: security questionnaire, certification check (SOC 2, ISO 27001, HITRUST as applicable), risk-tier assignment, contract clauses verified before execution?',
+        hint: 'Yes = all four steps explicit in workflow. Partial = some steps explicit, others optional. No = no workflow.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For every Tier-1 vendor onboarded in the past 12 months, is the completed due-diligence package on file? Sample three.',
+        hint: 'Yes = all three sampled vendors have complete packages. Partial = packages exist but missing components. No = packages missing or never produced.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the due-diligence template last refined based on a lesson learned (e.g., a vendor incident exposed a missing question)?',
+        hint: 'Yes = at least one lesson-learned-driven update within 12 months. Partial = generic refresh only. No = template static.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a vendor that failed initial due diligence in the past year and was either rejected or had remediations required before onboarding.',
   },
+
   'GV.SC-07': {
-    q1: 'Pull the ongoing-monitoring procedure. What\'s the reassessment cadence per tier? (e.g., Tier 1 = annually, Tier 2 = biennially)',
-    q1_hint: 'Yes = explicit cadence per tier in writing. Partial = cadence informal. No = no monitoring procedure.',
-    q2: 'For all Tier 1 vendors, what % have been reassessed within the cadence interval? Pull the dates from the register.',
-    q2_hint: 'Yes = ≥95% of Tier 1 vendors current on reassessment. Partial = 70-95%. No = <70% or not tracked.',
-    q3: 'At the most recent executive supply-chain review, were vendor risks summarized? What were the top three vendor risks?',
-    q3_hint: 'Yes = exec review within 12 months with named top risks and decisions. Partial = informal mention. No = no exec-level vendor-risk visibility.',
-    q4_prompt: 'Describe a specific vendor risk that was identified and remediated through the ongoing monitoring process in the past year.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the ongoing-monitoring procedure. What\'s the reassessment cadence per tier? (e.g., Tier 1 = annually, Tier 2 = biennially)',
+        hint: 'Yes = explicit cadence per tier in writing. Partial = cadence informal. No = no monitoring procedure.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For all Tier 1 vendors, what % have been reassessed within the cadence interval? Pull the dates from the register.',
+        hint: 'Yes = ≥95% of Tier 1 vendors current on reassessment. Partial = 70-95%. No = <70% or not tracked.',
+      },
+      {
+        id: 'q3',
+        prompt: 'At the most recent executive supply-chain review, were vendor risks summarized? What were the top three vendor risks?',
+        hint: 'Yes = exec review within 12 months with named top risks and decisions. Partial = informal mention. No = no exec-level vendor-risk visibility.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a specific vendor risk that was identified and remediated through the ongoing monitoring process in the past year.',
   },
+
   'GV.SC-08': {
-    q1: 'Open the Incident Response Plan. Does it name specific suppliers (RMM/PSA, identity provider, cloud provider, hardware partner, insurance carrier) WITH their incident-engagement procedures and current contact information?',
-    q1_hint: 'Yes = ≥4 specific suppliers with engagement procedures and current contacts. Partial = some named but procedures vague. No = generic "engage vendors as needed".',
-    q2: 'When was the most recent tabletop or real incident that exercised vendor coordination? Pull the after-action report (AAR).',
-    q2_hint: 'Yes = an exercise within 12 months that actually engaged at least one external party. Partial = tabletop only mentioning vendors but not engaging them. No = no vendor exercise.',
-    q3: 'When were the named vendor contacts last verified (test: are any of them no longer at that vendor)?',
-    q3_hint: 'Yes = verified within 12 months and current. Partial = some stale contacts. No = no verification process.',
-    q4_prompt: 'Describe a specific supplier interaction during an incident or tabletop in the past year and what worked well/poorly.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Open the Incident Response Plan. Does it name specific suppliers (RMM/PSA, identity provider, cloud provider, hardware partner, insurance carrier) WITH their incident-engagement procedures and current contact information?',
+        hint: 'Yes = ≥4 specific suppliers with engagement procedures and current contacts. Partial = some named but procedures vague. No = generic "engage vendors as needed".',
+      },
+      {
+        id: 'q2',
+        prompt: 'When was the most recent tabletop or real incident that exercised vendor coordination? Pull the after-action report (AAR).',
+        hint: 'Yes = an exercise within 12 months that actually engaged at least one external party. Partial = tabletop only mentioning vendors but not engaging them. No = no vendor exercise.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When were the named vendor contacts last verified (test: are any of them no longer at that vendor)?',
+        hint: 'Yes = verified within 12 months and current. Partial = some stale contacts. No = no verification process.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a specific supplier interaction during an incident or tabletop in the past year and what worked well/poorly.',
   },
+
   'GV.SC-09': {
-    q1: 'Pull the lifecycle policy for hardware/software. What supply-chain controls are required at each phase: procurement, deployment, operation, retirement?',
-    q1_hint: 'Yes = explicit controls at each phase. Partial = some phases covered. No = no lifecycle-supply-chain integration.',
-    q2: 'For currently deployed assets, show evidence of supply-chain controls being applied: firmware verification logs, dependency scan reports, hardware Bill of Materials (BOM), counterfeit checks.',
-    q2_hint: 'Yes = current artifacts produced by all relevant controls. Partial = some artifacts, some missing. No = controls in policy but no artifacts.',
-    q3: 'What supply-chain integrity metrics are tracked (defects found, exceptions granted, vendor changes triggered)? Pull the dashboard.',
-    q3_hint: 'Yes = a metrics view exists with recent data. Partial = metrics tracked informally. No = no metrics.',
-    q4_prompt: 'Describe a specific supply-chain integrity finding in the past year (counterfeit, tampered firmware, vulnerable dependency).',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the lifecycle policy for hardware/software. What supply-chain controls are required at each phase: procurement, deployment, operation, retirement?',
+        hint: 'Yes = explicit controls at each phase. Partial = some phases covered. No = no lifecycle-supply-chain integration.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For currently deployed assets, show evidence of supply-chain controls being applied: firmware verification logs, dependency scan reports, hardware Bill of Materials (BOM), counterfeit checks.',
+        hint: 'Yes = current artifacts produced by all relevant controls. Partial = some artifacts, some missing. No = controls in policy but no artifacts.',
+      },
+      {
+        id: 'q3',
+        prompt: 'What supply-chain integrity metrics are tracked (defects found, exceptions granted, vendor changes triggered)? Pull the dashboard.',
+        hint: 'Yes = a metrics view exists with recent data. Partial = metrics tracked informally. No = no metrics.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a specific supply-chain integrity finding in the past year (counterfeit, tampered firmware, vulnerable dependency).',
   },
+
   'GV.SC-10': {
-    q1: 'Pull the supply-chain termination provisions (procedure or contract clauses). What specific actions are required: access revocation, equipment return, data return/destruction, certificate of destruction?',
-    q1_hint: 'Yes = all four actions specified. Partial = some specified, others informal. No = no termination procedure.',
-    q2: 'For every vendor relationship that ended in the past 12 months, are the offboarding artifacts on file (revocation logs, return tracking, destruction certificates)?',
-    q2_hint: 'Yes = all terminated vendors have complete offboarding packages. Partial = some packages incomplete. No = offboarding artifacts missing.',
-    q3: 'Has any post-termination gap (residual access, retained data) been discovered in the past 12 months? If yes, what process improvement followed?',
-    q3_hint: 'Yes = either no gaps OR gaps identified and process improved. Partial = gaps identified but process unchanged. No = gaps not detected.',
-    q4_prompt: 'Describe a specific vendor offboarding in the past year and what was learned.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the supply-chain termination provisions (procedure or contract clauses). What specific actions are required: access revocation, equipment return, data return/destruction, certificate of destruction?',
+        hint: 'Yes = all four actions specified. Partial = some specified, others informal. No = no termination procedure.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For every vendor relationship that ended in the past 12 months, are the offboarding artifacts on file (revocation logs, return tracking, destruction certificates)?',
+        hint: 'Yes = all terminated vendors have complete offboarding packages. Partial = some packages incomplete. No = offboarding artifacts missing.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Has any post-termination gap (residual access, retained data) been discovered in the past 12 months? If yes, what process improvement followed?',
+        hint: 'Yes = either no gaps OR gaps identified and process improved. Partial = gaps identified but process unchanged. No = gaps not detected.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a specific vendor offboarding in the past year and what was learned.',
   },
 
   // ===========================================================================
   // ID — IDENTIFY
   // ===========================================================================
 
+
   'ID.AM-01': {
-    // EXISTENCE — is there one place to look up every device?
-    q1: 'Does a central hardware inventory exist (CMDB, RMM, or asset-management platform) covering every employee endpoint, server, and network device?',
-    q1_hint: 'Yes = a single source of truth lists all device classes (endpoints + servers + network gear + mobile). Partial = inventory exists but is split across systems with no reconciliation, OR covers only some device classes. No = no central inventory; devices are tracked ad-hoc or via spreadsheet.',
-    // QUALITY — are the records on a random sample actually populated?
-    q2: 'Pick 5 random devices from the inventory. Are all of these fields populated on all 5: asset tag or serial, assigned owner, OS, criticality tier, lifecycle status?',
-    q2_hint: 'Yes = every field populated on all 5 sampled devices. Partial = 3-4 of the 5 fields populated, OR all 5 fields populated on only 3-4 of the sampled devices. No = ≤2 fields populated, or core fields (owner, criticality) missing across the fleet.',
-    // CURRENCY — does it stay current with reality?
-    q3: 'Is the inventory reconciled against discovery tooling (RMM, MDM, or network scan) at least quarterly, with detected deltas closed within 30 days?',
-    q3_hint: 'Yes = a reconciliation report exists within the last 90 days AND every detected delta was closed within 30 days of detection. Partial = reconciliation happens but deltas linger without a closure SLA, OR cadence is slower than quarterly. No = no reconciliation process at all.',
-    q4_prompt: 'Describe one specific inventory gap identified and closed in the past 12 months — what was missing, how it was discovered, and what was changed to prevent recurrence.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Does a central hardware inventory exist (CMDB, RMM, or asset-management platform) covering every employee endpoint, server, and network device?',
+        hint: 'Yes = a single source of truth lists all device classes (endpoints + servers + network gear + mobile). Partial = inventory exists but is split across systems with no reconciliation, OR covers only some device classes. No = no central inventory; devices are tracked ad-hoc or via spreadsheet.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Pick 5 random devices from the inventory. Are all of these fields populated on all 5: asset tag or serial, assigned owner, OS, criticality tier, lifecycle status?',
+        hint: 'Yes = every field populated on all 5 sampled devices. Partial = 3-4 of the 5 fields populated, OR all 5 fields populated on only 3-4 of the sampled devices. No = ≤2 fields populated, or core fields (owner, criticality) missing across the fleet.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Is the inventory reconciled against discovery tooling (RMM, MDM, or network scan) at least quarterly, with detected deltas closed within 30 days?',
+        hint: 'Yes = a reconciliation report exists within the last 90 days AND every detected delta was closed within 30 days of detection. Partial = reconciliation happens but deltas linger without a closure SLA, OR cadence is slower than quarterly. No = no reconciliation process at all.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe one specific inventory gap identified and closed in the past 12 months — what was missing, how it was discovered, and what was changed to prevent recurrence.',
   },
+
   'ID.AM-02': {
-    q1: 'Does an approved-software / approved-SaaS list exist that covers both installed software and SaaS services, with an explicit policy rule that anything not on the list requires approval?',
-    q1_hint: 'Yes = a single list (or two paired lists) covers both installed software AND SaaS, and a written rule requires approval for anything else. Partial = list exists for one (software OR SaaS) but not both, OR list exists with no formal approval gate. No = no approved-software discipline; shadow IT is the default.',
-    q2: 'Run an audit of installed software on a random workstation and a random server. Are all installed packages on the approved list? Run a SaaS audit (e.g., M365 Cloud App Discovery) — any unsanctioned services?',
-    q2_hint: 'Yes = audit shows ≥95% on approved list, no unsanctioned SaaS. Partial = mostly compliant with some shadow IT. No = significant unauthorized software/SaaS.',
-    q3: 'Has the approved list been reconciled against actual installations and SaaS usage within the last quarter, with unauthorized items remediated?',
-    q3_hint: 'Yes = reconciliation within last 90 days AND all unauthorized findings remediated (removed, whitelisted with justification, or migrated to an approved alternative). Partial = reconciliation occurred but findings still open. No = no reconciliation process.',
-    q4_prompt: 'Describe a shadow-IT or unapproved-software finding in the past year and how it was resolved.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Does an approved-software / approved-SaaS list exist that covers both installed software and SaaS services, with an explicit policy rule that anything not on the list requires approval?',
+        hint: 'Yes = a single list (or two paired lists) covers both installed software AND SaaS, and a written rule requires approval for anything else. Partial = list exists for one (software OR SaaS) but not both, OR list exists with no formal approval gate. No = no approved-software discipline; shadow IT is the default.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Run an audit of installed software on a random workstation and a random server. Are all installed packages on the approved list? Run a SaaS audit (e.g., M365 Cloud App Discovery) — any unsanctioned services?',
+        hint: 'Yes = audit shows ≥95% on approved list, no unsanctioned SaaS. Partial = mostly compliant with some shadow IT. No = significant unauthorized software/SaaS.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Has the approved list been reconciled against actual installations and SaaS usage within the last quarter, with unauthorized items remediated?',
+        hint: 'Yes = reconciliation within last 90 days AND all unauthorized findings remediated (removed, whitelisted with justification, or migrated to an approved alternative). Partial = reconciliation occurred but findings still open. No = no reconciliation process.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a shadow-IT or unapproved-software finding in the past year and how it was resolved.',
   },
+
   'ID.AM-03': {
-    q1: 'Pull the current network topology diagram and a data-flow diagram for any Tier-1 system. What\'s the date of the most recent revision on each?',
-    q1_hint: 'Yes = both diagrams exist with revisions within last 12 months. Partial = one current, the other stale. No = diagrams missing or >12 months old.',
-    q2: 'On the data-flow diagram, are external connections, internal segments, and points where data crosses trust boundaries explicitly marked?',
-    q2_hint: 'Yes = all three elements visible. Partial = some shown, others missing. No = diagram lacks trust-boundary detail.',
-    q3: 'Pick a material network change in the last 6 months (new system, new integration, segmentation change). Was the diagram updated within 30 days?',
-    q3_hint: 'Yes = diagram updated within 30 days of change. Partial = updated but with delay. No = diagram doesn\'t reflect recent changes.',
-    q4_prompt: 'Describe a specific diagram update in the past year and what triggered it.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the current network topology diagram and a data-flow diagram for any Tier-1 system. What\'s the date of the most recent revision on each?',
+        hint: 'Yes = both diagrams exist with revisions within last 12 months. Partial = one current, the other stale. No = diagrams missing or >12 months old.',
+      },
+      {
+        id: 'q2',
+        prompt: 'On the data-flow diagram, are external connections, internal segments, and points where data crosses trust boundaries explicitly marked?',
+        hint: 'Yes = all three elements visible. Partial = some shown, others missing. No = diagram lacks trust-boundary detail.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Pick a material network change in the last 6 months (new system, new integration, segmentation change). Was the diagram updated within 30 days?',
+        hint: 'Yes = diagram updated within 30 days of change. Partial = updated but with delay. No = diagram doesn\'t reflect recent changes.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a specific diagram update in the past year and what triggered it.',
   },
+
   'ID.AM-04': {
-    q1: 'Open the supplier service inventory. How many service relationships are listed? Are function, criticality, business owner, and contract reference populated for each?',
-    q1_hint: 'Yes = inventory has ≥10 entries each with ≥4 of 5 fields (function, criticality, owner, contract ref, renewal date) populated. Partial = inventory exists but <10 entries or fields thin. No = no inventory or only AP records.',
-    q2: 'Cross-check the inventory against actual paid invoices in AP for the past quarter. How many paid services are missing from the inventory?',
-    q2_hint: 'Yes = no AP-only services (or all reconciled). Partial = some AP-only services remain. No = significant AP-only services.',
-    q3: 'When was the inventory last reviewed for new services or retired services?',
-    q3_hint: 'Yes = reviewed within last quarter with documented adds/removes. Partial = reviewed but stale. No = unreviewed.',
-    q4_prompt: 'Describe a vendor service that was added or retired in the past year and the operational consequence.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Open the supplier service inventory. How many service relationships are listed? Are function, criticality, business owner, and contract reference populated for each?',
+        hint: 'Yes = inventory has ≥10 entries each with ≥4 of 5 fields (function, criticality, owner, contract ref, renewal date) populated. Partial = inventory exists but <10 entries or fields thin. No = no inventory or only AP records.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Cross-check the inventory against actual paid invoices in AP for the past quarter. How many paid services are missing from the inventory?',
+        hint: 'Yes = no AP-only services (or all reconciled). Partial = some AP-only services remain. No = significant AP-only services.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the inventory last reviewed for new services or retired services?',
+        hint: 'Yes = reviewed within last quarter with documented adds/removes. Partial = reviewed but stale. No = unreviewed.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a vendor service that was added or retired in the past year and the operational consequence.',
   },
+
   'ID.AM-05': {
-    q1: 'Quote the asset criticality rubric. What makes an asset Tier 1 vs Tier 2 vs Tier 3 vs Tier 4? Is the rubric documented in policy?',
-    q1_hint: 'Yes = explicit written rubric distinguishing all tiers. Partial = informal tiering. No = no rubric.',
-    q2: 'For Tier 1 assets specifically, what specific operational treatment differs from lower tiers? (e.g., backup frequency, monitoring scope, patch SLA, RTO/RPO)',
-    q2_hint: 'Yes = clear differentiation in operational treatment by tier. Partial = some differentiation. No = same treatment regardless of tier.',
-    q3: 'In the past 12 months, was any asset deliberately re-tiered (upgraded or downgraded)? Show the decision and resulting operational change.',
-    q3_hint: 'Yes = at least one documented re-tiering with operational consequence. Partial = re-tiering happened but no consequence. No = tiers static.',
-    q4_prompt: 'Describe an asset that was reclassified in the past year and the operational consequence.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Quote the asset criticality rubric. What makes an asset Tier 1 vs Tier 2 vs Tier 3 vs Tier 4? Is the rubric documented in policy?',
+        hint: 'Yes = explicit written rubric distinguishing all tiers. Partial = informal tiering. No = no rubric.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For Tier 1 assets specifically, what specific operational treatment differs from lower tiers? (e.g., backup frequency, monitoring scope, patch SLA, RTO/RPO)',
+        hint: 'Yes = clear differentiation in operational treatment by tier. Partial = some differentiation. No = same treatment regardless of tier.',
+      },
+      {
+        id: 'q3',
+        prompt: 'In the past 12 months, was any asset deliberately re-tiered (upgraded or downgraded)? Show the decision and resulting operational change.',
+        hint: 'Yes = at least one documented re-tiering with operational consequence. Partial = re-tiering happened but no consequence. No = tiers static.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an asset that was reclassified in the past year and the operational consequence.',
   },
+
   'ID.AM-07': {
-    q1: 'Pull the data map. What designated data types are tracked (PII, PHI, cardholder, client confidential, etc.)? For each, name the specific systems that store or process it.',
-    q1_hint: 'Yes = data map covers ≥5 designated data types AND each is mapped to specific systems. Partial = covers 2-4 types or system mapping incomplete. No = no data map or only generic categories.',
-    q2: 'Open M365 (or equivalent productivity platform). Are sensitivity labels actually applied to documents containing the designated data types? Pull a sample report.',
-    q2_hint: 'Yes = labels in active use with measurable coverage. Partial = labels exist but inconsistent application. No = no labeling enforced.',
-    q3: 'When was the data inventory last reviewed? Were any new data types added or systems reclassified (e.g., a new SaaS migration changing where PHI lives)?',
-    q3_hint: 'Yes = review within 12 months with updates. Partial = review but stale. No = unreviewed.',
-    q4_prompt: 'Describe a data-inventory gap identified and closed in the past year (e.g., "we discovered client data was being copied to a third platform we hadn\'t mapped").',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the data map. What designated data types are tracked (PII, PHI, cardholder, client confidential, etc.)? For each, name the specific systems that store or process it.',
+        hint: 'Yes = data map covers ≥5 designated data types AND each is mapped to specific systems. Partial = covers 2-4 types or system mapping incomplete. No = no data map or only generic categories.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Open M365 (or equivalent productivity platform). Are sensitivity labels actually applied to documents containing the designated data types? Pull a sample report.',
+        hint: 'Yes = labels in active use with measurable coverage. Partial = labels exist but inconsistent application. No = no labeling enforced.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the data inventory last reviewed? Were any new data types added or systems reclassified (e.g., a new SaaS migration changing where PHI lives)?',
+        hint: 'Yes = review within 12 months with updates. Partial = review but stale. No = unreviewed.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a data-inventory gap identified and closed in the past year (e.g., "we discovered client data was being copied to a third platform we hadn\'t mapped").',
   },
+
   'ID.AM-08': {
-    q1: 'Pull the lifecycle policy. What are the explicit phases (acquisition, deployment, operation, EOL/EOS, retirement, disposal) and what gates apply at each?',
-    q1_hint: 'Yes = all phases named with explicit gates. Partial = some phases covered. No = no lifecycle policy.',
-    q2: 'Are EOL/EOS dates tracked in the inventory for every deployed asset, with a documented replacement plan for every asset within 12 months of EOL?',
-    q2_hint: 'Yes = inventory column for EOL/EOS is populated for all assets AND every near-EOL asset (≤12 months) has a written replacement plan with budget. Partial = EOL/EOS tracked but planning lags for some, OR tracking covers only some asset classes. No = no EOL/EOS tracking.',
-    q3: 'For the most recent system retirement, show the secure-decommissioning evidence: NIST 800-88 wipe verification, certificate of destruction, inventory removal record.',
-    q3_hint: 'Yes = all three artifacts produced for the most recent retirement. Partial = some artifacts. No = no documented decommissioning.',
-    q4_prompt: 'Describe a lifecycle event handled in the past year (refresh, retirement, replacement) and the secure-decommissioning steps taken.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the lifecycle policy. What are the explicit phases (acquisition, deployment, operation, EOL/EOS, retirement, disposal) and what gates apply at each?',
+        hint: 'Yes = all phases named with explicit gates. Partial = some phases covered. No = no lifecycle policy.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Are EOL/EOS dates tracked in the inventory for every deployed asset, with a documented replacement plan for every asset within 12 months of EOL?',
+        hint: 'Yes = inventory column for EOL/EOS is populated for all assets AND every near-EOL asset (≤12 months) has a written replacement plan with budget. Partial = EOL/EOS tracked but planning lags for some, OR tracking covers only some asset classes. No = no EOL/EOS tracking.',
+      },
+      {
+        id: 'q3',
+        prompt: 'For the most recent system retirement, show the secure-decommissioning evidence: NIST 800-88 wipe verification, certificate of destruction, inventory removal record.',
+        hint: 'Yes = all three artifacts produced for the most recent retirement. Partial = some artifacts. No = no documented decommissioning.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a lifecycle event handled in the past year (refresh, retirement, replacement) and the secure-decommissioning steps taken.',
   },
+
 
   'ID.RA-01': {
-    q1: 'Pull the vulnerability management procedure. Quote the documented scan cadence (e.g., monthly internal, monthly external, quarterly authenticated, annual pen test).',
-    q1_hint: 'Yes = explicit cadence per scan type in writing. Partial = cadence informal. No = no procedure.',
-    q2: 'Has a vulnerability scan run within the documented cadence, and are its findings tracked against the documented remediation SLA (with due dates by severity)?',
-    q2_hint: 'Yes = most recent scan is within the documented cadence (e.g., within the past month for monthly scans) AND each finding has a remediation owner and SLA-driven due date in a tracker. Partial = scans run but findings are not tracked to a SLA. No = scans are not happening on cadence, or no report is retained.',
-    q3: 'Quote the documented remediation SLAs by severity (e.g., critical CVE within 14 days). For the past 12 months, what % of findings met SLA?',
-    q3_hint: 'Yes = ≥90% SLA compliance. Partial = 70-90%. No = <70% or not tracked.',
-    q4_prompt: 'Describe the most significant vulnerability remediated in the past year — how it was found, how long it took, and what compensating controls were used while it was open.',
-  },
-  'ID.RA-02': {
-    q1: 'Name the specific cyber threat intelligence sources subscribed to (e.g., CISA, MS-ISAC, FBI InfraGard, vendor advisories, sector ISACs, paid feeds). What\'s the documented review cadence?',
-    q1_hint: 'Yes = ≥4 named sources with explicit review cadence. Partial = some sources, cadence informal. No = no formal TI subscriptions.',
-    q2: 'When did a threat intel item last drive a specific action — IOC fed into the SIEM, an advisory triggering an emergency patch, a sector alert prompting a hunt? Show the connection.',
-    q2_hint: 'Yes = a recent (within 90 days) TI-driven action with documented trace. Partial = older example. No = TI received but never actioned.',
-    q3: 'When was the value of TI sources last reviewed? Were any feeds added or dropped based on actionability?',
-    q3_hint: 'Yes = annual feed-effectiveness review with rationalization. Partial = informal value-checks. No = subscriptions unreviewed.',
-    q4_prompt: 'Describe a threat intel finding that drove a specific control change or hunt activity in the past year.',
-  },
-  'ID.RA-03': {
-    q1: 'Pull the Risk Register. Filter for entries that name specific threats. How many entries describe threats specific to your environment (e.g., "phishing targeting M365 admin accounts", "supply-chain attack via open-source dependency")? How many are vague generics?',
-    q1_hint: 'Yes = ≥10 specific threat entries with named actors/techniques. Partial = mix of specific and generic. No = mostly vague generics like "ransomware".',
-    q2: 'Pick three threats from the Risk Register at random. For each, name the specific asset(s) AND data category(ies) the threat scopes to. (e.g., "phishing → M365 admin accounts → credential data")',
-    q2_hint: 'Yes = 3 of 3 sampled threats name specific asset(s) AND data category(ies). Partial = 1-2 of 3 fully scoped. No = 0 of 3 fully scoped.',
-    q3: 'When was the threat list last reviewed? Were new entries added based on threat intel and incident learnings (e.g., AI-related threats, new ransomware family)?',
-    q3_hint: 'Yes = quarterly review with additions tied to TI/incidents. Partial = annual review only. No = unreviewed.',
-    q4_prompt: 'Describe a new threat added to the register in the past year — what triggered the addition, and what response was planned.',
-  },
-  'ID.RA-04': {
-    q1: 'For a random Risk Register entry, show the likelihood and impact estimates. Are the inputs visible (rationale captured), not just a single composite score?',
-    q1_hint: 'Yes = entries show working — likelihood rationale, impact rationale, score derivation. Partial = scores shown but rationale weak. No = single number with no rationale.',
-    q2: 'When was the most recent re-estimate for a top-five risk? What changed (likelihood up, impact down, scope shifted)?',
-    q2_hint: 'Yes = recent re-estimate with documented reasoning. Partial = informal updates. No = estimates static.',
-    q3: 'When was estimation discipline last calibrated (peer review, sample rescore, comparison against actual incident outcomes)?',
-    q3_hint: 'Yes = a calibration exercise within 12 months with documented outcome. Partial = informal sanity-check. No = no calibration.',
-    q4_prompt: 'Describe a specific risk whose likelihood or impact was re-estimated in the past year and what drove the change.',
-  },
-  'ID.RA-05': {
-    q1: 'Pull the prioritized risk list (top-N register, heat map, ranked treatment plan). How are risks ranked — by inherent risk, residual risk, or another method?',
-    q1_hint: 'Yes = explicit ranking method, prioritized list visible. Partial = informal prioritization. No = no priority list.',
-    q2: 'Does the priority list drive resource allocation? Show that the highest-priority risks have the most attention in current budget, headcount, or project sequencing.',
-    q2_hint: 'Yes = top risks have visible resource allocation. Partial = some alignment. No = list and budget are decoupled.',
-    q3: 'Between successive board packs or executive reviews, has the priority list changed? Did a risk move up or down?',
-    q3_hint: 'Yes = priority changes documented between reviews. Partial = list mostly static. No = priority list never changes.',
-    q4_prompt: 'Describe a specific risk that moved up or down in priority in the past year and the operational consequence.',
-  },
-  'ID.RA-06': {
-    q1: 'For each entry in the current Risk Register, is the chosen response (Accept/Transfer/Avoid/Mitigate) recorded along with planned actions, owner, and target date?',
-    q1_hint: 'Yes = all entries have response, actions, owner, date. Partial = some entries complete, others bare. No = responses not formally recorded.',
-    q2: 'For the past five risk responses initiated, what\'s the closure rate? After closure, was residual risk re-assessed?',
-    q2_hint: 'Yes = high closure rate AND residual re-assessment performed. Partial = closures happen but residual not re-assessed. No = responses orphaned.',
-    q3: 'How is response status communicated to the risk owner, executives, and (if relevant) external parties? Show the most recent communication artifact.',
-    q3_hint: 'Yes = regular status communications with named recipients. Partial = ad-hoc updates. No = no communication.',
-    q4_prompt: 'Describe a specific risk response executed in the past year and the result (was the residual risk what you expected?).',
-  },
-  'ID.RA-07': {
-    q1: 'Does the change-management log capture every submitted change with its outcome (approved / denied / deferred) and its type (emergency vs. scheduled)?',
-    q1_hint: 'Yes = every change in the past month has both fields filled, and the log is the source of truth. Partial = changes are recorded but outcome or type is missing on some entries. No = no change log, or changes happen outside the log.',
-    q2: 'Pull the exception register. How many active exceptions? For a random three, do they have: compensating controls, time-box (expiration date), risk owner, scheduled review date?',
-    q2_hint: 'Yes = all sampled exceptions have all four. Partial = some elements present. No = exceptions exist without proper documentation.',
-    q3: 'When was the last exception aging review? How many stale exceptions were retired or extended with new justification?',
-    q3_hint: 'Yes = recent aging review with retire/extend actions. Partial = exceptions accumulate without review. No = no aging review.',
-    q4_prompt: 'Describe a specific high-risk change or exception managed in the past year and the compensating controls applied.',
-  },
-  'ID.RA-08': {
-    q1: 'Open https://[your-domain]/.well-known/security.txt — does the file exist? Does it name a contact channel and disclosure policy?',
-    q1_hint: 'Yes = security.txt file exists and is current. Partial = some channel exists (security@ email) but not standardized. No = no public disclosure channel.',
-    q2: 'Has the external vulnerability disclosure procedure been exercised in the past 12 months — either by a real report or a simulated submission — with the response time documented?',
-    q2_hint: 'Yes = a real or simulated report was received and processed within the past 12 months, with response time recorded. Partial = procedure exists but was never exercised (real or simulated). No = no documented procedure.',
-    q3: 'When was the disclosure program last reviewed? Was scope expanded (e.g., bug bounty considered, scope clarified)?',
-    q3_hint: 'Yes = review within 12 months with documented decisions. Partial = informal review. No = program static or absent.',
-    q4_prompt: 'Describe a specific vulnerability disclosure handled in the past year, OR a step taken to set up the program.',
-  },
-  'ID.RA-09': {
-    q1: 'For hardware: are firmware hashes verified against vendor-published values before deployment? Show the verification log for the most recent server or appliance deployment.',
-    q1_hint: 'Yes = verification step documented and evidence on file. Partial = informal "we trust the vendor". No = no verification.',
-    q2: 'For software: are dependency vulnerability scans run on every release? Is code signing enforced? Show the pipeline configuration.',
-    q2_hint: 'Yes = automated dep-scan + code-signing enforcement in pipeline. Partial = some controls but not gated. No = no integrity controls.',
-    q3: 'Have any authenticity failures (counterfeit, tampered firmware, unsigned code, malicious dependency) been detected in the past 12 months? If yes, what was the response?',
-    q3_hint: 'Yes = either no failures (with active scanning) OR failures detected and responded to. Partial = scanning gaps exist. No = no detection capability.',
-    q4_prompt: 'Describe an authenticity check that flagged something in the past year (counterfeit hardware, malicious dependency, etc.).',
-  },
-  'ID.RA-10': {
-    q1: 'Pull the critical-supplier (Tier-1) assessment template. What does it cover (security questionnaire, SOC 2 review, financial stability, regulatory compliance)?',
-    q1_hint: 'Yes = explicit template with multiple coverage areas. Partial = template exists but thin. No = no template.',
-    q2: 'For every Tier-1 supplier onboarded in the past 12 months, is the completed assessment on file? Sample three.',
-    q2_hint: 'Yes = all three sampled have complete assessments. Partial = some incomplete. No = assessments not happening.',
-    q3: 'For a supplier that was assessed pre-acquisition, are the findings tracked into ongoing monitoring (so they don\'t get lost between teams)?',
-    q3_hint: 'Yes = pre-acquisition findings link to ongoing-monitoring records. Partial = findings exist but disconnected. No = pre- and ongoing- separate.',
-    q4_prompt: 'Describe a finding from a critical-supplier assessment that shaped a contract or operational decision in the past year.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the vulnerability management procedure. Quote the documented scan cadence (e.g., monthly internal, monthly external, quarterly authenticated, annual pen test).',
+        hint: 'Yes = explicit cadence per scan type in writing. Partial = cadence informal. No = no procedure.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Has a vulnerability scan run within the documented cadence, and are its findings tracked against the documented remediation SLA (with due dates by severity)?',
+        hint: 'Yes = most recent scan is within the documented cadence (e.g., within the past month for monthly scans) AND each finding has a remediation owner and SLA-driven due date in a tracker. Partial = scans run but findings are not tracked to a SLA. No = scans are not happening on cadence, or no report is retained.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Quote the documented remediation SLAs by severity (e.g., critical CVE within 14 days). For the past 12 months, what % of findings met SLA?',
+        hint: 'Yes = ≥90% SLA compliance. Partial = 70-90%. No = <70% or not tracked.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe the most significant vulnerability remediated in the past year — how it was found, how long it took, and what compensating controls were used while it was open.',
   },
 
+  'ID.RA-02': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Name the specific cyber threat intelligence sources subscribed to (e.g., CISA, MS-ISAC, FBI InfraGard, vendor advisories, sector ISACs, paid feeds). What\'s the documented review cadence?',
+        hint: 'Yes = ≥4 named sources with explicit review cadence. Partial = some sources, cadence informal. No = no formal TI subscriptions.',
+      },
+      {
+        id: 'q2',
+        prompt: 'When did a threat intel item last drive a specific action — IOC fed into the SIEM, an advisory triggering an emergency patch, a sector alert prompting a hunt? Show the connection.',
+        hint: 'Yes = a recent (within 90 days) TI-driven action with documented trace. Partial = older example. No = TI received but never actioned.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the value of TI sources last reviewed? Were any feeds added or dropped based on actionability?',
+        hint: 'Yes = annual feed-effectiveness review with rationalization. Partial = informal value-checks. No = subscriptions unreviewed.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a threat intel finding that drove a specific control change or hunt activity in the past year.',
+  },
+
+  'ID.RA-03': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the Risk Register. Filter for entries that name specific threats. How many entries describe threats specific to your environment (e.g., "phishing targeting M365 admin accounts", "supply-chain attack via open-source dependency")? How many are vague generics?',
+        hint: 'Yes = ≥10 specific threat entries with named actors/techniques. Partial = mix of specific and generic. No = mostly vague generics like "ransomware".',
+      },
+      {
+        id: 'q2',
+        prompt: 'Pick three threats from the Risk Register at random. For each, name the specific asset(s) AND data category(ies) the threat scopes to. (e.g., "phishing → M365 admin accounts → credential data")',
+        hint: 'Yes = 3 of 3 sampled threats name specific asset(s) AND data category(ies). Partial = 1-2 of 3 fully scoped. No = 0 of 3 fully scoped.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the threat list last reviewed? Were new entries added based on threat intel and incident learnings (e.g., AI-related threats, new ransomware family)?',
+        hint: 'Yes = quarterly review with additions tied to TI/incidents. Partial = annual review only. No = unreviewed.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a new threat added to the register in the past year — what triggered the addition, and what response was planned.',
+  },
+
+  'ID.RA-04': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'For a random Risk Register entry, show the likelihood and impact estimates. Are the inputs visible (rationale captured), not just a single composite score?',
+        hint: 'Yes = entries show working — likelihood rationale, impact rationale, score derivation. Partial = scores shown but rationale weak. No = single number with no rationale.',
+      },
+      {
+        id: 'q2',
+        prompt: 'When was the most recent re-estimate for a top-five risk? What changed (likelihood up, impact down, scope shifted)?',
+        hint: 'Yes = recent re-estimate with documented reasoning. Partial = informal updates. No = estimates static.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was estimation discipline last calibrated (peer review, sample rescore, comparison against actual incident outcomes)?',
+        hint: 'Yes = a calibration exercise within 12 months with documented outcome. Partial = informal sanity-check. No = no calibration.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a specific risk whose likelihood or impact was re-estimated in the past year and what drove the change.',
+  },
+
+  'ID.RA-05': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the prioritized risk list (top-N register, heat map, ranked treatment plan). How are risks ranked — by inherent risk, residual risk, or another method?',
+        hint: 'Yes = explicit ranking method, prioritized list visible. Partial = informal prioritization. No = no priority list.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Does the priority list drive resource allocation? Show that the highest-priority risks have the most attention in current budget, headcount, or project sequencing.',
+        hint: 'Yes = top risks have visible resource allocation. Partial = some alignment. No = list and budget are decoupled.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Between successive board packs or executive reviews, has the priority list changed? Did a risk move up or down?',
+        hint: 'Yes = priority changes documented between reviews. Partial = list mostly static. No = priority list never changes.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a specific risk that moved up or down in priority in the past year and the operational consequence.',
+  },
+
+  'ID.RA-06': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'For each entry in the current Risk Register, is the chosen response (Accept/Transfer/Avoid/Mitigate) recorded along with planned actions, owner, and target date?',
+        hint: 'Yes = all entries have response, actions, owner, date. Partial = some entries complete, others bare. No = responses not formally recorded.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For the past five risk responses initiated, what\'s the closure rate? After closure, was residual risk re-assessed?',
+        hint: 'Yes = high closure rate AND residual re-assessment performed. Partial = closures happen but residual not re-assessed. No = responses orphaned.',
+      },
+      {
+        id: 'q3',
+        prompt: 'How is response status communicated to the risk owner, executives, and (if relevant) external parties? Show the most recent communication artifact.',
+        hint: 'Yes = regular status communications with named recipients. Partial = ad-hoc updates. No = no communication.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a specific risk response executed in the past year and the result (was the residual risk what you expected?).',
+  },
+
+  'ID.RA-07': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Does the change-management log capture every submitted change with its outcome (approved / denied / deferred) and its type (emergency vs. scheduled)?',
+        hint: 'Yes = every change in the past month has both fields filled, and the log is the source of truth. Partial = changes are recorded but outcome or type is missing on some entries. No = no change log, or changes happen outside the log.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Pull the exception register. How many active exceptions? For a random three, do they have: compensating controls, time-box (expiration date), risk owner, scheduled review date?',
+        hint: 'Yes = all sampled exceptions have all four. Partial = some elements present. No = exceptions exist without proper documentation.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the last exception aging review? How many stale exceptions were retired or extended with new justification?',
+        hint: 'Yes = recent aging review with retire/extend actions. Partial = exceptions accumulate without review. No = no aging review.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a specific high-risk change or exception managed in the past year and the compensating controls applied.',
+  },
+
+  'ID.RA-08': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Open https://[your-domain]/.well-known/security.txt — does the file exist? Does it name a contact channel and disclosure policy?',
+        hint: 'Yes = security.txt file exists and is current. Partial = some channel exists (security@ email) but not standardized. No = no public disclosure channel.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Has the external vulnerability disclosure procedure been exercised in the past 12 months — either by a real report or a simulated submission — with the response time documented?',
+        hint: 'Yes = a real or simulated report was received and processed within the past 12 months, with response time recorded. Partial = procedure exists but was never exercised (real or simulated). No = no documented procedure.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the disclosure program last reviewed? Was scope expanded (e.g., bug bounty considered, scope clarified)?',
+        hint: 'Yes = review within 12 months with documented decisions. Partial = informal review. No = program static or absent.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a specific vulnerability disclosure handled in the past year, OR a step taken to set up the program.',
+  },
+
+  'ID.RA-09': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'For hardware: are firmware hashes verified against vendor-published values before deployment? Show the verification log for the most recent server or appliance deployment.',
+        hint: 'Yes = verification step documented and evidence on file. Partial = informal "we trust the vendor". No = no verification.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For software: are dependency vulnerability scans run on every release? Is code signing enforced? Show the pipeline configuration.',
+        hint: 'Yes = automated dep-scan + code-signing enforcement in pipeline. Partial = some controls but not gated. No = no integrity controls.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Have any authenticity failures (counterfeit, tampered firmware, unsigned code, malicious dependency) been detected in the past 12 months? If yes, what was the response?',
+        hint: 'Yes = either no failures (with active scanning) OR failures detected and responded to. Partial = scanning gaps exist. No = no detection capability.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an authenticity check that flagged something in the past year (counterfeit hardware, malicious dependency, etc.).',
+  },
+
+  'ID.RA-10': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the critical-supplier (Tier-1) assessment template. What does it cover (security questionnaire, SOC 2 review, financial stability, regulatory compliance)?',
+        hint: 'Yes = explicit template with multiple coverage areas. Partial = template exists but thin. No = no template.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For every Tier-1 supplier onboarded in the past 12 months, is the completed assessment on file? Sample three.',
+        hint: 'Yes = all three sampled have complete assessments. Partial = some incomplete. No = assessments not happening.',
+      },
+      {
+        id: 'q3',
+        prompt: 'For a supplier that was assessed pre-acquisition, are the findings tracked into ongoing monitoring (so they don\'t get lost between teams)?',
+        hint: 'Yes = pre-acquisition findings link to ongoing-monitoring records. Partial = findings exist but disconnected. No = pre- and ongoing- separate.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a finding from a critical-supplier assessment that shaped a contract or operational decision in the past year.',
+  },
+
+
   'ID.IM-01': {
-    q1: 'Pull the improvement register or backlog. How many items came from internal evaluations (audit, self-assessment, gap analysis) in the past 12 months? Show the categorization.',
-    q1_hint: 'Yes = ≥10 evaluation-driven items in the backlog with category tags. Partial = items exist but uncategorized. No = no evaluation-to-backlog flow.',
-    q2: 'For three random evaluation-driven items, are owners, target dates, and current status visible?',
-    q2_hint: 'Yes = all three sampled items have all metadata. Partial = items exist but tracking incomplete. No = orphaned findings.',
-    q3: 'For closed evaluation items, is the verification artifact (re-audit, re-test, before/after metric) attached to the closure note?',
-    q3_hint: 'Yes = closures verified with artifacts. Partial = closures noted but verification weak. No = closures unverified.',
-    q4_prompt: 'Describe an evaluation finding that produced a measurable improvement in the past year — what was found, what was done, what improved.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the improvement register or backlog. How many items came from internal evaluations (audit, self-assessment, gap analysis) in the past 12 months? Show the categorization.',
+        hint: 'Yes = ≥10 evaluation-driven items in the backlog with category tags. Partial = items exist but uncategorized. No = no evaluation-to-backlog flow.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For three random evaluation-driven items, are owners, target dates, and current status visible?',
+        hint: 'Yes = all three sampled items have all metadata. Partial = items exist but tracking incomplete. No = orphaned findings.',
+      },
+      {
+        id: 'q3',
+        prompt: 'For closed evaluation items, is the verification artifact (re-audit, re-test, before/after metric) attached to the closure note?',
+        hint: 'Yes = closures verified with artifacts. Partial = closures noted but verification weak. No = closures unverified.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an evaluation finding that produced a measurable improvement in the past year — what was found, what was done, what improved.',
   },
+
   'ID.IM-02': {
-    q1: 'When was the last vulnerability assessment, penetration test, red-team exercise, or tabletop exercise conducted? Pull the after-action report (AAR).',
-    q1_hint: 'Yes = a documented test/exercise within last 12 months. Partial = older. No = no recent testing.',
-    q2: 'How many findings from the most recent test became improvement backlog items? What\'s the current closure rate?',
-    q2_hint: 'Yes = findings → backlog with high closure rate. Partial = findings logged but slow closure. No = findings not actioned.',
-    q3: 'Year-over-year, has the count of critical findings decreased? Pull the trend report.',
-    q3_hint: 'Yes = decreasing critical-finding trend. Partial = flat. No = increasing or not measured.',
-    q4_prompt: 'Describe a test-driven improvement made in the past year and the measurable impact (e.g., "pen test found X, we deployed Y, next test reduced critical findings by Z%").',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'When was the last vulnerability assessment, penetration test, red-team exercise, or tabletop exercise conducted? Pull the after-action report (AAR).',
+        hint: 'Yes = a documented test/exercise within last 12 months. Partial = older. No = no recent testing.',
+      },
+      {
+        id: 'q2',
+        prompt: 'How many findings from the most recent test became improvement backlog items? What\'s the current closure rate?',
+        hint: 'Yes = findings → backlog with high closure rate. Partial = findings logged but slow closure. No = findings not actioned.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Year-over-year, has the count of critical findings decreased? Pull the trend report.',
+        hint: 'Yes = decreasing critical-finding trend. Partial = flat. No = increasing or not measured.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a test-driven improvement made in the past year and the measurable impact (e.g., "pen test found X, we deployed Y, next test reduced critical findings by Z%").',
   },
+
   'ID.IM-03': {
-    q1: 'When was the last review of helpdesk-trend or alert-volume data? Show the resulting improvement items.',
-    q1_hint: 'Yes = recent review with documented improvement items. Partial = data tracked but not reviewed. No = no operational-feedback loop.',
-    q2: 'For a recent operational pain point (recurring ticket type, frequent alert), was a structural improvement made (automation, process change, training)? Show the before/after metric.',
-    q2_hint: 'Yes = at least one operational improvement with measurable impact. Partial = improvements happen but not measured. No = pain points endure.',
-    q3: 'Pull the most recent (within 90 days) board pack or executive briefing. Which of these operational metrics are shown with current values: helpdesk ticket volume, alert volume, MTTR, change-failure rate, mean time to recover?',
-    q3_hint: 'Yes = ≥4 of 5 metrics shown with current values AND a discussion note. Partial = 2-3 of 5 shown. No = ≤1 shown or no exec briefing within 90 days.',
-    q4_prompt: 'Describe a specific operational improvement made from process feedback in the past year.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'When was the last review of helpdesk-trend or alert-volume data? Show the resulting improvement items.',
+        hint: 'Yes = recent review with documented improvement items. Partial = data tracked but not reviewed. No = no operational-feedback loop.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For a recent operational pain point (recurring ticket type, frequent alert), was a structural improvement made (automation, process change, training)? Show the before/after metric.',
+        hint: 'Yes = at least one operational improvement with measurable impact. Partial = improvements happen but not measured. No = pain points endure.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Pull the most recent (within 90 days) board pack or executive briefing. Which of these operational metrics are shown with current values: helpdesk ticket volume, alert volume, MTTR, change-failure rate, mean time to recover?',
+        hint: 'Yes = ≥4 of 5 metrics shown with current values AND a discussion note. Partial = 2-3 of 5 shown. No = ≤1 shown or no exec briefing within 90 days.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a specific operational improvement made from process feedback in the past year.',
   },
+
   'ID.IM-04': {
-    q1: 'Pull the Incident Response Plan. What\'s the version, last approval date, and approver? Is it accessible to the response team (test: ask a responder to retrieve it)?',
-    q1_hint: 'Yes = current version, recent approval, accessible. Partial = exists but stale or hard to find. No = absent.',
-    q2: 'When was the IR Plan last exercised (real or tabletop)? What changes were made based on findings?',
-    q2_hint: 'Yes = exercise within 12 months with documented plan revisions. Partial = exercise but no plan updates. No = no exercises.',
-    q3: 'List the named external coordination contacts (insurer, IR retainer firm, legal counsel, law enforcement liaison, regulators). For each, when was the contact last verified (test: an email or call within the past 12 months)?',
-    q3_hint: 'Yes = ≥4 named contacts AND all verified within 12 months. Partial = some verified, some stale. No = <4 contacts named or any critical contact unverified >12 months.',
-    q4_prompt: 'Describe an IR Plan update made in the past year and what triggered it.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the Incident Response Plan. What\'s the version, last approval date, and approver? Is it accessible to the response team (test: ask a responder to retrieve it)?',
+        hint: 'Yes = current version, recent approval, accessible. Partial = exists but stale or hard to find. No = absent.',
+      },
+      {
+        id: 'q2',
+        prompt: 'When was the IR Plan last exercised (real or tabletop)? What changes were made based on findings?',
+        hint: 'Yes = exercise within 12 months with documented plan revisions. Partial = exercise but no plan updates. No = no exercises.',
+      },
+      {
+        id: 'q3',
+        prompt: 'List the named external coordination contacts (insurer, IR retainer firm, legal counsel, law enforcement liaison, regulators). For each, when was the contact last verified (test: an email or call within the past 12 months)?',
+        hint: 'Yes = ≥4 named contacts AND all verified within 12 months. Partial = some verified, some stale. No = <4 contacts named or any critical contact unverified >12 months.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an IR Plan update made in the past year and what triggered it.',
   },
 
   // ===========================================================================
   // PR — PROTECT
   // ===========================================================================
 
+
   'PR.AA-01': {
-    q1: 'Pull the joiner/mover/leaver procedure. What systems are touched (HRIS, identity provider, cloud apps, RMM, etc.) and in what order?',
-    q1_hint: 'Yes = procedure names ≥5 systems with sequence. Partial = procedure exists but incomplete. No = ad-hoc onboarding/offboarding.',
-    q2: 'For three random recent terminations, was access removed within the documented timeframe (typically same day)? Show the de-provisioning logs.',
-    q2_hint: 'Yes = all three sampled terminations meet SLA. Partial = some delays. No = significant delays.',
-    q3: 'Pull the service account inventory. How many accounts? Pick five — do they have named owners, last-rotated dates, and approval records?',
-    q3_hint: 'Yes = service account discipline with current rotation. Partial = inventory exists but rotation lax. No = no service-account discipline.',
-    q4_prompt: 'Describe an identity-lifecycle improvement in the past year (e.g., "automated termination via HRIS webhook").',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the joiner/mover/leaver procedure. What systems are touched (HRIS, identity provider, cloud apps, RMM, etc.) and in what order?',
+        hint: 'Yes = procedure names ≥5 systems with sequence. Partial = procedure exists but incomplete. No = ad-hoc onboarding/offboarding.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For three random recent terminations, was access removed within the documented timeframe (typically same day)? Show the de-provisioning logs.',
+        hint: 'Yes = all three sampled terminations meet SLA. Partial = some delays. No = significant delays.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Pull the service account inventory. How many accounts? Pick five — do they have named owners, last-rotated dates, and approval records?',
+        hint: 'Yes = service account discipline with current rotation. Partial = inventory exists but rotation lax. No = no service-account discipline.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an identity-lifecycle improvement in the past year (e.g., "automated termination via HRIS webhook").',
   },
+
   'PR.AA-02': {
-    q1: 'Quote the identity proofing requirement for new hires. Was government-ID checked at the most recent hire? Pull the I-9 and any additional verification.',
-    q1_hint: 'Yes = explicit proofing requirement AND verified at most recent hire. Partial = requirement exists but execution weak. No = no proofing standard.',
-    q2: 'For administrator accounts, is proofing stronger than baseline employees (e.g., explicit attestation, secondary verification, manager sign-off)?',
-    q2_hint: 'Yes = differentiated proofing for privileged roles. Partial = same proofing regardless of role. No = no differentiation.',
-    q3: 'For three random vendor onboardings, was identity proofing performed before access was granted? Show the records.',
-    q3_hint: 'Yes = all three vendors had proofing on file before access. Partial = some did, some didn\'t. No = vendors get access without proofing.',
-    q4_prompt: 'Describe an identity-proofing improvement in the past year (new method added, threshold raised).',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Quote the identity proofing requirement for new hires. Was government-ID checked at the most recent hire? Pull the I-9 and any additional verification.',
+        hint: 'Yes = explicit proofing requirement AND verified at most recent hire. Partial = requirement exists but execution weak. No = no proofing standard.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For administrator accounts, is proofing stronger than baseline employees (e.g., explicit attestation, secondary verification, manager sign-off)?',
+        hint: 'Yes = differentiated proofing for privileged roles. Partial = same proofing regardless of role. No = no differentiation.',
+      },
+      {
+        id: 'q3',
+        prompt: 'For three random vendor onboardings, was identity proofing performed before access was granted? Show the records.',
+        hint: 'Yes = all three vendors had proofing on file before access. Partial = some did, some didn\'t. No = vendors get access without proofing.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an identity-proofing improvement in the past year (new method added, threshold raised).',
   },
+
   'PR.AA-03': {
-    q1: 'Open Microsoft Entra ID > Conditional Access (or your IdP equivalent). Does a policy enforce MFA for: (a) all users on M365, (b) every admin role assignment, (c) VPN/remote access, (d) RMM/PSA admin consoles?',
-    q1_hint: 'Yes = 4 of 4 covered by enforced policy. Partial = 2-3 covered. No = 0-1 covered.',
-    q2: 'Pull the most recent MFA coverage report. What\'s the current % for human accounts? For privileged service accounts where supported?',
-    q2_hint: 'Yes = ≥99% human + ≥95% privileged service accounts. Partial = 90-99%. No = <90% or not measured.',
-    q3: 'Open the secrets vault. Pick five service accounts. When was the password/key last rotated for each? Are all within the documented rotation interval (typically 90 days)?',
-    q3_hint: 'Yes = all five within rotation window. Partial = some compliant, some stale. No = no rotation discipline.',
-    q4_prompt: 'Describe an MFA bypass identified and shut down (or attest none exist with supporting evidence), and the most recent secret rotation event.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Open Microsoft Entra ID > Conditional Access (or your IdP equivalent). Does a policy enforce MFA for: (a) all users on M365, (b) every admin role assignment, (c) VPN/remote access, (d) RMM/PSA admin consoles?',
+        hint: 'Yes = 4 of 4 covered by enforced policy. Partial = 2-3 covered. No = 0-1 covered.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Pull the most recent MFA coverage report. What\'s the current % for human accounts? For privileged service accounts where supported?',
+        hint: 'Yes = ≥99% human + ≥95% privileged service accounts. Partial = 90-99%. No = <90% or not measured.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Open the secrets vault. Pick five service accounts. When was the password/key last rotated for each? Are all within the documented rotation interval (typically 90 days)?',
+        hint: 'Yes = all five within rotation window. Partial = some compliant, some stale. No = no rotation discipline.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an MFA bypass identified and shut down (or attest none exist with supporting evidence), and the most recent secret rotation event.',
   },
+
   'PR.AA-04': {
-    q1: 'Pull the Conditional Access or identity-provider configuration. What\'s the access token lifetime? What\'s the refresh token lifetime? Are they shorter for privileged users?',
-    q1_hint: 'Yes = TTLs explicitly configured AND differentiated for privileged roles. Partial = configured but not differentiated. No = default-TTL with no review.',
-    q2: 'Run Mozilla Observatory (or SSL Labs) on your public login page. Quote the actual letter grade. Are session cookies marked Secure, HttpOnly, AND SameSite=Strict (or Lax for cross-site flows)?',
-    q2_hint: 'Yes = grade A or A+ AND all 3 cookie flags set on session cookies. Partial = grade B or one flag missing. No = grade C or below, or any flag missing on a sensitive cookie.',
-    q3: 'When was the IdP configuration last audited for drift from baseline (longer TTLs added, signing relaxed, scopes broadened)?',
-    q3_hint: 'Yes = audit within 12 months with no drift findings. Partial = drift identified and being remediated. No = no audit.',
-    q4_prompt: 'Describe an identity-assertion-protection change in the past year (TTL tightened, new scopes added, signing strengthened).',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the Conditional Access or identity-provider configuration. What\'s the access token lifetime? What\'s the refresh token lifetime? Are they shorter for privileged users?',
+        hint: 'Yes = TTLs explicitly configured AND differentiated for privileged roles. Partial = configured but not differentiated. No = default-TTL with no review.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Run Mozilla Observatory (or SSL Labs) on your public login page. Quote the actual letter grade. Are session cookies marked Secure, HttpOnly, AND SameSite=Strict (or Lax for cross-site flows)?',
+        hint: 'Yes = grade A or A+ AND all 3 cookie flags set on session cookies. Partial = grade B or one flag missing. No = grade C or below, or any flag missing on a sensitive cookie.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the IdP configuration last audited for drift from baseline (longer TTLs added, signing relaxed, scopes broadened)?',
+        hint: 'Yes = audit within 12 months with no drift findings. Partial = drift identified and being remediated. No = no audit.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an identity-assertion-protection change in the past year (TTL tightened, new scopes added, signing strengthened).',
   },
+
   'PR.AA-05': {
-    q1: 'Quote the access-control policy. Does it explicitly require least privilege, separation of duties, and documented authorization for every grant?',
-    q1_hint: 'Yes = explicit language on all three. Partial = some principles named, others informal. No = no formal policy.',
-    q2: 'Within the past quarter, was a documented access review of all privileged accounts performed by a named certifier, with at least one access removal or confirmation recorded per account?',
-    q2_hint: 'Yes = a review within the last 90 days with a named certifier AND every privileged account explicitly confirmed or removed. Partial = review happened but no documented decisions per account, or review is older than 90 days. No = no review process.',
-    q3: 'How many standing-privilege accounts exist? Has just-in-time (JIT) access been adopted for any role?',
-    q3_hint: 'Yes = JIT adopted with measurable reduction in standing privilege. Partial = JIT for some roles. No = standing privilege ubiquitous.',
-    q4_prompt: 'Describe an access-permission improvement in the past year (JIT rollout, role consolidation, separation-of-duties enforcement).',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Quote the access-control policy. Does it explicitly require least privilege, separation of duties, and documented authorization for every grant?',
+        hint: 'Yes = explicit language on all three. Partial = some principles named, others informal. No = no formal policy.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Within the past quarter, was a documented access review of all privileged accounts performed by a named certifier, with at least one access removal or confirmation recorded per account?',
+        hint: 'Yes = a review within the last 90 days with a named certifier AND every privileged account explicitly confirmed or removed. Partial = review happened but no documented decisions per account, or review is older than 90 days. No = no review process.',
+      },
+      {
+        id: 'q3',
+        prompt: 'How many standing-privilege accounts exist? Has just-in-time (JIT) access been adopted for any role?',
+        hint: 'Yes = JIT adopted with measurable reduction in standing privilege. Partial = JIT for some roles. No = standing privilege ubiquitous.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an access-permission improvement in the past year (JIT rollout, role consolidation, separation-of-duties enforcement).',
   },
+
   'PR.AA-06': {
-    q1: 'Pull the physical access control list. What zones exist (general office, server room, restricted areas)? How many people have access to each?',
-    q1_hint: 'Yes = clear zoning with explicit access lists per zone. Partial = zones exist but lists fuzzy. No = no zoning or no lists.',
-    q2: 'For three random terminations in the past 12 months, was physical access (badge, key) collected on or before the last day?',
-    q2_hint: 'Yes = all three returned same day. Partial = some delays. No = badges not consistently collected.',
-    q3: 'Pull the physical access logs. Has the log been reviewed in the past 90 days? Were any anomalies (after-hours access, repeated denials, tailgating) investigated?',
-    q3_hint: 'Yes = review within 90 days with at least one anomaly investigation. Partial = logs exist but unreviewed. No = no logs or reviews.',
-    q4_prompt: 'Describe a physical-access improvement in the past year (zone added, badge system upgraded, monitoring expanded).',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the physical access control list. What zones exist (general office, server room, restricted areas)? How many people have access to each?',
+        hint: 'Yes = clear zoning with explicit access lists per zone. Partial = zones exist but lists fuzzy. No = no zoning or no lists.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For three random terminations in the past 12 months, was physical access (badge, key) collected on or before the last day?',
+        hint: 'Yes = all three returned same day. Partial = some delays. No = badges not consistently collected.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Pull the physical access logs. Has the log been reviewed in the past 90 days? Were any anomalies (after-hours access, repeated denials, tailgating) investigated?',
+        hint: 'Yes = review within 90 days with at least one anomaly investigation. Partial = logs exist but unreviewed. No = no logs or reviews.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a physical-access improvement in the past year (zone added, badge system upgraded, monitoring expanded).',
   },
+
 
   'PR.AT-01': {
-    q1: 'Pull the LMS training assignment report. How many active users assigned the annual security training? What\'s the completion %?',
-    q1_hint: 'Yes = ≥95% completion within the documented timeframe. Partial = 80-95%. No = <80% or no LMS tracking.',
-    q2: 'Quote the training topics covered. Are they specific to the org\'s threat landscape (BEC, AI usage, social engineering tactics seen in your industry) or generic off-the-shelf?',
-    q2_hint: 'Yes = topics include org-specific threats AND generic baseline. Partial = generic only. No = no formal topic list.',
-    q3: 'What\'s the current monthly phishing simulation click rate? Has it improved year-over-year?',
-    q3_hint: 'Yes = simulation running with decreasing click rate. Partial = running but flat. No = no simulations.',
-    q4_prompt: 'Describe a training improvement made in the past year and its measurable impact on phishing click rate or incident frequency.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the LMS training assignment report. How many active users assigned the annual security training? What\'s the completion %?',
+        hint: 'Yes = ≥95% completion within the documented timeframe. Partial = 80-95%. No = <80% or no LMS tracking.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Quote the training topics covered. Are they specific to the org\'s threat landscape (BEC, AI usage, social engineering tactics seen in your industry) or generic off-the-shelf?',
+        hint: 'Yes = topics include org-specific threats AND generic baseline. Partial = generic only. No = no formal topic list.',
+      },
+      {
+        id: 'q3',
+        prompt: 'What\'s the current monthly phishing simulation click rate? Has it improved year-over-year?',
+        hint: 'Yes = simulation running with decreasing click rate. Partial = running but flat. No = no simulations.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a training improvement made in the past year and its measurable impact on phishing click rate or incident frequency.',
   },
+
   'PR.AT-02': {
-    q1: 'Pull the role-to-training matrix. Which specialized roles have role-specific training assigned (administrators, developers, AI agent operators, helpdesk, finance, HR)?',
-    q1_hint: 'Yes = ≥4 specialized role categories with assigned training. Partial = 1-3 covered. No = no role-specific training.',
-    q2: 'For three random people in specialized roles, are their specialized training completions current?',
-    q2_hint: 'Yes = all three have current specialized training. Partial = some current, some stale. No = specialized training not enforced.',
-    q3: 'For each specialized role (admin, developer, AI agent operator), name the competency-validation method (certification name, lab exercise URL, capability assessment script). What % of role-holders currently hold a valid passed validation?',
-    q3_hint: 'Yes = every specialized role has a named validation method AND ≥80% of role-holders have current validations. Partial = some roles have validation OR coverage 50-80%. No = no validation beyond course completion.',
-    q4_prompt: 'Describe a specialized-training initiative completed in the past year (e.g., "AI usage training rolled out to engineering").',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the role-to-training matrix. Which specialized roles have role-specific training assigned (administrators, developers, AI agent operators, helpdesk, finance, HR)?',
+        hint: 'Yes = ≥4 specialized role categories with assigned training. Partial = 1-3 covered. No = no role-specific training.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For three random people in specialized roles, are their specialized training completions current?',
+        hint: 'Yes = all three have current specialized training. Partial = some current, some stale. No = specialized training not enforced.',
+      },
+      {
+        id: 'q3',
+        prompt: 'For each specialized role (admin, developer, AI agent operator), name the competency-validation method (certification name, lab exercise URL, capability assessment script). What % of role-holders currently hold a valid passed validation?',
+        hint: 'Yes = every specialized role has a named validation method AND ≥80% of role-holders have current validations. Partial = some roles have validation OR coverage 50-80%. No = no validation beyond course completion.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a specialized-training initiative completed in the past year (e.g., "AI usage training rolled out to engineering").',
   },
+
 
   'PR.DS-01': {
-    q1: 'For the primary file storage system (M365, Google Workspace, NAS, etc.), is encryption at rest enabled using AES-256, with FIPS 140-2/3 validated modules where regulation or contract requires it?',
-    q1_hint: 'Yes = AES-256 enabled AND FIPS-validated modules in use wherever required by HIPAA/PCI/contract. Partial = encryption enabled but algorithm is weaker than AES-256, or FIPS validation is required but missing. No = encryption is off or unverified on the primary store.',
-    q2: 'For databases storing PII/PHI/cardholder data, is column-level or table-level encryption in use? Show the configuration.',
-    q2_hint: 'Yes = sensitive data encrypted at rest in database. Partial = whole-disk only, no column-level. No = no encryption beyond OS-level.',
-    q3: 'Pull the encryption coverage report. What % of in-scope systems have data-at-rest encryption verified?',
-    q3_hint: 'Yes = ≥95% verified coverage. Partial = 80-95%. No = <80% or not measured.',
-    q4_prompt: 'Describe a data-at-rest protection improvement in the past year (e.g., column-level encryption added, FIPS validation upgrade).',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'For the primary file storage system (M365, Google Workspace, NAS, etc.), is encryption at rest enabled using AES-256, with FIPS 140-2/3 validated modules where regulation or contract requires it?',
+        hint: 'Yes = AES-256 enabled AND FIPS-validated modules in use wherever required by HIPAA/PCI/contract. Partial = encryption enabled but algorithm is weaker than AES-256, or FIPS validation is required but missing. No = encryption is off or unverified on the primary store.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For databases storing PII/PHI/cardholder data, is column-level or table-level encryption in use? Show the configuration.',
+        hint: 'Yes = sensitive data encrypted at rest in database. Partial = whole-disk only, no column-level. No = no encryption beyond OS-level.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Pull the encryption coverage report. What % of in-scope systems have data-at-rest encryption verified?',
+        hint: 'Yes = ≥95% verified coverage. Partial = 80-95%. No = <80% or not measured.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a data-at-rest protection improvement in the past year (e.g., column-level encryption added, FIPS validation upgrade).',
   },
+
   'PR.DS-02': {
-    q1: 'For your public-facing web/SaaS surface, what\'s the SSL Labs grade (or equivalent scan)? Is TLS 1.0/1.1 disabled?',
-    q1_hint: 'Yes = grade A or A+ with TLS 1.0/1.1 disabled. Partial = grade B with deprecated protocols still enabled. No = grade C or below.',
-    q2: 'How is sensitive data transmitted to clients? Is email blocked from carrying unencrypted PII (DLP enforcement)?',
-    q2_hint: 'Yes = encrypted-channels-only enforced via DLP. Partial = policy says encrypted but enforcement weak. No = unencrypted email common.',
-    q3: 'When was the last TLS configuration scan? Were weak ciphers or deprecated protocols found and remediated?',
-    q3_hint: 'Yes = scan within last quarter with findings remediated. Partial = scans done but findings linger. No = no scanning.',
-    q4_prompt: 'Describe a data-in-transit protection improvement in the past year (DLP rule added, weak cipher removed, TLS 1.3 adopted).',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'For your public-facing web/SaaS surface, what\'s the SSL Labs grade (or equivalent scan)? Is TLS 1.0/1.1 disabled?',
+        hint: 'Yes = grade A or A+ with TLS 1.0/1.1 disabled. Partial = grade B with deprecated protocols still enabled. No = grade C or below.',
+      },
+      {
+        id: 'q2',
+        prompt: 'How is sensitive data transmitted to clients? Is email blocked from carrying unencrypted PII (DLP enforcement)?',
+        hint: 'Yes = encrypted-channels-only enforced via DLP. Partial = policy says encrypted but enforcement weak. No = unencrypted email common.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the last TLS configuration scan? Were weak ciphers or deprecated protocols found and remediated?',
+        hint: 'Yes = scan within last quarter with findings remediated. Partial = scans done but findings linger. No = no scanning.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a data-in-transit protection improvement in the past year (DLP rule added, weak cipher removed, TLS 1.3 adopted).',
   },
+
   'PR.DS-10': {
-    q1: 'Open the DLP policy console (M365 Purview / SaaS-DLP / endpoint-DLP). List the active rules covering: copy/paste, screen capture, clipboard, file upload to non-approved sites, email-attachment scanning of sensitive data.',
-    q1_hint: 'Yes = ≥4 of 5 vectors covered by enforced rules. Partial = 2-3 of 5 covered. No = ≤1 covered or no DLP.',
-    q2: 'When did DLP/UEBA last alert on a data-in-use anomaly (mass export, off-hours access, unusual file movement)? Was it investigated?',
-    q2_hint: 'Yes = recent alert with documented investigation. Partial = alerts fire but go unreviewed. No = no alerting.',
-    q3: 'Pull the AI-related DLP rules. What rules block (or warn on): copy/paste into ChatGPT/Claude/Gemini consumer consoles, browser-extension data exfil, paste of credentials or PII into any AI prompt, upload of client data to non-approved AI endpoints?',
-    q3_hint: 'Yes = ≥3 of 4 AI vectors with active blocking rules. Partial = monitoring only OR 1-2 of 4 covered. No = no AI-specific DLP.',
-    q4_prompt: 'Describe a data-in-use protection added or improved in the past year (often AI-related now).',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Open the DLP policy console (M365 Purview / SaaS-DLP / endpoint-DLP). List the active rules covering: copy/paste, screen capture, clipboard, file upload to non-approved sites, email-attachment scanning of sensitive data.',
+        hint: 'Yes = ≥4 of 5 vectors covered by enforced rules. Partial = 2-3 of 5 covered. No = ≤1 covered or no DLP.',
+      },
+      {
+        id: 'q2',
+        prompt: 'When did DLP/UEBA last alert on a data-in-use anomaly (mass export, off-hours access, unusual file movement)? Was it investigated?',
+        hint: 'Yes = recent alert with documented investigation. Partial = alerts fire but go unreviewed. No = no alerting.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Pull the AI-related DLP rules. What rules block (or warn on): copy/paste into ChatGPT/Claude/Gemini consumer consoles, browser-extension data exfil, paste of credentials or PII into any AI prompt, upload of client data to non-approved AI endpoints?',
+        hint: 'Yes = ≥3 of 4 AI vectors with active blocking rules. Partial = monitoring only OR 1-2 of 4 covered. No = no AI-specific DLP.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a data-in-use protection added or improved in the past year (often AI-related now).',
   },
+
   'PR.DS-11': {
-    q1: 'Open the backup console (Veeam, Datto, native cloud backup, etc.). Show the immutability or air-gap status for: M365 backups, primary file storage backups, database backups, cloud workload backups.',
-    q1_hint: 'Yes = all four have immutability or air-gap. Partial = some have it, others don\'t. No = no immutable/air-gap copies.',
-    q2: 'Within the past quarter, has a Tier-1 restore been tested with actual RTO and RPO at or under the documented targets?',
-    q2_hint: 'Yes = a Tier-1 restore was tested within the last 90 days AND achieved RTO/RPO met the targets, with the test record showing system name + achieved vs. target numbers side-by-side. Partial = test happened within the quarter but actuals missed one or both targets, OR the test is older than a quarter. No = no recent Tier-1 restore test.',
-    q3: 'In the past 12 months, has any backup been found compromised, corrupted, or unrecoverable — and if so, was the response documented (root cause, fix, retest)?',
-    q3_hint: 'Yes = either no failures occurred (with active testing in place to detect them) OR failures were detected and the documented response includes root cause, remediation, and a successful retest. Partial = active testing happens but the detection bar is thin (e.g., only checksums, no real restores). No = no detection capability — failures would go unnoticed.',
-    q4_prompt: 'Describe a backup or restore improvement in the past year (failed restore caught, immutability added, retention extended).',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Open the backup console (Veeam, Datto, native cloud backup, etc.). Show the immutability or air-gap status for: M365 backups, primary file storage backups, database backups, cloud workload backups.',
+        hint: 'Yes = all four have immutability or air-gap. Partial = some have it, others don\'t. No = no immutable/air-gap copies.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Within the past quarter, has a Tier-1 restore been tested with actual RTO and RPO at or under the documented targets?',
+        hint: 'Yes = a Tier-1 restore was tested within the last 90 days AND achieved RTO/RPO met the targets, with the test record showing system name + achieved vs. target numbers side-by-side. Partial = test happened within the quarter but actuals missed one or both targets, OR the test is older than a quarter. No = no recent Tier-1 restore test.',
+      },
+      {
+        id: 'q3',
+        prompt: 'In the past 12 months, has any backup been found compromised, corrupted, or unrecoverable — and if so, was the response documented (root cause, fix, retest)?',
+        hint: 'Yes = either no failures occurred (with active testing in place to detect them) OR failures were detected and the documented response includes root cause, remediation, and a successful retest. Partial = active testing happens but the detection bar is thin (e.g., only checksums, no real restores). No = no detection capability — failures would go unnoticed.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a backup or restore improvement in the past year (failed restore caught, immutability added, retention extended).',
   },
+
 
   'PR.PS-01': {
-    q1: 'For server OS, workstation OS, network devices, cloud workloads — quote the specific hardening baseline reference (CIS Benchmark Level 1 or 2, vendor security guide, internal hardened image).',
-    q1_hint: 'Yes = baseline named and version-pinned for each platform. Partial = baselines exist but unpinned. No = no formal baselines.',
-    q2: 'How are baselines deployed (Intune, MDM, Ansible, Terraform, Group Policy)? For a random workstation, is the baseline applied? Pull the compliance report.',
-    q2_hint: 'Yes = automated deployment with high compliance %. Partial = manual or partial deployment. No = no enforcement.',
-    q3: 'Within the past 30 days, has a drift-detection report been run, and were all identified drifted systems either re-baselined or documented as accepted exceptions?',
-    q3_hint: 'Yes = drift-detection report within the last 30 days AND every drifted system was re-baselined or documented as an exception with owner + reason. Partial = detection runs but drifted systems linger without remediation or exception, OR report is older than 30 days. No = no drift detection.',
-    q4_prompt: 'Describe a configuration-management improvement in the past year (new baseline adopted, drift detection added, CIS benchmark upgrade).',
-  },
-  'PR.PS-02': {
-    q1: 'Pull the software lifecycle policy. What triggers replacement (vendor EOL, security advisory, version skew)?',
-    q1_hint: 'Yes = explicit triggers in writing with named owners. Partial = informal. No = no policy.',
-    q2: 'What\'s the current patch compliance % for critical CVEs against the documented SLA (e.g., 14 days)?',
-    q2_hint: 'Yes = ≥95% within SLA. Partial = 70-95%. No = <70% or not measured.',
-    q3: 'How many unsupported software instances remain in production? For each, what\'s the compensating control or risk acceptance on file?',
-    q3_hint: 'Yes = ≤2 instances OR all have active compensating-control documentation. Partial = some unsupported with weak compensation. No = unsupported software widespread without controls.',
-    q4_prompt: 'Describe a specific software replacement or retirement in the past year (legacy app sunset, end-of-support migration completed).',
-  },
-  'PR.PS-03': {
-    q1: 'Pull the hardware lifecycle policy. What replacement triggers apply (age, condition, vendor EOL, performance)?',
-    q1_hint: 'Yes = explicit triggers in policy. Partial = informal triggers. No = no policy.',
-    q2: 'For currently deployed hardware approaching EOL (within 12 months), is a replacement project planned and budgeted?',
-    q2_hint: 'Yes = all near-EOL hardware has funded replacement plan. Partial = some funded, some unfunded. No = EOL not tracked.',
-    q3: 'For the most recent hardware decommissioning, show the secure-wipe certificate (NIST 800-88), inventory removal record, and disposal vendor receipt.',
-    q3_hint: 'Yes = all three artifacts produced for the most recent decommissioning. Partial = some artifacts. No = no documented decommissioning.',
-    q4_prompt: 'Describe a hardware refresh or decommissioning event in the past year and the secure-disposal evidence.',
-  },
-  'PR.PS-04': {
-    q1: 'Open your SIEM (or log aggregator). How many log sources are currently active? Which of these are forwarding events: M365, Entra ID, EDR, Firewall, VPN, Domain Controllers, Cloud workloads, RMM/PSA?',
-    q1_hint: 'Yes = ≥6 of these sources active. Partial = 3-5 active. No = <3 or no SIEM.',
-    q2: 'What\'s the documented log retention period (hot vs cold)? What\'s the current actual retention for security-relevant logs?',
-    q2_hint: 'Yes = actual retention matches policy (e.g., 12 months hot, 24 months cold). Partial = retention exists but shorter than policy. No = retention not measured or short.',
-    q3: 'Open your SIEM detection rule library. How many rules are tagged or mapped to MITRE ATT&CK techniques? When was the last detection-engineering review?',
-    q3_hint: 'Yes = ≥30 rules with ATT&CK mapping AND review within last quarter. Partial = some rules but mapping incomplete. No = no ATT&CK mapping.',
-    q4_prompt: 'Describe a logging improvement in the past year (new source onboarded, rule added, retention extended).',
-  },
-  'PR.PS-05': {
-    q1: 'What\'s the technical mechanism preventing unauthorized installation (allowlisting, restricted local admin, EDR control)? Show the configuration.',
-    q1_hint: 'Yes = active enforcement mechanism. Partial = some controls (e.g., restricted admin only). No = no technical prevention.',
-    q2: 'What % of endpoints have local admin restrictions enforced? Show the compliance report.',
-    q2_hint: 'Yes = ≥95% endpoints restricted. Partial = 70-95%. No = <70%.',
-    q3: 'In the past 30 days, how many attempted unauthorized installs were blocked? Pull the enforcement log.',
-    q3_hint: 'Yes = log shows active enforcement events. Partial = log exists but no recent activity (could be lack of attempts or lack of logging). No = no log.',
-    q4_prompt: 'Describe an unauthorized-software prevention improvement in the past year (allowlisting deployed, EDR upgraded, admin rights revoked).',
-  },
-  'PR.PS-06': {
-    q1: 'Pull the SDLC policy. Does it require: threat modeling, secure coding standards (e.g., OWASP), code review, SAST/DAST/SCA scans, security tests before release?',
-    q1_hint: 'Yes = all five required. Partial = some required, others optional. No = no formal SDLC.',
-    q2: 'For the most recent release, were all SDLC gates passed? Pull the pipeline report.',
-    q2_hint: 'Yes = pipeline shows all gates green. Partial = gates exist but skipped. No = no gating.',
-    q3: 'What\'s the vulnerability density (findings per 1000 lines of code or per release) trend? Pull the metric.',
-    q3_hint: 'Yes = trend tracked AND decreasing. Partial = tracked but flat. No = not measured.',
-    q4_prompt: 'Describe a secure-SDLC improvement in the past year (new gate added, SAST adoption, threat modeling rolled out).',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'For server OS, workstation OS, network devices, cloud workloads — quote the specific hardening baseline reference (CIS Benchmark Level 1 or 2, vendor security guide, internal hardened image).',
+        hint: 'Yes = baseline named and version-pinned for each platform. Partial = baselines exist but unpinned. No = no formal baselines.',
+      },
+      {
+        id: 'q2',
+        prompt: 'How are baselines deployed (Intune, MDM, Ansible, Terraform, Group Policy)? For a random workstation, is the baseline applied? Pull the compliance report.',
+        hint: 'Yes = automated deployment with high compliance %. Partial = manual or partial deployment. No = no enforcement.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Within the past 30 days, has a drift-detection report been run, and were all identified drifted systems either re-baselined or documented as accepted exceptions?',
+        hint: 'Yes = drift-detection report within the last 30 days AND every drifted system was re-baselined or documented as an exception with owner + reason. Partial = detection runs but drifted systems linger without remediation or exception, OR report is older than 30 days. No = no drift detection.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a configuration-management improvement in the past year (new baseline adopted, drift detection added, CIS benchmark upgrade).',
   },
 
+  'PR.PS-02': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the software lifecycle policy. What triggers replacement (vendor EOL, security advisory, version skew)?',
+        hint: 'Yes = explicit triggers in writing with named owners. Partial = informal. No = no policy.',
+      },
+      {
+        id: 'q2',
+        prompt: 'What\'s the current patch compliance % for critical CVEs against the documented SLA (e.g., 14 days)?',
+        hint: 'Yes = ≥95% within SLA. Partial = 70-95%. No = <70% or not measured.',
+      },
+      {
+        id: 'q3',
+        prompt: 'How many unsupported software instances remain in production? For each, what\'s the compensating control or risk acceptance on file?',
+        hint: 'Yes = ≤2 instances OR all have active compensating-control documentation. Partial = some unsupported with weak compensation. No = unsupported software widespread without controls.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a specific software replacement or retirement in the past year (legacy app sunset, end-of-support migration completed).',
+  },
+
+  'PR.PS-03': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the hardware lifecycle policy. What replacement triggers apply (age, condition, vendor EOL, performance)?',
+        hint: 'Yes = explicit triggers in policy. Partial = informal triggers. No = no policy.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For currently deployed hardware approaching EOL (within 12 months), is a replacement project planned and budgeted?',
+        hint: 'Yes = all near-EOL hardware has funded replacement plan. Partial = some funded, some unfunded. No = EOL not tracked.',
+      },
+      {
+        id: 'q3',
+        prompt: 'For the most recent hardware decommissioning, show the secure-wipe certificate (NIST 800-88), inventory removal record, and disposal vendor receipt.',
+        hint: 'Yes = all three artifacts produced for the most recent decommissioning. Partial = some artifacts. No = no documented decommissioning.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a hardware refresh or decommissioning event in the past year and the secure-disposal evidence.',
+  },
+
+  'PR.PS-04': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Open your SIEM (or log aggregator). How many log sources are currently active? Which of these are forwarding events: M365, Entra ID, EDR, Firewall, VPN, Domain Controllers, Cloud workloads, RMM/PSA?',
+        hint: 'Yes = ≥6 of these sources active. Partial = 3-5 active. No = <3 or no SIEM.',
+      },
+      {
+        id: 'q2',
+        prompt: 'What\'s the documented log retention period (hot vs cold)? What\'s the current actual retention for security-relevant logs?',
+        hint: 'Yes = actual retention matches policy (e.g., 12 months hot, 24 months cold). Partial = retention exists but shorter than policy. No = retention not measured or short.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Open your SIEM detection rule library. How many rules are tagged or mapped to MITRE ATT&CK techniques? When was the last detection-engineering review?',
+        hint: 'Yes = ≥30 rules with ATT&CK mapping AND review within last quarter. Partial = some rules but mapping incomplete. No = no ATT&CK mapping.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a logging improvement in the past year (new source onboarded, rule added, retention extended).',
+  },
+
+  'PR.PS-05': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'What\'s the technical mechanism preventing unauthorized installation (allowlisting, restricted local admin, EDR control)? Show the configuration.',
+        hint: 'Yes = active enforcement mechanism. Partial = some controls (e.g., restricted admin only). No = no technical prevention.',
+      },
+      {
+        id: 'q2',
+        prompt: 'What % of endpoints have local admin restrictions enforced? Show the compliance report.',
+        hint: 'Yes = ≥95% endpoints restricted. Partial = 70-95%. No = <70%.',
+      },
+      {
+        id: 'q3',
+        prompt: 'In the past 30 days, how many attempted unauthorized installs were blocked? Pull the enforcement log.',
+        hint: 'Yes = log shows active enforcement events. Partial = log exists but no recent activity (could be lack of attempts or lack of logging). No = no log.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an unauthorized-software prevention improvement in the past year (allowlisting deployed, EDR upgraded, admin rights revoked).',
+  },
+
+  'PR.PS-06': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the SDLC policy. Does it require: threat modeling, secure coding standards (e.g., OWASP), code review, SAST/DAST/SCA scans, security tests before release?',
+        hint: 'Yes = all five required. Partial = some required, others optional. No = no formal SDLC.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For the most recent release, were all SDLC gates passed? Pull the pipeline report.',
+        hint: 'Yes = pipeline shows all gates green. Partial = gates exist but skipped. No = no gating.',
+      },
+      {
+        id: 'q3',
+        prompt: 'What\'s the vulnerability density (findings per 1000 lines of code or per release) trend? Pull the metric.',
+        hint: 'Yes = trend tracked AND decreasing. Partial = tracked but flat. No = not measured.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a secure-SDLC improvement in the past year (new gate added, SAST adoption, threat modeling rolled out).',
+  },
+
+
   'PR.IR-01': {
-    q1: 'Pull the network architecture diagram. What zones exist? Are firewall rules between zones default-deny?',
-    q1_hint: 'Yes = clear zoning with default-deny. Partial = zones exist but rules permissive. No = flat network.',
-    q2: 'For wireless: are corporate, guest, and IoT networks separated with appropriate authentication? When was the last rogue-AP scan?',
-    q2_hint: 'Yes = three-network separation with regular rogue-AP scanning. Partial = some separation. No = single wireless network.',
-    q3: 'Pull the firewall rule review report. How many rules total? How many were removed or refined in the most recent annual review?',
-    q3_hint: 'Yes = annual review with documented rule removals. Partial = review without removals. No = no review.',
-    q4_prompt: 'Describe a network-protection improvement in the past year (segmentation added, rules cleaned up, microsegmentation pilot).',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the network architecture diagram. What zones exist? Are firewall rules between zones default-deny?',
+        hint: 'Yes = clear zoning with default-deny. Partial = zones exist but rules permissive. No = flat network.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For wireless: are corporate, guest, and IoT networks separated with appropriate authentication? When was the last rogue-AP scan?',
+        hint: 'Yes = three-network separation with regular rogue-AP scanning. Partial = some separation. No = single wireless network.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Pull the firewall rule review report. How many rules total? How many were removed or refined in the most recent annual review?',
+        hint: 'Yes = annual review with documented rule removals. Partial = review without removals. No = no review.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a network-protection improvement in the past year (segmentation added, rules cleaned up, microsegmentation pilot).',
   },
+
   'PR.IR-02': {
-    q1: 'For facilities housing tech assets, what environmental protections are in place: fire suppression, redundant power (UPS/generator), HVAC monitoring, water detection?',
-    q1_hint: 'Yes = ≥3 of 4 protections present. Partial = 1-2 present. No = minimal or none.',
-    q2: 'Within each protection\'s documented testing interval, has the most recent inspection or load test (fire suppression, UPS battery, generator) been performed with records on file?',
-    q2_hint: 'Yes = every applicable protection has its most recent inspection/test inside the documented interval, with records produced on request. Partial = at least one inspection is overdue or the record is missing. No = no testing records — inspections are not happening on cadence.',
-    q3: 'Has any environmental incident or close call occurred in the past 12 months? What change resulted?',
-    q3_hint: 'Yes = either no incidents OR incident drove improvement. Partial = incident but no follow-up. No = no monitoring to detect close calls.',
-    q4_prompt: 'Describe an environmental-protection improvement in the past year (UPS upgrade, fire suppression test, leak sensor added).',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'For facilities housing tech assets, what environmental protections are in place: fire suppression, redundant power (UPS/generator), HVAC monitoring, water detection?',
+        hint: 'Yes = ≥3 of 4 protections present. Partial = 1-2 present. No = minimal or none.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Within each protection\'s documented testing interval, has the most recent inspection or load test (fire suppression, UPS battery, generator) been performed with records on file?',
+        hint: 'Yes = every applicable protection has its most recent inspection/test inside the documented interval, with records produced on request. Partial = at least one inspection is overdue or the record is missing. No = no testing records — inspections are not happening on cadence.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Has any environmental incident or close call occurred in the past 12 months? What change resulted?',
+        hint: 'Yes = either no incidents OR incident drove improvement. Partial = incident but no follow-up. No = no monitoring to detect close calls.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an environmental-protection improvement in the past year (UPS upgrade, fire suppression test, leak sensor added).',
   },
+
   'PR.IR-03': {
-    q1: 'Pull the DR/BCP plan. What are the documented RTO and RPO targets per system tier?',
-    q1_hint: 'Yes = explicit RTO/RPO per tier in writing. Partial = targets named but not tiered. No = no targets.',
-    q2: 'For Tier-1 systems, what resilience mechanisms are in place (HA, replication, failover, geographic separation)? Show the architecture.',
-    q2_hint: 'Yes = HA/replication/failover for all Tier 1. Partial = some Tier 1 systems. No = no resilience design.',
-    q3: 'When was the most recent DR test? What\'s the actual RTO/RPO achieved vs. targets?',
-    q3_hint: 'Yes = annual test with met or near-met targets. Partial = test happened but missed targets. No = no test or test failed without remediation.',
-    q4_prompt: 'Describe a resilience improvement in the past year (failover tested, RPO tightened, HA architecture added).',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the DR/BCP plan. What are the documented RTO and RPO targets per system tier?',
+        hint: 'Yes = explicit RTO/RPO per tier in writing. Partial = targets named but not tiered. No = no targets.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For Tier-1 systems, what resilience mechanisms are in place (HA, replication, failover, geographic separation)? Show the architecture.',
+        hint: 'Yes = HA/replication/failover for all Tier 1. Partial = some Tier 1 systems. No = no resilience design.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the most recent DR test? What\'s the actual RTO/RPO achieved vs. targets?',
+        hint: 'Yes = annual test with met or near-met targets. Partial = test happened but missed targets. No = no test or test failed without remediation.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a resilience improvement in the past year (failover tested, RPO tightened, HA architecture added).',
   },
+
   'PR.IR-04': {
-    q1: 'For Tier-1 systems, what capacity metrics are tracked (CPU, memory, storage, bandwidth, license counts)? Pull the dashboard.',
-    q1_hint: 'Yes = dashboard tracks ≥4 of 5 metrics (CPU, memory, storage, bandwidth, license counts) with current values. Partial = 2-3 of 5 tracked. No = ≤1 tracked or no dashboard.',
-    q2: 'What\'s the current capacity utilization for top three Tier-1 systems? At what threshold does proactive expansion trigger?',
-    q2_hint: 'Yes = utilization tracked AND explicit thresholds. Partial = tracked but no thresholds. No = utilization unknown.',
-    q3: 'In the past 12 months, has capacity been expanded proactively (before saturation) for at least one critical system based on the forecast?',
-    q3_hint: 'Yes = at least one proactive expansion documented. Partial = expansions occurred but reactively. No = capacity addressed only after outages.',
-    q4_prompt: 'Describe a specific capacity issue identified and resolved in the past year (proactive or reactive).',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'For Tier-1 systems, what capacity metrics are tracked (CPU, memory, storage, bandwidth, license counts)? Pull the dashboard.',
+        hint: 'Yes = dashboard tracks ≥4 of 5 metrics (CPU, memory, storage, bandwidth, license counts) with current values. Partial = 2-3 of 5 tracked. No = ≤1 tracked or no dashboard.',
+      },
+      {
+        id: 'q2',
+        prompt: 'What\'s the current capacity utilization for top three Tier-1 systems? At what threshold does proactive expansion trigger?',
+        hint: 'Yes = utilization tracked AND explicit thresholds. Partial = tracked but no thresholds. No = utilization unknown.',
+      },
+      {
+        id: 'q3',
+        prompt: 'In the past 12 months, has capacity been expanded proactively (before saturation) for at least one critical system based on the forecast?',
+        hint: 'Yes = at least one proactive expansion documented. Partial = expansions occurred but reactively. No = capacity addressed only after outages.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a specific capacity issue identified and resolved in the past year (proactive or reactive).',
   },
 
   // ===========================================================================
   // DE — DETECT
   // ===========================================================================
 
+
   'DE.CM-01': {
-    q1: 'Open the SIEM. Which network log sources are active: firewall, VPN, proxy, DNS, identity provider, cloud platforms? How many events per day?',
-    q1_hint: 'Yes = ≥4 sources active with measurable event volume. Partial = 2-3 sources. No = network logging fragmented.',
-    q2: 'How many correlation rules cover MITRE ATT&CK network-related techniques (initial access, lateral movement, exfil, command-and-control)?',
-    q2_hint: 'Yes = ≥10 rules with explicit ATT&CK mapping. Partial = some rules but coverage thin. No = no correlation logic.',
-    q3: 'What\'s the current MTTD for high-severity alerts? Pull the trend over the past 6 months.',
-    q3_hint: 'Yes = MTTD tracked and trending down (or near target). Partial = tracked but not improving. No = MTTD not measured.',
-    q4_prompt: 'Describe a network-monitoring improvement in the past year (new source onboarded, rule added, MTTD reduced).',
-  },
-  'DE.CM-02': {
-    q1: 'For sensitive areas (server room, restricted zones), what monitoring exists (cameras with retention, badge anomaly detection, environmental alarms)?',
-    q1_hint: 'Yes = monitoring in all sensitive areas with documented retention. Partial = monitoring exists but coverage gaps. No = no monitoring.',
-    q2: 'When was a physical alert (after-hours access, repeated denied entry, environmental anomaly) last triaged? Show the record.',
-    q2_hint: 'Yes = recent alert triage with documented investigation. Partial = alerts logged but unreviewed. No = no triage process.',
-    q3: 'When was the most recent documented review of physical-monitoring records (camera footage, badge logs, alarm records)? List one specific finding from that review and the action it drove.',
-    q3_hint: 'Yes = review within last quarter AND a documented finding with downstream action. Partial = review within 12 months OR finding without action. No = no review or >12 months stale.',
-    q4_prompt: 'Describe a physical-monitoring improvement or finding in the past year.',
-  },
-  'DE.CM-03': {
-    q1: 'Open the SIEM. List the user-activity log sources currently active: sign-in events, privileged-action events, file-access events, sensitive-data-access events, M365 Audit Log, Entra ID Audit Log, EDR user actions.',
-    q1_hint: 'Yes = ≥5 of 7 sources active and forwarding events to SIEM. Partial = 3-4 of 7 active. No = ≤2 active or no SIEM.',
-    q2: 'Is UEBA or behavior analytics deployed? Pull the most recent flagged-event report.',
-    q2_hint: 'Yes = UEBA active with recent alerts triaged. Partial = UEBA configured but underused. No = no behavior analytics.',
-    q3: 'Quote the section of the AUP describing the scope and proportionality of personnel monitoring. When did legal last review (date)? Are personnel notified at hire AND given an annual reminder?',
-    q3_hint: 'Yes = AUP section quotable AND legal review ≤12 months AND both notifications happen. Partial = 1-2 of 3 satisfied. No = no disclosure or no legal review.',
-    q4_prompt: 'Describe a personnel-monitoring improvement or insider-risk finding in the past year.',
-  },
-  'DE.CM-06': {
-    q1: 'For external service providers with privileged access (MSPs, RMM operators), what activity is logged (session, privileged access, RMM events)?',
-    q1_hint: 'Yes = ≥3 of 4 logged (session start/stop, command/action audit, file/record access, RMM event detail) per vendor session. Partial = 1-2 of 4 logged. No = vendor activity opaque or no logging.',
-    q2: 'For the most recent 5 vendor sessions on a Tier-1 system, can each session be matched to a specific approved work ticket within the SIEM logs? How many of 5 reconcile cleanly (start/stop times match, scope matches)?',
-    q2_hint: 'Yes = 5 of 5 reconcile cleanly. Partial = 3-4 of 5 reconcile. No = ≤2 of 5 reconcile or no ticketing for vendor activity.',
-    q3: 'When was the last vendor activity review? Were any unauthorized actions identified and escalated?',
-    q3_hint: 'Yes = review within last quarter with at least one finding (or attestation of none). Partial = review happens but findings unaddressed. No = no review.',
-    q4_prompt: 'Describe an external-provider monitoring improvement or finding in the past year.',
-  },
-  'DE.CM-09': {
-    q1: 'What % of in-scope endpoints have EDR/AV agents reporting? Pull the coverage dashboard.',
-    q1_hint: 'Yes = ≥98% coverage. Partial = 90-98%. No = <90%.',
-    q2: 'For critical systems, is file integrity monitoring (FIM) or runtime monitoring enabled? Show the configuration.',
-    q2_hint: 'Yes = FIM/runtime monitoring active on Tier-1 systems. Partial = some systems covered. No = no FIM/runtime.',
-    q3: 'Open the SIEM. List the cross-source correlation rules combining EDR + identity, EDR + network, FIM + access. How many such cross-source rules exist?',
-    q3_hint: 'Yes = ≥5 cross-source rules with at least one combining EDR + identity. Partial = 1-4 cross-source rules. No = no cross-source correlation, sources isolated.',
-    q4_prompt: 'Describe a host-monitoring improvement in the past year (EDR upgrade, FIM rollout, runtime tooling adopted).',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Open the SIEM. Which network log sources are active: firewall, VPN, proxy, DNS, identity provider, cloud platforms? How many events per day?',
+        hint: 'Yes = ≥4 sources active with measurable event volume. Partial = 2-3 sources. No = network logging fragmented.',
+      },
+      {
+        id: 'q2',
+        prompt: 'How many correlation rules cover MITRE ATT&CK network-related techniques (initial access, lateral movement, exfil, command-and-control)?',
+        hint: 'Yes = ≥10 rules with explicit ATT&CK mapping. Partial = some rules but coverage thin. No = no correlation logic.',
+      },
+      {
+        id: 'q3',
+        prompt: 'What\'s the current MTTD for high-severity alerts? Pull the trend over the past 6 months.',
+        hint: 'Yes = MTTD tracked and trending down (or near target). Partial = tracked but not improving. No = MTTD not measured.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a network-monitoring improvement in the past year (new source onboarded, rule added, MTTD reduced).',
   },
 
+  'DE.CM-02': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'For sensitive areas (server room, restricted zones), what monitoring exists (cameras with retention, badge anomaly detection, environmental alarms)?',
+        hint: 'Yes = monitoring in all sensitive areas with documented retention. Partial = monitoring exists but coverage gaps. No = no monitoring.',
+      },
+      {
+        id: 'q2',
+        prompt: 'When was a physical alert (after-hours access, repeated denied entry, environmental anomaly) last triaged? Show the record.',
+        hint: 'Yes = recent alert triage with documented investigation. Partial = alerts logged but unreviewed. No = no triage process.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the most recent documented review of physical-monitoring records (camera footage, badge logs, alarm records)? List one specific finding from that review and the action it drove.',
+        hint: 'Yes = review within last quarter AND a documented finding with downstream action. Partial = review within 12 months OR finding without action. No = no review or >12 months stale.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a physical-monitoring improvement or finding in the past year.',
+  },
+
+  'DE.CM-03': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Open the SIEM. List the user-activity log sources currently active: sign-in events, privileged-action events, file-access events, sensitive-data-access events, M365 Audit Log, Entra ID Audit Log, EDR user actions.',
+        hint: 'Yes = ≥5 of 7 sources active and forwarding events to SIEM. Partial = 3-4 of 7 active. No = ≤2 active or no SIEM.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Is UEBA or behavior analytics deployed? Pull the most recent flagged-event report.',
+        hint: 'Yes = UEBA active with recent alerts triaged. Partial = UEBA configured but underused. No = no behavior analytics.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Quote the section of the AUP describing the scope and proportionality of personnel monitoring. When did legal last review (date)? Are personnel notified at hire AND given an annual reminder?',
+        hint: 'Yes = AUP section quotable AND legal review ≤12 months AND both notifications happen. Partial = 1-2 of 3 satisfied. No = no disclosure or no legal review.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a personnel-monitoring improvement or insider-risk finding in the past year.',
+  },
+
+  'DE.CM-06': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'For external service providers with privileged access (MSPs, RMM operators), what activity is logged (session, privileged access, RMM events)?',
+        hint: 'Yes = ≥3 of 4 logged (session start/stop, command/action audit, file/record access, RMM event detail) per vendor session. Partial = 1-2 of 4 logged. No = vendor activity opaque or no logging.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For the most recent 5 vendor sessions on a Tier-1 system, can each session be matched to a specific approved work ticket within the SIEM logs? How many of 5 reconcile cleanly (start/stop times match, scope matches)?',
+        hint: 'Yes = 5 of 5 reconcile cleanly. Partial = 3-4 of 5 reconcile. No = ≤2 of 5 reconcile or no ticketing for vendor activity.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the last vendor activity review? Were any unauthorized actions identified and escalated?',
+        hint: 'Yes = review within last quarter with at least one finding (or attestation of none). Partial = review happens but findings unaddressed. No = no review.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an external-provider monitoring improvement or finding in the past year.',
+  },
+
+  'DE.CM-09': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'What % of in-scope endpoints have EDR/AV agents reporting? Pull the coverage dashboard.',
+        hint: 'Yes = ≥98% coverage. Partial = 90-98%. No = <90%.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For critical systems, is file integrity monitoring (FIM) or runtime monitoring enabled? Show the configuration.',
+        hint: 'Yes = FIM/runtime monitoring active on Tier-1 systems. Partial = some systems covered. No = no FIM/runtime.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Open the SIEM. List the cross-source correlation rules combining EDR + identity, EDR + network, FIM + access. How many such cross-source rules exist?',
+        hint: 'Yes = ≥5 cross-source rules with at least one combining EDR + identity. Partial = 1-4 cross-source rules. No = no cross-source correlation, sources isolated.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a host-monitoring improvement in the past year (EDR upgrade, FIM rollout, runtime tooling adopted).',
+  },
+
+
   'DE.AE-02': {
-    q1: 'Pull the analyst runbook for triage. What context does an analyst collect for each alert (asset criticality, user identity, prior alerts, threat-intel match)?',
-    q1_hint: 'Yes = triage runbook explicitly defines first-touch SLA per severity (Critical/High/Medium/Low) AND escalation path. Partial = runbook exists but SLA-by-severity incomplete. No = no runbook.',
-    q2: 'For three random recent alerts (or incidents), do the case notes capture the analytical reasoning (indicators considered, sources consulted, rationale for closure)?',
-    q2_hint: 'Yes = all three cases show clear reasoning. Partial = some thorough, others terse. No = case notes are minimal.',
-    q3: 'When was the last QA review of incident records? Did the analytical chain hold up upon review?',
-    q3_hint: 'Yes = QA review within last quarter with positive outcome. Partial = review without findings or improvements. No = no QA.',
-    q4_prompt: 'Describe an analysis-process improvement in the past year (new context source added, runbook revised, training delivered).',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the analyst runbook for triage. What context does an analyst collect for each alert (asset criticality, user identity, prior alerts, threat-intel match)?',
+        hint: 'Yes = triage runbook explicitly defines first-touch SLA per severity (Critical/High/Medium/Low) AND escalation path. Partial = runbook exists but SLA-by-severity incomplete. No = no runbook.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For three random recent alerts (or incidents), do the case notes capture the analytical reasoning (indicators considered, sources consulted, rationale for closure)?',
+        hint: 'Yes = all three cases show clear reasoning. Partial = some thorough, others terse. No = case notes are minimal.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the last QA review of incident records? Did the analytical chain hold up upon review?',
+        hint: 'Yes = QA review within last quarter with positive outcome. Partial = review without findings or improvements. No = no QA.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an analysis-process improvement in the past year (new context source added, runbook revised, training delivered).',
   },
+
   'DE.AE-03': {
-    q1: 'Pull the SIEM/XDR correlation rules. How many rules combine multiple sources (e.g., identity + endpoint, network + cloud)?',
-    q1_hint: 'Yes = ≥10 cross-source rules. Partial = some cross-source rules. No = single-source rules only.',
-    q2: 'When was the last rule-tuning session? What was the false-positive rate before vs. after?',
-    q2_hint: 'Yes = tuning session within last quarter with FP-rate reduction. Partial = tuning happened. No = no tuning process.',
-    q3: 'What\'s the current MITRE ATT&CK technique coverage? Pull the matrix.',
-    q3_hint: 'Yes = ≥40% ATT&CK technique coverage with documented gaps. Partial = some coverage. No = no ATT&CK mapping.',
-    q4_prompt: 'Describe a correlation improvement or new detection in the past year.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the SIEM/XDR correlation rules. How many rules combine multiple sources (e.g., identity + endpoint, network + cloud)?',
+        hint: 'Yes = ≥10 cross-source rules. Partial = some cross-source rules. No = single-source rules only.',
+      },
+      {
+        id: 'q2',
+        prompt: 'When was the last rule-tuning session? What was the false-positive rate before vs. after?',
+        hint: 'Yes = tuning session within last quarter with FP-rate reduction. Partial = tuning happened. No = no tuning process.',
+      },
+      {
+        id: 'q3',
+        prompt: 'What\'s the current MITRE ATT&CK technique coverage? Pull the matrix.',
+        hint: 'Yes = ≥40% ATT&CK technique coverage with documented gaps. Partial = some coverage. No = no ATT&CK mapping.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a correlation improvement or new detection in the past year.',
   },
+
   'DE.AE-04': {
-    q1: 'Pull the impact-assessment template from the IR procedure. What dimensions does it cover (data, systems, clients, financial, regulatory)?',
-    q1_hint: 'Yes = template covers ≥4 dimensions. Partial = 2-3 dimensions. No = no template.',
-    q2: 'For the most recent incident, was an impact assessment produced? Was it used to drive severity classification?',
-    q2_hint: 'Yes = recent incident has assessment that drove classification. Partial = assessment exists but disconnected. No = no impact assessment.',
-    q3: 'For closed incidents in the past 12 months, compare initial impact estimate vs. final validated estimate. How accurate were the initial estimates?',
-    q3_hint: 'Yes = initial-vs-final tracked with calibration. Partial = data exists but unanalyzed. No = no comparison.',
-    q4_prompt: 'Describe an impact-assessment lesson learned in the past year (e.g., "we systematically underestimate scope when X").',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the impact-assessment template from the IR procedure. What dimensions does it cover (data, systems, clients, financial, regulatory)?',
+        hint: 'Yes = template covers ≥4 dimensions. Partial = 2-3 dimensions. No = no template.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For the most recent incident, was an impact assessment produced? Was it used to drive severity classification?',
+        hint: 'Yes = recent incident has assessment that drove classification. Partial = assessment exists but disconnected. No = no impact assessment.',
+      },
+      {
+        id: 'q3',
+        prompt: 'For closed incidents in the past 12 months, compare initial impact estimate vs. final validated estimate. How accurate were the initial estimates?',
+        hint: 'Yes = initial-vs-final tracked with calibration. Partial = data exists but unanalyzed. No = no comparison.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an impact-assessment lesson learned in the past year (e.g., "we systematically underestimate scope when X").',
   },
+
   'DE.AE-06': {
-    q1: 'Pull the alert routing configuration. Are alerts going to the on-call, summaries to leadership, technical detail to engineers? Show the matrix.',
-    q1_hint: 'Yes = explicit routing matrix with named recipients. Partial = some routing but informal. No = single-bucket alerts.',
-    q2: 'What\'s the current alert acknowledgement time for high-severity? Are missed escalations investigated?',
-    q2_hint: 'Yes = ack-time within target AND missed-escalation reviews happen. Partial = ack-time tracked but misses unaddressed. No = ack-time unknown.',
-    q3: 'When was the routing matrix last updated for personnel changes? Are any recipients stale?',
-    q3_hint: 'Yes = updated within last quarter with current recipients. Partial = some stale entries. No = stale matrix.',
-    q4_prompt: 'Describe an alert-routing improvement in the past year.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the alert routing configuration. Are alerts going to the on-call, summaries to leadership, technical detail to engineers? Show the matrix.',
+        hint: 'Yes = explicit routing matrix with named recipients. Partial = some routing but informal. No = single-bucket alerts.',
+      },
+      {
+        id: 'q2',
+        prompt: 'What\'s the current alert acknowledgement time for high-severity? Are missed escalations investigated?',
+        hint: 'Yes = ack-time within target AND missed-escalation reviews happen. Partial = ack-time tracked but misses unaddressed. No = ack-time unknown.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the routing matrix last updated for personnel changes? Are any recipients stale?',
+        hint: 'Yes = updated within last quarter with current recipients. Partial = some stale entries. No = stale matrix.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an alert-routing improvement in the past year.',
   },
+
   'DE.AE-07': {
-    q1: 'How is threat intel ingested into the SIEM (IOC feeds, manual, automated)? When was the last IOC match that fired an investigation?',
-    q1_hint: 'Yes = automated TI ingestion with recent investigation. Partial = manual or rare matches. No = no TI integration.',
-    q2: 'How is TI prioritized for relevance (sector, geography, technology stack) so the team focuses on actionable items?',
-    q2_hint: 'Yes = explicit prioritization with reduced volume of low-relevance items. Partial = some prioritization. No = firehose.',
-    q3: 'What % of TI items lead to a detection, hunt, or control change? Pull the effectiveness report.',
-    q3_hint: 'Yes = effectiveness measured with high actionable rate. Partial = measured but low rate. No = not measured.',
-    q4_prompt: 'Describe a TI-driven detection or control change in the past year.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'How is threat intel ingested into the SIEM (IOC feeds, manual, automated)? When was the last IOC match that fired an investigation?',
+        hint: 'Yes = automated TI ingestion with recent investigation. Partial = manual or rare matches. No = no TI integration.',
+      },
+      {
+        id: 'q2',
+        prompt: 'How is TI prioritized for relevance (sector, geography, technology stack) so the team focuses on actionable items?',
+        hint: 'Yes = explicit prioritization with reduced volume of low-relevance items. Partial = some prioritization. No = firehose.',
+      },
+      {
+        id: 'q3',
+        prompt: 'What % of TI items lead to a detection, hunt, or control change? Pull the effectiveness report.',
+        hint: 'Yes = effectiveness measured with high actionable rate. Partial = measured but low rate. No = not measured.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a TI-driven detection or control change in the past year.',
   },
+
   'DE.AE-08': {
-    q1: 'Quote the incident criteria matrix or severity rubric. What threshold of impact, scope, or confidence promotes an event to "incident"?',
-    q1_hint: 'Yes = explicit criteria with thresholds. Partial = qualitative criteria. No = informal "we know it when we see it".',
-    q2: 'For three recent events (close calls or actual incidents), is the criteria check explicitly cited in the incident record?',
-    q2_hint: 'Yes = all three sampled cases cite criteria. Partial = criteria cited inconsistently. No = criteria not surfaced in records.',
-    q3: 'When were the criteria last revised? What was the trigger (event that should have been an incident but wasn\'t, or vice versa)?',
-    q3_hint: 'Yes = revision within 12 months tied to a learning. Partial = revision without clear trigger. No = criteria static.',
-    q4_prompt: 'Describe an incident-criteria refinement in the past year.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Quote the incident criteria matrix or severity rubric. What threshold of impact, scope, or confidence promotes an event to "incident"?',
+        hint: 'Yes = explicit criteria with thresholds. Partial = qualitative criteria. No = informal "we know it when we see it".',
+      },
+      {
+        id: 'q2',
+        prompt: 'For three recent events (close calls or actual incidents), is the criteria check explicitly cited in the incident record?',
+        hint: 'Yes = all three sampled cases cite criteria. Partial = criteria cited inconsistently. No = criteria not surfaced in records.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When were the criteria last revised? What was the trigger (event that should have been an incident but wasn\'t, or vice versa)?',
+        hint: 'Yes = revision within 12 months tied to a learning. Partial = revision without clear trigger. No = criteria static.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an incident-criteria refinement in the past year.',
   },
 
   // ===========================================================================
   // RS — RESPOND
   // ===========================================================================
 
+
   'RS.MA-01': {
-    q1: 'Open the IR Plan. What\'s the version number? What\'s the date of last approval signature? Does it name (a) cyber insurance carrier + notification timeframe, (b) IR retainer firm + engagement procedure, (c) law enforcement contact, (d) data-breach regulator(s)?',
-    q1_hint: 'Yes = approved within 12 months AND 4-of-4 third parties named with engagement details. Partial = 1-3 of 4. No = generic plan with no third-party detail.',
-    q2: 'List every actual or simulated incident in the past 12 months that exercised the IR Plan. For each: severity, response time vs. target, third parties engaged.',
-    q2_hint: 'Yes = ≥1 exercise with response-vs-target tracked AND third parties engaged. Partial = exercises happen but third parties not engaged. No = no exercises.',
-    q3: 'After the most recent significant incident or tabletop, what changes were made to the IR Plan as a result? Provide section reference and revision date.',
-    q3_hint: 'Yes = documented plan revisions tied to lessons learned. Partial = lessons documented but plan unchanged. No = no learning loop.',
-    q4_prompt: 'Describe a third-party (insurer/IR retainer/lawyer) coordination during a real or simulated incident in the past year — what worked well or poorly.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Open the IR Plan. What\'s the version number? What\'s the date of last approval signature? Does it name (a) cyber insurance carrier + notification timeframe, (b) IR retainer firm + engagement procedure, (c) law enforcement contact, (d) data-breach regulator(s)?',
+        hint: 'Yes = approved within 12 months AND 4-of-4 third parties named with engagement details. Partial = 1-3 of 4. No = generic plan with no third-party detail.',
+      },
+      {
+        id: 'q2',
+        prompt: 'List every actual or simulated incident in the past 12 months that exercised the IR Plan. For each: severity, response time vs. target, third parties engaged.',
+        hint: 'Yes = ≥1 exercise with response-vs-target tracked AND third parties engaged. Partial = exercises happen but third parties not engaged. No = no exercises.',
+      },
+      {
+        id: 'q3',
+        prompt: 'After the most recent significant incident or tabletop, what changes were made to the IR Plan as a result? Provide section reference and revision date.',
+        hint: 'Yes = documented plan revisions tied to lessons learned. Partial = lessons documented but plan unchanged. No = no learning loop.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a third-party (insurer/IR retainer/lawyer) coordination during a real or simulated incident in the past year — what worked well or poorly.',
   },
+
   'RS.MA-02': {
-    q1: 'Pull the triage runbook. What\'s the SLA for first triage touch by severity?',
-    q1_hint: 'Yes = SLA defined per severity. Partial = single SLA across all severities. No = no SLA.',
-    q2: 'What\'s the current time-to-triage metric across severities? Pull the dashboard or report.',
-    q2_hint: 'Yes = metric tracked AND meeting SLA. Partial = tracked but missing target. No = not measured.',
-    q3: 'When was the last triage misclassification (incident triaged low that turned out high)? What runbook change followed?',
-    q3_hint: 'Yes = either no misclassifications OR misclassification → runbook change. Partial = misclassification without follow-up. No = no calibration.',
-    q4_prompt: 'Describe a triage improvement in the past year.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the triage runbook. What\'s the SLA for first triage touch by severity?',
+        hint: 'Yes = SLA defined per severity. Partial = single SLA across all severities. No = no SLA.',
+      },
+      {
+        id: 'q2',
+        prompt: 'What\'s the current time-to-triage metric across severities? Pull the dashboard or report.',
+        hint: 'Yes = metric tracked AND meeting SLA. Partial = tracked but missing target. No = not measured.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the last triage misclassification (incident triaged low that turned out high)? What runbook change followed?',
+        hint: 'Yes = either no misclassifications OR misclassification → runbook change. Partial = misclassification without follow-up. No = no calibration.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a triage improvement in the past year.',
   },
+
   'RS.MA-03': {
-    q1: 'Quote the incident category taxonomy (BEC, malware, lost device, insider, etc.) and the severity matrix.',
-    q1_hint: 'Yes = explicit taxonomy and severity matrix in writing. Partial = one or the other. No = no formal classification.',
-    q2: 'For the past five closed incidents, were similar incidents classified consistently? Sample-audit the records.',
-    q2_hint: 'Yes = consistent classification across similar cases. Partial = some inconsistency. No = highly variable.',
-    q3: 'When were categories or severities last revised? What new categories were added (e.g., AI-related, supply-chain compromise)?',
-    q3_hint: 'Yes = revision within 12 months with new categories. Partial = revision but only minor. No = taxonomy static.',
-    q4_prompt: 'Describe a category or severity refinement in the past year.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Quote the incident category taxonomy (BEC, malware, lost device, insider, etc.) and the severity matrix.',
+        hint: 'Yes = explicit taxonomy and severity matrix in writing. Partial = one or the other. No = no formal classification.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For the past five closed incidents, were similar incidents classified consistently? Sample-audit the records.',
+        hint: 'Yes = consistent classification across similar cases. Partial = some inconsistency. No = highly variable.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When were categories or severities last revised? What new categories were added (e.g., AI-related, supply-chain compromise)?',
+        hint: 'Yes = revision within 12 months with new categories. Partial = revision but only minor. No = taxonomy static.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a category or severity refinement in the past year.',
   },
+
   'RS.MA-04': {
-    q1: 'Pull the escalation matrix. Who escalates to whom under what conditions, with what timeline (e.g., "engineer escalates to CIO within 1 hour for High severity")?',
-    q1_hint: 'Yes = explicit matrix with named recipients and timelines. Partial = matrix exists but timelines vague. No = no escalation matrix.',
-    q2: 'For the past three escalations, were timelines met? Pull the records.',
-    q2_hint: 'Yes = all three met timeline. Partial = some delays. No = timelines not enforced.',
-    q3: 'When were escalation paths last verified? Are any contacts no longer employed at this organization?',
-    q3_hint: 'Yes = verified within last quarter with all contacts current. Partial = some stale. No = stale matrix.',
-    q4_prompt: 'Describe an escalation event or improvement in the past year.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the escalation matrix. Who escalates to whom under what conditions, with what timeline (e.g., "engineer escalates to CIO within 1 hour for High severity")?',
+        hint: 'Yes = explicit matrix with named recipients and timelines. Partial = matrix exists but timelines vague. No = no escalation matrix.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For the past three escalations, were timelines met? Pull the records.',
+        hint: 'Yes = all three met timeline. Partial = some delays. No = timelines not enforced.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When were escalation paths last verified? Are any contacts no longer employed at this organization?',
+        hint: 'Yes = verified within last quarter with all contacts current. Partial = some stale. No = stale matrix.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an escalation event or improvement in the past year.',
   },
+
   'RS.MA-05': {
-    q1: 'Pull the criteria for recovery initiation. What confirms containment + eradication before recovery starts?',
-    q1_hint: 'Yes = explicit criteria with confirmation steps. Partial = criteria informal. No = no criteria.',
-    q2: 'For the past two incidents that reached recovery, is the gating criteria check documented in the incident record?',
-    q2_hint: 'Yes = both records show explicit criteria check. Partial = check happened but undocumented. No = recovery started without gating.',
-    q3: 'Has any recovery been started prematurely (leading to relapse) in the past 12 months? What change followed?',
-    q3_hint: 'Yes = either no premature recoveries OR one occurred and gating tightened. Partial = relapse without follow-up. No = no learning loop.',
-    q4_prompt: 'Describe a recovery-initiation lesson learned in the past year.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the criteria for recovery initiation. What confirms containment + eradication before recovery starts?',
+        hint: 'Yes = explicit criteria with confirmation steps. Partial = criteria informal. No = no criteria.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For the past two incidents that reached recovery, is the gating criteria check documented in the incident record?',
+        hint: 'Yes = both records show explicit criteria check. Partial = check happened but undocumented. No = recovery started without gating.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Has any recovery been started prematurely (leading to relapse) in the past 12 months? What change followed?',
+        hint: 'Yes = either no premature recoveries OR one occurred and gating tightened. Partial = relapse without follow-up. No = no learning loop.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a recovery-initiation lesson learned in the past year.',
   },
+
 
   'RS.AN-03': {
-    q1: 'Quote the RCA requirement from policy. What severity threshold triggers a mandatory RCA?',
-    q1_hint: 'Yes = explicit threshold (e.g., Medium and above). Partial = RCA encouraged but not required. No = no RCA requirement.',
-    q2: 'For the past three Critical/High/Medium incidents, is an RCA on file? Does it identify process and human factors (not just technical)?',
-    q2_hint: 'Yes = all three have RCAs covering ≥3 factor types. Partial = RCAs exist but technical-only. No = no RCAs.',
-    q3: 'For each RCA finding, is there a tracked improvement item? Has the improvement reduced recurrence?',
-    q3_hint: 'Yes = findings → tracked items AND recurrence trend documented. Partial = findings tracked but recurrence unmeasured. No = findings die in the report.',
-    q4_prompt: 'Describe an RCA finding that drove a structural change in the past year.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Quote the RCA requirement from policy. What severity threshold triggers a mandatory RCA?',
+        hint: 'Yes = explicit threshold (e.g., Medium and above). Partial = RCA encouraged but not required. No = no RCA requirement.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For the past three Critical/High/Medium incidents, is an RCA on file? Does it identify process and human factors (not just technical)?',
+        hint: 'Yes = all three have RCAs covering ≥3 factor types. Partial = RCAs exist but technical-only. No = no RCAs.',
+      },
+      {
+        id: 'q3',
+        prompt: 'For each RCA finding, is there a tracked improvement item? Has the improvement reduced recurrence?',
+        hint: 'Yes = findings → tracked items AND recurrence trend documented. Partial = findings tracked but recurrence unmeasured. No = findings die in the report.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an RCA finding that drove a structural change in the past year.',
   },
+
   'RS.AN-06': {
-    q1: 'What case management tool captures investigation actions? Show the timestamp/actor logging on a recent case.',
-    q1_hint: 'Yes = dedicated tool with timestamp+actor on every action. Partial = action log exists but informal. No = no investigation log.',
-    q2: 'Open the case management tool\'s permissions configuration. How many users have edit rights on closed cases? Is there an audit log capturing every edit (who, what, when)?',
-    q2_hint: 'Yes = edit rights restricted to ≤2 named admin roles AND audit log enabled. Partial = either edit-restriction OR audit-log present, not both. No = neither in place.',
-    q3: 'For an investigation closed >6 months ago, can you retrieve the full record (test by attempting retrieval)?',
-    q3_hint: 'Yes = retrieval succeeds within minutes. Partial = retrieval requires significant effort. No = records lost or inaccessible.',
-    q4_prompt: 'Describe an investigation-recordkeeping improvement in the past year.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'What case management tool captures investigation actions? Show the timestamp/actor logging on a recent case.',
+        hint: 'Yes = dedicated tool with timestamp+actor on every action. Partial = action log exists but informal. No = no investigation log.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Open the case management tool\'s permissions configuration. How many users have edit rights on closed cases? Is there an audit log capturing every edit (who, what, when)?',
+        hint: 'Yes = edit rights restricted to ≤2 named admin roles AND audit log enabled. Partial = either edit-restriction OR audit-log present, not both. No = neither in place.',
+      },
+      {
+        id: 'q3',
+        prompt: 'For an investigation closed >6 months ago, can you retrieve the full record (test by attempting retrieval)?',
+        hint: 'Yes = retrieval succeeds within minutes. Partial = retrieval requires significant effort. No = records lost or inaccessible.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an investigation-recordkeeping improvement in the past year.',
   },
+
   'RS.AN-07': {
-    q1: 'Pull the forensics procedure. What\'s the chain-of-custody template? What evidence types does it cover (memory, disk, logs, screenshots)?',
-    q1_hint: 'Yes = explicit chain-of-custody covering ≥4 evidence types. Partial = template covers some types. No = no chain-of-custody process.',
-    q2: 'For the most recent High/Critical incident, show: hash records, evidence-bag entries, access logs to evidence.',
-    q2_hint: 'Yes = all three artifacts produced for the most recent qualifying incident. Partial = some artifacts. No = ad-hoc handling.',
-    q3: 'When was the procedure last exercised in tabletop or real incident? Did responders know how to collect properly under pressure?',
-    q3_hint: 'Yes = exercise within 12 months with positive outcome. Partial = exercise had gaps. No = no exercise.',
-    q4_prompt: 'Describe an incident-data-collection improvement in the past year.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the forensics procedure. What\'s the chain-of-custody template? What evidence types does it cover (memory, disk, logs, screenshots)?',
+        hint: 'Yes = explicit chain-of-custody covering ≥4 evidence types. Partial = template covers some types. No = no chain-of-custody process.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For the most recent High/Critical incident, show: hash records, evidence-bag entries, access logs to evidence.',
+        hint: 'Yes = all three artifacts produced for the most recent qualifying incident. Partial = some artifacts. No = ad-hoc handling.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the procedure last exercised in tabletop or real incident? Did responders know how to collect properly under pressure?',
+        hint: 'Yes = exercise within 12 months with positive outcome. Partial = exercise had gaps. No = no exercise.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an incident-data-collection improvement in the past year.',
   },
+
   'RS.AN-08': {
-    q1: 'Pull the magnitude-estimation template. What dimensions does it cover (records affected, systems compromised, financial impact, regulatory exposure)?',
-    q1_hint: 'Yes = template covers ≥3 dimensions. Partial = template thin. No = no template.',
-    q2: 'For closed incidents in the past 12 months, compare initial vs. final magnitude estimates. How accurate were the initial estimates?',
-    q2_hint: 'Yes = data tracked with calibration analysis. Partial = data exists but unanalyzed. No = no comparison.',
-    q3: 'When was magnitude estimation last reviewed for accuracy? What change followed?',
-    q3_hint: 'Yes = review within 12 months with documented improvement. Partial = review without action. No = no review.',
-    q4_prompt: 'Describe a magnitude-estimation lesson learned in the past year.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the magnitude-estimation template. What dimensions does it cover (records affected, systems compromised, financial impact, regulatory exposure)?',
+        hint: 'Yes = template covers ≥3 dimensions. Partial = template thin. No = no template.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For closed incidents in the past 12 months, compare initial vs. final magnitude estimates. How accurate were the initial estimates?',
+        hint: 'Yes = data tracked with calibration analysis. Partial = data exists but unanalyzed. No = no comparison.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was magnitude estimation last reviewed for accuracy? What change followed?',
+        hint: 'Yes = review within 12 months with documented improvement. Partial = review without action. No = no review.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a magnitude-estimation lesson learned in the past year.',
   },
+
 
   'RS.CO-02': {
-    q1: 'Pull the notification matrix. Who is notified, when (timeframes), and through what channel (executive, legal, HR, customers, regulators, public)?',
-    q1_hint: 'Yes = matrix covers ≥5 audience categories with explicit timeframes. Partial = matrix exists but coverage gaps. No = no matrix.',
-    q2: 'For the past three incidents, were notifications executed within timeframes? Pull the notification logs.',
-    q2_hint: 'Yes = all three met timeframes. Partial = some delays. No = significant delays or missing notifications.',
-    q3: 'List your incident notification templates by audience class (executive, customer, regulator, public, employee). For each template, when did legal last review (date)?',
-    q3_hint: 'Yes = ≥5 templates covering all audience classes AND each shows legal review ≤12 months. Partial = 2-4 templates OR some legal reviews stale. No = ≤1 template or no legal review.',
-    q4_prompt: 'Describe a notification process improvement in the past year.',
-  },
-  'RS.CO-03': {
-    q1: 'Pull the information-sharing matrix. What approved channels per audience (status page, email, customer portal, ISAC submission, regulatory portal)?',
-    q1_hint: 'Yes = explicit matrix with named channels per audience. Partial = informal channels. No = no matrix.',
-    q2: 'When was sharing last balanced with confidentiality (legal review on incident comms, need-to-know tagging, redaction process)?',
-    q2_hint: 'Yes = legal review on recent comms AND need-to-know tagging. Partial = informal redaction. No = no controls on sharing.',
-    q3: 'After the most recent significant incident, did the right people get the right info at the right time? Pull the post-incident comms review.',
-    q3_hint: 'Yes = explicit comms retrospective with positive findings. Partial = retrospective with gaps. No = no comms retro.',
-    q4_prompt: 'Describe an information-sharing improvement in the past year.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the notification matrix. Who is notified, when (timeframes), and through what channel (executive, legal, HR, customers, regulators, public)?',
+        hint: 'Yes = matrix covers ≥5 audience categories with explicit timeframes. Partial = matrix exists but coverage gaps. No = no matrix.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For the past three incidents, were notifications executed within timeframes? Pull the notification logs.',
+        hint: 'Yes = all three met timeframes. Partial = some delays. No = significant delays or missing notifications.',
+      },
+      {
+        id: 'q3',
+        prompt: 'List your incident notification templates by audience class (executive, customer, regulator, public, employee). For each template, when did legal last review (date)?',
+        hint: 'Yes = ≥5 templates covering all audience classes AND each shows legal review ≤12 months. Partial = 2-4 templates OR some legal reviews stale. No = ≤1 template or no legal review.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a notification process improvement in the past year.',
   },
 
-  'RS.MI-01': {
-    q1: 'Pull the containment playbooks for each major incident category (BEC, malware, ransomware, insider, account compromise). How many playbooks exist?',
-    q1_hint: 'Yes = ≥4 category-specific playbooks. Partial = 1-3 playbooks. No = single generic playbook or none.',
-    q2: 'For the past three incidents, what was the actual containment time? How did it compare to severity targets (e.g., 1h Critical, 4h High)?',
-    q2_hint: 'Yes = containment times tracked AND meeting targets. Partial = tracked but missing targets. No = not tracked.',
-    q3: 'For an incident where containment didn\'t fully limit damage, what playbook revision followed?',
-    q3_hint: 'Yes = either no incomplete containments OR one occurred and playbook revised. Partial = revision lagging. No = no learning loop.',
-    q4_prompt: 'Describe a containment improvement in the past year.',
+  'RS.CO-03': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the information-sharing matrix. What approved channels per audience (status page, email, customer portal, ISAC submission, regulatory portal)?',
+        hint: 'Yes = explicit matrix with named channels per audience. Partial = informal channels. No = no matrix.',
+      },
+      {
+        id: 'q2',
+        prompt: 'When was sharing last balanced with confidentiality (legal review on incident comms, need-to-know tagging, redaction process)?',
+        hint: 'Yes = legal review on recent comms AND need-to-know tagging. Partial = informal redaction. No = no controls on sharing.',
+      },
+      {
+        id: 'q3',
+        prompt: 'After the most recent significant incident, did the right people get the right info at the right time? Pull the post-incident comms review.',
+        hint: 'Yes = explicit comms retrospective with positive findings. Partial = retrospective with gaps. No = no comms retro.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an information-sharing improvement in the past year.',
   },
+
+
+  'RS.MI-01': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the containment playbooks for each major incident category (BEC, malware, ransomware, insider, account compromise). How many playbooks exist?',
+        hint: 'Yes = ≥4 category-specific playbooks. Partial = 1-3 playbooks. No = single generic playbook or none.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For the past three incidents, what was the actual containment time? How did it compare to severity targets (e.g., 1h Critical, 4h High)?',
+        hint: 'Yes = containment times tracked AND meeting targets. Partial = tracked but missing targets. No = not tracked.',
+      },
+      {
+        id: 'q3',
+        prompt: 'For an incident where containment didn\'t fully limit damage, what playbook revision followed?',
+        hint: 'Yes = either no incomplete containments OR one occurred and playbook revised. Partial = revision lagging. No = no learning loop.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a containment improvement in the past year.',
+  },
+
   'RS.MI-02': {
-    q1: 'Pull the eradication checklist for malware, ransomware, account compromise. Are each documented with verification steps?',
-    q1_hint: 'Yes = checklists for each major category with explicit verification. Partial = some categories covered. No = no checklists.',
-    q2: 'For the most recent eradication, show the verification artifact (re-scan, EDR confirmation, password rotation log, key rotation log).',
-    q2_hint: 'Yes = verification artifact on file. Partial = some verification. No = eradication unverified.',
-    q3: 'Has any threat returned post-eradication in the past 12 months? What procedural change followed?',
-    q3_hint: 'Yes = either no recurrence OR recurrence drove procedural change. Partial = recurrence without follow-up. No = no detection of recurrence.',
-    q4_prompt: 'Describe an eradication improvement in the past year.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the eradication checklist for malware, ransomware, account compromise. Are each documented with verification steps?',
+        hint: 'Yes = checklists for each major category with explicit verification. Partial = some categories covered. No = no checklists.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For the most recent eradication, show the verification artifact (re-scan, EDR confirmation, password rotation log, key rotation log).',
+        hint: 'Yes = verification artifact on file. Partial = some verification. No = eradication unverified.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Has any threat returned post-eradication in the past 12 months? What procedural change followed?',
+        hint: 'Yes = either no recurrence OR recurrence drove procedural change. Partial = recurrence without follow-up. No = no detection of recurrence.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe an eradication improvement in the past year.',
   },
 
   // ===========================================================================
   // RC — RECOVER
   // ===========================================================================
 
+
   'RC.RP-01': {
-    q1: 'Does the recovery procedure (within the IR Plan or a separate DR Plan) explicitly define all three of: activation criteria, decision authority, and communication path to the recovery team?',
-    q1_hint: 'Yes = all three are named explicitly in the procedure with no ambiguity. Partial = one or two elements are defined but the third is vague. No = no procedure, or all three are informal.',
-    q2: 'For the past 12 months, when was recovery last executed (real or tabletop)? Pull the record.',
-    q2_hint: 'Yes = a real or simulated execution within 12 months. Partial = older. No = no exercises.',
-    q3: 'For each gap identified during the most recent execution, show the closure tracker entry.',
-    q3_hint: 'Yes = gaps tracked to closure with verification. Partial = gaps tracked but slow closure. No = gaps die in the AAR.',
-    q4_prompt: 'Describe a recovery-procedure improvement in the past year.',
-  },
-  'RC.RP-02': {
-    q1: 'Pull the recovery-prioritization rubric. What drives ordering (RTO/RPO, business impact, dependencies)?',
-    q1_hint: 'Yes = explicit rubric tying ordering to RTO/RPO and dependencies. Partial = informal rubric. No = no rubric.',
-    q2: 'For the most recent recovery (real or tabletop), what was scoped, in what order, and with what resources? Pull the runbook used.',
-    q2_hint: 'Yes = explicit scoping document with order and resource assignment. Partial = ad-hoc scoping during execution. No = no scoping discipline.',
-    q3: 'After execution, was prioritization reviewed for whether the right things came first?',
-    q3_hint: 'Yes = post-recovery prioritization review with documented findings. Partial = review without findings. No = no review.',
-    q4_prompt: 'Describe a recovery-prioritization improvement in the past year.',
-  },
-  'RC.RP-03': {
-    q1: 'Within the past quarter, has a Tier-1 restoration test been performed with actual recovery time and recovery point at or under the documented RTO/RPO targets?',
-    q1_hint: 'Yes = a Tier-1 restore was tested within the last 90 days AND achieved RTO/RPO met the targets, with the test record showing system name + achieved vs. target numbers side-by-side. Partial = test was performed but actuals exceeded one or both targets. No = no Tier-1 restoration test within the quarter.',
-    q2: 'Open the backup console. Show immutability or air-gap status for: M365, file storage, databases, cloud workloads.',
-    q2_hint: 'Yes = all four covered. Partial = some covered. No = no immutable copies.',
-    q3: 'Within the past quarter, has backup integrity been verified by malware scan or hash check, with any findings either resolved or absent?',
-    q3_hint: 'Yes = scan or hash verification was run within the last 90 days AND either no findings were detected OR every finding was documented and addressed. Partial = verification runs but on an irregular cadence (longer than quarterly), OR findings exist without documented response. No = no integrity verification.',
-    q4_prompt: 'Describe a restoration test in the past year that surfaced a problem with backups, and what was changed.',
-  },
-  'RC.RP-04': {
-    q1: 'Pull the post-incident operating procedure. What heightened-monitoring period applies after qualifying incidents? What additional controls apply?',
-    q1_hint: 'Yes = explicit post-incident operating mode with duration and additional controls. Partial = informal heightened state. No = no procedure.',
-    q2: 'For the most recent significant incident, were post-incident norms applied? Pull the records.',
-    q2_hint: 'Yes = norms applied with documented duration and exit. Partial = some norms applied. No = no post-incident posture change.',
-    q3: 'When was the last post-incident norm reviewed before exit? Was anything made permanent?',
-    q3_hint: 'Yes = exit review documented AND at least one improvement made permanent. Partial = exit without review. No = norms exit silently.',
-    q4_prompt: 'Describe a post-incident operating norm applied in the past year.',
-  },
-  'RC.RP-05': {
-    q1: 'Pull the restoration-verification checklist. What integrity, security, and functionality checks are required before returning to production?',
-    q1_hint: 'Yes = checklist has explicit items for all three categories (data integrity, security re-baseline, functional smoke tests) AND each item has pass/fail criteria. Partial = checklist exists but ≤2 of 3 categories covered or pass criteria informal. No = ad-hoc verification or no checklist.',
-    q2: 'For the most recent restoration, show the verification artifact (data integrity confirmed, security re-baselined, smoke tests passed).',
-    q2_hint: 'Yes = all three artifacts on file. Partial = some artifacts. No = unverified restoration.',
-    q3: 'Has any restoration in the past 12 months let an issue through? What checklist revision followed?',
-    q3_hint: 'Yes = either no issues OR issue drove checklist revision. Partial = issue without follow-up. No = no detection of issues.',
-    q4_prompt: 'Describe a verification improvement in the past year.',
-  },
-  'RC.RP-06': {
-    q1: 'Pull the closure-criteria checklist. What documentation must be complete before incident closure (RCA, lessons learned, action items, stakeholder notifications)?',
-    q1_hint: 'Yes = explicit closure checklist with ≥4 required artifacts. Partial = checklist incomplete. No = no closure criteria.',
-    q2: 'For the past five closed incidents, is the documentation package complete?',
-    q2_hint: 'Yes = all five complete. Partial = most complete. No = significant gaps.',
-    q3: 'For action items generated by incidents closed in the past 12 months, is the closure rate ≥80% with documented verification for every closed item?',
-    q3_hint: 'Yes = ≥80% of action items are closed AND every closure has a verification artifact (re-test, audit, before/after metric). Partial = 50-80% closure rate, OR closures exist without verification. No = <50% closure rate, or no action-items tracker.',
-    q4_prompt: 'Describe a closure-process improvement in the past year.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Does the recovery procedure (within the IR Plan or a separate DR Plan) explicitly define all three of: activation criteria, decision authority, and communication path to the recovery team?',
+        hint: 'Yes = all three are named explicitly in the procedure with no ambiguity. Partial = one or two elements are defined but the third is vague. No = no procedure, or all three are informal.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For the past 12 months, when was recovery last executed (real or tabletop)? Pull the record.',
+        hint: 'Yes = a real or simulated execution within 12 months. Partial = older. No = no exercises.',
+      },
+      {
+        id: 'q3',
+        prompt: 'For each gap identified during the most recent execution, show the closure tracker entry.',
+        hint: 'Yes = gaps tracked to closure with verification. Partial = gaps tracked but slow closure. No = gaps die in the AAR.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a recovery-procedure improvement in the past year.',
   },
 
-  'RC.CO-03': {
-    q1: 'Pull the recovery-communication cadence (e.g., 4h Critical, 8h High). Are channels (email, status page, phone) defined per cadence?',
-    q1_hint: 'Yes = cadence + channels per severity. Partial = cadence informal. No = no cadence.',
-    q2: 'For the most recent recovery, were communications consistent across channels? Pull the message archive — same content sent via email, status page, customer portal?',
-    q2_hint: 'Yes = consistent messaging across all channels. Partial = mostly consistent with minor variation. No = conflicting messages or single-channel only.',
-    q3: 'After recovery, did stakeholders feel informed? Pull the feedback (customer survey, internal retro).',
-    q3_hint: 'Yes = positive feedback captured and lessons applied. Partial = feedback captured but not acted on. No = no feedback collected.',
-    q4_prompt: 'Describe a recovery-communication improvement in the past year.',
+  'RC.RP-02': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the recovery-prioritization rubric. What drives ordering (RTO/RPO, business impact, dependencies)?',
+        hint: 'Yes = explicit rubric tying ordering to RTO/RPO and dependencies. Partial = informal rubric. No = no rubric.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For the most recent recovery (real or tabletop), what was scoped, in what order, and with what resources? Pull the runbook used.',
+        hint: 'Yes = explicit scoping document with order and resource assignment. Partial = ad-hoc scoping during execution. No = no scoping discipline.',
+      },
+      {
+        id: 'q3',
+        prompt: 'After execution, was prioritization reviewed for whether the right things came first?',
+        hint: 'Yes = post-recovery prioritization review with documented findings. Partial = review without findings. No = no review.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a recovery-prioritization improvement in the past year.',
   },
+
+  'RC.RP-03': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Within the past quarter, has a Tier-1 restoration test been performed with actual recovery time and recovery point at or under the documented RTO/RPO targets?',
+        hint: 'Yes = a Tier-1 restore was tested within the last 90 days AND achieved RTO/RPO met the targets, with the test record showing system name + achieved vs. target numbers side-by-side. Partial = test was performed but actuals exceeded one or both targets. No = no Tier-1 restoration test within the quarter.',
+      },
+      {
+        id: 'q2',
+        prompt: 'Open the backup console. Show immutability or air-gap status for: M365, file storage, databases, cloud workloads.',
+        hint: 'Yes = all four covered. Partial = some covered. No = no immutable copies.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Within the past quarter, has backup integrity been verified by malware scan or hash check, with any findings either resolved or absent?',
+        hint: 'Yes = scan or hash verification was run within the last 90 days AND either no findings were detected OR every finding was documented and addressed. Partial = verification runs but on an irregular cadence (longer than quarterly), OR findings exist without documented response. No = no integrity verification.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a restoration test in the past year that surfaced a problem with backups, and what was changed.',
+  },
+
+  'RC.RP-04': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the post-incident operating procedure. What heightened-monitoring period applies after qualifying incidents? What additional controls apply?',
+        hint: 'Yes = explicit post-incident operating mode with duration and additional controls. Partial = informal heightened state. No = no procedure.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For the most recent significant incident, were post-incident norms applied? Pull the records.',
+        hint: 'Yes = norms applied with documented duration and exit. Partial = some norms applied. No = no post-incident posture change.',
+      },
+      {
+        id: 'q3',
+        prompt: 'When was the last post-incident norm reviewed before exit? Was anything made permanent?',
+        hint: 'Yes = exit review documented AND at least one improvement made permanent. Partial = exit without review. No = norms exit silently.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a post-incident operating norm applied in the past year.',
+  },
+
+  'RC.RP-05': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the restoration-verification checklist. What integrity, security, and functionality checks are required before returning to production?',
+        hint: 'Yes = checklist has explicit items for all three categories (data integrity, security re-baseline, functional smoke tests) AND each item has pass/fail criteria. Partial = checklist exists but ≤2 of 3 categories covered or pass criteria informal. No = ad-hoc verification or no checklist.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For the most recent restoration, show the verification artifact (data integrity confirmed, security re-baselined, smoke tests passed).',
+        hint: 'Yes = all three artifacts on file. Partial = some artifacts. No = unverified restoration.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Has any restoration in the past 12 months let an issue through? What checklist revision followed?',
+        hint: 'Yes = either no issues OR issue drove checklist revision. Partial = issue without follow-up. No = no detection of issues.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a verification improvement in the past year.',
+  },
+
+  'RC.RP-06': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the closure-criteria checklist. What documentation must be complete before incident closure (RCA, lessons learned, action items, stakeholder notifications)?',
+        hint: 'Yes = explicit closure checklist with ≥4 required artifacts. Partial = checklist incomplete. No = no closure criteria.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For the past five closed incidents, is the documentation package complete?',
+        hint: 'Yes = all five complete. Partial = most complete. No = significant gaps.',
+      },
+      {
+        id: 'q3',
+        prompt: 'For action items generated by incidents closed in the past 12 months, is the closure rate ≥80% with documented verification for every closed item?',
+        hint: 'Yes = ≥80% of action items are closed AND every closure has a verification artifact (re-test, audit, before/after metric). Partial = 50-80% closure rate, OR closures exist without verification. No = <50% closure rate, or no action-items tracker.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a closure-process improvement in the past year.',
+  },
+
+
+  'RC.CO-03': {
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Pull the recovery-communication cadence (e.g., 4h Critical, 8h High). Are channels (email, status page, phone) defined per cadence?',
+        hint: 'Yes = cadence + channels per severity. Partial = cadence informal. No = no cadence.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For the most recent recovery, were communications consistent across channels? Pull the message archive — same content sent via email, status page, customer portal?',
+        hint: 'Yes = consistent messaging across all channels. Partial = mostly consistent with minor variation. No = conflicting messages or single-channel only.',
+      },
+      {
+        id: 'q3',
+        prompt: 'After recovery, did stakeholders feel informed? Pull the feedback (customer survey, internal retro).',
+        hint: 'Yes = positive feedback captured and lessons applied. Partial = feedback captured but not acted on. No = no feedback collected.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a recovery-communication improvement in the past year.',
+  },
+
   'RC.CO-04': {
-    q1: 'Who is the designated communications lead during a public incident? Pull the IR Plan section.',
-    q1_hint: 'Yes = explicit role with named individual. Partial = role exists but unfilled. No = no designated lead.',
-    q2: 'For the most recent public statement, was it legal-reviewed and version-controlled? Pull the approval log.',
-    q2_hint: 'Yes = legal review AND version control documented. Partial = legal review only. No = ad-hoc public statements.',
-    q3: 'Was post-incident effectiveness reviewed (clarity, accuracy, timing) and used to refine the public-comms playbook?',
-    q3_hint: 'Yes = review with documented playbook revision. Partial = review without revision. No = no review.',
-    q4_prompt: 'Describe a public-communications improvement in the past year.',
+    items: [
+      {
+        id: 'q1',
+        prompt: 'Who is the designated communications lead during a public incident? Pull the IR Plan section.',
+        hint: 'Yes = explicit role with named individual. Partial = role exists but unfilled. No = no designated lead.',
+      },
+      {
+        id: 'q2',
+        prompt: 'For the most recent public statement, was it legal-reviewed and version-controlled? Pull the approval log.',
+        hint: 'Yes = legal review AND version control documented. Partial = legal review only. No = ad-hoc public statements.',
+      },
+      {
+        id: 'q3',
+        prompt: 'Was post-incident effectiveness reviewed (clarity, accuracy, timing) and used to refine the public-comms playbook?',
+        hint: 'Yes = review with documented playbook revision. Partial = review without revision. No = no review.',
+      },
+    ],
+    evidence_narrative_prompt: 'Describe a public-communications improvement in the past year.',
   },
 };

@@ -4,7 +4,23 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import type { AssessmentResponse, FrameworkDefinition } from '@/lib/supabase/types';
 import { GROUP_COLORS, controlsOf } from '@/lib/scoring';
-import { isComplete, tierForScore } from '@/lib/assessment';
+import { isComplete, itemsFromResponse, tierForScore } from '@/lib/assessment';
+import { CONTROL_QUESTIONS } from '@/lib/assessment-questions';
+
+/**
+ * "Complete" means: every item the questionnaire defines for this
+ * control has a saved answer. Controls vary in item count post-0029,
+ * so the expected count is looked up from CONTROL_QUESTIONS rather
+ * than hardcoded to 3.
+ */
+function isResponseComplete(
+  response: AssessmentResponse | null | undefined,
+  controlId: string,
+): boolean {
+  if (!response) return false;
+  const expected = CONTROL_QUESTIONS[controlId]?.items.length ?? 3;
+  return isComplete(itemsFromResponse(response), expected);
+}
 
 /**
  * Landing page for the guided Practice assessment. Shows overall progress,
@@ -33,7 +49,7 @@ export default function AssessmentLanding({
     let done = 0;
     for (const c of ctrls) {
       const r = responsesByControl.get(c.id);
-      if (r && isComplete(r)) done++;
+      if (isResponseComplete(r, c.id)) done++;
     }
     return { id: g.id, name: g.name, total, done };
   });
@@ -47,7 +63,7 @@ export default function AssessmentLanding({
       for (const cat of g.categories) {
         for (const ctrl of cat.controls) {
           const r = responsesByControl.get(ctrl.id);
-          if (!r || !isComplete(r)) return ctrl.id;
+          if (!isResponseComplete(r, ctrl.id)) return ctrl.id;
         }
       }
     }
@@ -155,7 +171,7 @@ export default function AssessmentLanding({
                 {g.categories.flatMap((cat) =>
                   cat.controls.map((ctrl) => {
                     const r = responsesByControl.get(ctrl.id);
-                    const complete = r ? isComplete(r) : false;
+                    const complete = isResponseComplete(r, ctrl.id);
                     const score = r?.computed_score ?? null;
                     return (
                       <tr key={ctrl.id}>
