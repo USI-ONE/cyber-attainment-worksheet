@@ -62,8 +62,8 @@ export const CONTROL_QUESTIONS: Record<string, ControlQuestionnaire> = {
     q1_hint: 'Yes = can name 5+ specific items WITH their satisfying control mapping. Partial = can name 3-4, or naming is generic ("we follow HIPAA" without the specific subpart). No = vague references only or fewer than 3 named.',
     q2: 'Open the Legal & Regulatory Requirements Register. Pull a random entry. Does it have: an owner, a "last reviewed" date within the last 12 months, and a documented mapping to satisfying controls?',
     q2_hint: 'Yes = sampled entry has all three (owner, recent date, control map). Partial = has 1-2 of the three. No = none of these or no register exists.',
-    q3: 'Has any law, regulation, or contract on the register changed in the past 12 months (new amendment, new customer contract with cyber requirements, expired regulation)? If yes, was the program adjusted? If no changes, has counsel attested to that?',
-    q3_hint: 'Yes = a recent change is identified AND a corresponding program adjustment is documented. Yes also = no-change attestation from counsel signed in past 12 months. Partial = changes happened but adjustments lag. No = no review process to detect changes.',
+    q3: 'Is there a documented process to detect changes to laws, regulations, or contracts that affect cybersecurity, and was it exercised in the past 12 months?',
+    q3_hint: 'Yes = process exists AND was exercised — either a change was detected and the program adjusted with documentation, OR counsel signed a no-change attestation within 12 months. Partial = process exists but was not exercised, or a change happened and the program response is still lagging. No = no change-detection process.',
     q4_prompt: 'Describe one specific regulatory or contractual change in the past year (Utah AI Policy Act, a new client BAA, an insurer requirement) and exactly how the program was adjusted in response.',
   },
   'GV.OC-04': {
@@ -80,8 +80,8 @@ export const CONTROL_QUESTIONS: Record<string, ControlQuestionnaire> = {
     q1_hint: 'Yes = can readily name 5+ specific dependencies WITH tier and exposure. Partial = list exists but tiers or exposures are vague. No = no documented dependency map.',
     q2: 'For each Tier-1 dependency, where is the documented contingency plan (e.g., "if M365 is down: we shift to backup mail relay X for Y hours")? Has the plan been tested in the past 12 months?',
     q2_hint: 'Yes = all Tier-1 dependencies have a written, tested contingency plan. Partial = plans exist for most but some untested or stale. No = no contingency plans or only verbal "we\'d figure it out".',
-    q3: 'Has any dependency outage occurred in the past 12 months? How long did it last and how was the contingency plan executed? If no outages, has at least one dependency been tabletop-tested?',
-    q3_hint: 'Yes = real or simulated outage exercised the contingency, with documented after-action notes. Partial = outage occurred but ad-hoc response. No = no exercises, no real tests.',
+    q3: 'In the past 12 months, has at least one Tier-1 dependency contingency been exercised — either by a real outage or a tabletop test — with documented after-action notes?',
+    q3_hint: 'Yes = real outage handled per plan, or tabletop test conducted, with after-action notes on file. Partial = outage occurred but response was ad-hoc; no notes. No = no real or simulated exercises in the past 12 months.',
     q4_prompt: 'Describe a critical dependency that was identified, reclassified, or whose risk treatment changed in the past year — and the operational consequence.',
   },
 
@@ -131,8 +131,8 @@ export const CONTROL_QUESTIONS: Record<string, ControlQuestionnaire> = {
     q4_prompt: 'Describe a cybersecurity risk communication that crossed organizational boundaries (to/from a supplier, customer, regulator) in the past year.',
   },
   'GV.RM-06': {
-    q1: 'Quote the likelihood scale used in the Risk Register (1-5? frequency-based? probability-based?). Quote the impact scale. Quote the combination rule (matrix? multiplicative? expected loss?).',
-    q1_hint: 'Yes = all three (likelihood scale, impact scale, combination rule) explicitly defined in writing. Partial = some defined, others informal. No = ad-hoc scoring.',
+    q1: 'Does the Risk Register use an explicitly documented likelihood scale, impact scale, and combination rule (matrix or formula)?',
+    q1_hint: 'Yes = all three are defined in writing — e.g., 1-5 frequency-based likelihood, 1-5 financial-impact, multiplicative matrix or expected-loss formula. Partial = one or two are documented; others are informal. No = ad-hoc scoring with no documented method.',
     q2: 'Pull all current Risk Register entries. Do they all use the same scale and combination rule, or do some use a different (older) approach?',
     q2_hint: 'Yes = uniform application of one method. Partial = method evolved and not all entries migrated. No = inconsistent scoring across entries.',
     q3: 'When was the methodology last calibrated (peer review, sample rescore exercise, comparison against incidents)? What was the outcome?',
@@ -208,15 +208,15 @@ export const CONTROL_QUESTIONS: Record<string, ControlQuestionnaire> = {
   'GV.OV-01': {
     q1: 'Quote the documented cadence for executive review of cybersecurity strategy outcomes (quarterly? semiannually? at every board meeting?).',
     q1_hint: 'Yes = explicit cadence in policy or program charter. Partial = cadence implied. No = no documented cadence.',
-    q2: 'Pull the minutes from the most recent oversight review. Were KPIs presented? Were strategy outcomes (risks closed, incidents handled) discussed? Were specific decisions taken?',
-    q2_hint: 'Yes = recent (within last quarter) review with KPIs, outcomes, AND decisions documented. Partial = some elements present, others missing. No = no documented review or stale.',
+    q2: 'Do the minutes from the most recent oversight review document all three of: KPIs presented, strategy outcomes discussed (risks closed, incidents handled), and explicit decisions taken?',
+    q2_hint: 'Yes = recent (within last quarter) minutes show all three elements. Partial = minutes within the quarter but missing one of the three elements, or older minutes that contain all three. No = no documented review within 6 months.',
     q3: 'At the most recent review, was at least one strategy adjustment made (priority change, new initiative, explicit confirmation to stay the course)?',
     q3_hint: 'Yes = explicit adjustment or confirmation documented. Partial = discussion but no decision recorded. No = review is purely informational.',
     q4_prompt: 'Describe a strategy adjustment that came directly out of an oversight review in the past year.',
   },
   'GV.OV-02': {
-    q1: 'Pull the coverage matrix mapping cybersecurity strategy elements to risks, regulations, threats, and stakeholder expectations. How many strategy elements are listed in rows? How many input columns (risks, regs, threats, stakeholders)? How many cells flagged as gaps?',
-    q1_hint: 'Yes = matrix has ≥6 strategy elements × ≥4 input columns AND lists explicit gaps. Partial = matrix exists with <6 elements or gaps not flagged. No = no coverage matrix.',
+    q1: 'Does a coverage matrix exist that maps each cybersecurity strategy element to its driving risks, regulations, threats, and stakeholder expectations, with gaps explicitly flagged?',
+    q1_hint: 'Yes = matrix has ≥6 strategy elements as rows × ≥4 input columns (risks, regs, threats, stakeholders) and gaps are explicitly marked. Partial = matrix exists but is thinner than that, OR gaps are not flagged. No = no coverage matrix.',
     q2: 'When was the matrix last completed? How many gaps were identified?',
     q2_hint: 'Yes = completed within last 12 months with documented gaps and resolutions. Partial = older or partial check. No = never completed.',
     q3: 'For each gap identified, is there a tracked initiative with owner and target date? Show the tracker.',
@@ -329,21 +329,24 @@ export const CONTROL_QUESTIONS: Record<string, ControlQuestionnaire> = {
   // ===========================================================================
 
   'ID.AM-01': {
-    q1: 'Open the hardware inventory (CMDB / RMM / asset management platform). How many total devices are listed? For a random sample of 5, do all entries have populated: asset tag/serial, owner, OS, criticality, lifecycle status?',
-    q1_hint: 'Yes = inventory with ≥4 of 5 fields populated for all sampled. Partial = inventory exists but data quality patchy. No = no central inventory or major gaps.',
-    q2: 'Pull the most recent reconciliation report between the inventory and discovery tooling (RMM, MDM, network scan). How many delta items were found? How many were resolved?',
-    q2_hint: 'Yes = recent reconciliation with all deltas resolved. Partial = reconciliation done but unresolved gaps. No = no reconciliation process.',
-    q3: 'Pick a device that was added or retired in the past 30 days. Is it correctly reflected in the inventory? How long after the change did the inventory update?',
-    q3_hint: 'Yes = inventory updated within 7 days of change. Partial = updated but >7 days. No = inventory missed the change entirely.',
-    q4_prompt: 'Describe an inventory gap identified and closed in the past year — the gap, how it was found, and the fix.',
+    // EXISTENCE — is there one place to look up every device?
+    q1: 'Does a central hardware inventory exist (CMDB, RMM, or asset-management platform) covering every employee endpoint, server, and network device?',
+    q1_hint: 'Yes = a single source of truth lists all device classes (endpoints + servers + network gear + mobile). Partial = inventory exists but is split across systems with no reconciliation, OR covers only some device classes. No = no central inventory; devices are tracked ad-hoc or via spreadsheet.',
+    // QUALITY — are the records on a random sample actually populated?
+    q2: 'Pick 5 random devices from the inventory. Are all of these fields populated on all 5: asset tag or serial, assigned owner, OS, criticality tier, lifecycle status?',
+    q2_hint: 'Yes = every field populated on all 5 sampled devices. Partial = 3-4 of the 5 fields populated, OR all 5 fields populated on only 3-4 of the sampled devices. No = ≤2 fields populated, or core fields (owner, criticality) missing across the fleet.',
+    // CURRENCY — does it stay current with reality?
+    q3: 'Is the inventory reconciled against discovery tooling (RMM, MDM, or network scan) at least quarterly, with detected deltas closed within 30 days?',
+    q3_hint: 'Yes = a reconciliation report exists within the last 90 days AND every detected delta was closed within 30 days of detection. Partial = reconciliation happens but deltas linger without a closure SLA, OR cadence is slower than quarterly. No = no reconciliation process at all.',
+    q4_prompt: 'Describe one specific inventory gap identified and closed in the past 12 months — what was missing, how it was discovered, and what was changed to prevent recurrence.',
   },
   'ID.AM-02': {
-    q1: 'Open the approved-software list. How many applications are listed? How many SaaS services are listed? Is there an explicit "anything else requires CIO approval" rule?',
-    q1_hint: 'Yes = list exists for both installed software AND SaaS, with explicit approval gate. Partial = list exists but incomplete. No = no approved-software discipline.',
+    q1: 'Does an approved-software / approved-SaaS list exist that covers both installed software and SaaS services, with an explicit policy rule that anything not on the list requires approval?',
+    q1_hint: 'Yes = a single list (or two paired lists) covers both installed software AND SaaS, and a written rule requires approval for anything else. Partial = list exists for one (software OR SaaS) but not both, OR list exists with no formal approval gate. No = no approved-software discipline; shadow IT is the default.',
     q2: 'Run an audit of installed software on a random workstation and a random server. Are all installed packages on the approved list? Run a SaaS audit (e.g., M365 Cloud App Discovery) — any unsanctioned services?',
     q2_hint: 'Yes = audit shows ≥95% on approved list, no unsanctioned SaaS. Partial = mostly compliant with some shadow IT. No = significant unauthorized software/SaaS.',
-    q3: 'When was the inventory last reconciled against actual installations and SaaS subscriptions? Were any unauthorized items found? Were they remediated?',
-    q3_hint: 'Yes = reconciled within last quarter with findings remediated. Partial = reconciled but findings unaddressed. No = no reconciliation.',
+    q3: 'Has the approved list been reconciled against actual installations and SaaS usage within the last quarter, with unauthorized items remediated?',
+    q3_hint: 'Yes = reconciliation within last 90 days AND all unauthorized findings remediated (removed, whitelisted with justification, or migrated to an approved alternative). Partial = reconciliation occurred but findings still open. No = no reconciliation process.',
     q4_prompt: 'Describe a shadow-IT or unapproved-software finding in the past year and how it was resolved.',
   },
   'ID.AM-03': {
@@ -385,8 +388,8 @@ export const CONTROL_QUESTIONS: Record<string, ControlQuestionnaire> = {
   'ID.AM-08': {
     q1: 'Pull the lifecycle policy. What are the explicit phases (acquisition, deployment, operation, EOL/EOS, retirement, disposal) and what gates apply at each?',
     q1_hint: 'Yes = all phases named with explicit gates. Partial = some phases covered. No = no lifecycle policy.',
-    q2: 'For currently deployed assets, is end-of-life and end-of-support date tracked? How many assets are within 12 months of EOL? Is replacement planned and budgeted?',
-    q2_hint: 'Yes = EOL/EOS tracked AND replacement planned for all near-EOL assets. Partial = tracking exists but planning lags. No = no EOL/EOS tracking.',
+    q2: 'Are EOL/EOS dates tracked in the inventory for every deployed asset, with a documented replacement plan for every asset within 12 months of EOL?',
+    q2_hint: 'Yes = inventory column for EOL/EOS is populated for all assets AND every near-EOL asset (≤12 months) has a written replacement plan with budget. Partial = EOL/EOS tracked but planning lags for some, OR tracking covers only some asset classes. No = no EOL/EOS tracking.',
     q3: 'For the most recent system retirement, show the secure-decommissioning evidence: NIST 800-88 wipe verification, certificate of destruction, inventory removal record.',
     q3_hint: 'Yes = all three artifacts produced for the most recent retirement. Partial = some artifacts. No = no documented decommissioning.',
     q4_prompt: 'Describe a lifecycle event handled in the past year (refresh, retirement, replacement) and the secure-decommissioning steps taken.',
@@ -395,8 +398,8 @@ export const CONTROL_QUESTIONS: Record<string, ControlQuestionnaire> = {
   'ID.RA-01': {
     q1: 'Pull the vulnerability management procedure. Quote the documented scan cadence (e.g., monthly internal, monthly external, quarterly authenticated, annual pen test).',
     q1_hint: 'Yes = explicit cadence per scan type in writing. Partial = cadence informal. No = no procedure.',
-    q2: 'When was the most recent vulnerability scan? Pull the report. How many critical, high, medium findings? When are they due to be remediated by SLA?',
-    q2_hint: 'Yes = recent scan with findings tracked against remediation SLA. Partial = scan exists but SLA not enforced. No = scans not happening or report not retained.',
+    q2: 'Has a vulnerability scan run within the documented cadence, and are its findings tracked against the documented remediation SLA (with due dates by severity)?',
+    q2_hint: 'Yes = most recent scan is within the documented cadence (e.g., within the past month for monthly scans) AND each finding has a remediation owner and SLA-driven due date in a tracker. Partial = scans run but findings are not tracked to a SLA. No = scans are not happening on cadence, or no report is retained.',
     q3: 'Quote the documented remediation SLAs by severity (e.g., critical CVE within 14 days). For the past 12 months, what % of findings met SLA?',
     q3_hint: 'Yes = ≥90% SLA compliance. Partial = 70-90%. No = <70% or not tracked.',
     q4_prompt: 'Describe the most significant vulnerability remediated in the past year — how it was found, how long it took, and what compensating controls were used while it was open.',
@@ -447,8 +450,8 @@ export const CONTROL_QUESTIONS: Record<string, ControlQuestionnaire> = {
     q4_prompt: 'Describe a specific risk response executed in the past year and the result (was the residual risk what you expected?).',
   },
   'ID.RA-07': {
-    q1: 'Pull the change management log. How many changes were submitted in the past month? How many approved / denied / deferred? How many were emergency vs. scheduled?',
-    q1_hint: 'Yes = active change log with categorization and outcomes. Partial = changes recorded but unstructured. No = no change log.',
+    q1: 'Does the change-management log capture every submitted change with its outcome (approved / denied / deferred) and its type (emergency vs. scheduled)?',
+    q1_hint: 'Yes = every change in the past month has both fields filled, and the log is the source of truth. Partial = changes are recorded but outcome or type is missing on some entries. No = no change log, or changes happen outside the log.',
     q2: 'Pull the exception register. How many active exceptions? For a random three, do they have: compensating controls, time-box (expiration date), risk owner, scheduled review date?',
     q2_hint: 'Yes = all sampled exceptions have all four. Partial = some elements present. No = exceptions exist without proper documentation.',
     q3: 'When was the last exception aging review? How many stale exceptions were retired or extended with new justification?',
@@ -458,8 +461,8 @@ export const CONTROL_QUESTIONS: Record<string, ControlQuestionnaire> = {
   'ID.RA-08': {
     q1: 'Open https://[your-domain]/.well-known/security.txt — does the file exist? Does it name a contact channel and disclosure policy?',
     q1_hint: 'Yes = security.txt file exists and is current. Partial = some channel exists (security@ email) but not standardized. No = no public disclosure channel.',
-    q2: 'When was the most recent external vulnerability report received and processed? What was the response time? If none received, has the procedure been tested with a simulated submission?',
-    q2_hint: 'Yes = real or simulated test within 12 months with documented response. Partial = process exists but untested. No = no test or no procedure.',
+    q2: 'Has the external vulnerability disclosure procedure been exercised in the past 12 months — either by a real report or a simulated submission — with the response time documented?',
+    q2_hint: 'Yes = a real or simulated report was received and processed within the past 12 months, with response time recorded. Partial = procedure exists but was never exercised (real or simulated). No = no documented procedure.',
     q3: 'When was the disclosure program last reviewed? Was scope expanded (e.g., bug bounty considered, scope clarified)?',
     q3_hint: 'Yes = review within 12 months with documented decisions. Partial = informal review. No = program static or absent.',
     q4_prompt: 'Describe a specific vulnerability disclosure handled in the past year, OR a step taken to set up the program.',
@@ -563,8 +566,8 @@ export const CONTROL_QUESTIONS: Record<string, ControlQuestionnaire> = {
   'PR.AA-05': {
     q1: 'Quote the access-control policy. Does it explicitly require least privilege, separation of duties, and documented authorization for every grant?',
     q1_hint: 'Yes = explicit language on all three. Partial = some principles named, others informal. No = no formal policy.',
-    q2: 'Pull the most recent access review for privileged accounts. When was it? Who certified? How many accesses were removed?',
-    q2_hint: 'Yes = review within last quarter for privileged AND removals occurred. Partial = review happened but no removals. No = no review process.',
+    q2: 'Within the past quarter, was a documented access review of all privileged accounts performed by a named certifier, with at least one access removal or confirmation recorded per account?',
+    q2_hint: 'Yes = a review within the last 90 days with a named certifier AND every privileged account explicitly confirmed or removed. Partial = review happened but no documented decisions per account, or review is older than 90 days. No = no review process.',
     q3: 'How many standing-privilege accounts exist? Has just-in-time (JIT) access been adopted for any role?',
     q3_hint: 'Yes = JIT adopted with measurable reduction in standing privilege. Partial = JIT for some roles. No = standing privilege ubiquitous.',
     q4_prompt: 'Describe an access-permission improvement in the past year (JIT rollout, role consolidation, separation-of-duties enforcement).',
@@ -599,8 +602,8 @@ export const CONTROL_QUESTIONS: Record<string, ControlQuestionnaire> = {
   },
 
   'PR.DS-01': {
-    q1: 'For the primary file storage system (M365, NAS, etc.), is encryption at rest enabled? What algorithm (AES-256)? Are FIPS 140-2/3 validated modules in use where required by regulation or contract?',
-    q1_hint: 'Yes = AES-256 enabled with FIPS validation where required. Partial = encryption enabled but not validated. No = encryption gaps.',
+    q1: 'For the primary file storage system (M365, Google Workspace, NAS, etc.), is encryption at rest enabled using AES-256, with FIPS 140-2/3 validated modules where regulation or contract requires it?',
+    q1_hint: 'Yes = AES-256 enabled AND FIPS-validated modules in use wherever required by HIPAA/PCI/contract. Partial = encryption enabled but algorithm is weaker than AES-256, or FIPS validation is required but missing. No = encryption is off or unverified on the primary store.',
     q2: 'For databases storing PII/PHI/cardholder data, is column-level or table-level encryption in use? Show the configuration.',
     q2_hint: 'Yes = sensitive data encrypted at rest in database. Partial = whole-disk only, no column-level. No = no encryption beyond OS-level.',
     q3: 'Pull the encryption coverage report. What % of in-scope systems have data-at-rest encryption verified?',
@@ -628,10 +631,10 @@ export const CONTROL_QUESTIONS: Record<string, ControlQuestionnaire> = {
   'PR.DS-11': {
     q1: 'Open the backup console (Veeam, Datto, native cloud backup, etc.). Show the immutability or air-gap status for: M365 backups, primary file storage backups, database backups, cloud workload backups.',
     q1_hint: 'Yes = all four have immutability or air-gap. Partial = some have it, others don\'t. No = no immutable/air-gap copies.',
-    q2: 'When was the most recent successful Tier-1 restore test? Which system? What RTO and RPO were actually achieved? How did they compare to documented targets?',
-    q2_hint: 'Yes = recent test (within last quarter) with RTO/RPO meeting target. Partial = test happened but missed target. No = no recent restore test.',
-    q3: 'Have any backups been found compromised or corrupted in the past 12 months? Has any restore failed? What was the response?',
-    q3_hint: 'Yes = either no failures (with active testing) OR failures detected and addressed. Partial = limited testing means low detection. No = no testing capability.',
+    q2: 'Within the past quarter, has a Tier-1 restore been tested with actual RTO and RPO at or under the documented targets?',
+    q2_hint: 'Yes = a Tier-1 restore was tested within the last 90 days AND achieved RTO/RPO met the targets, with the test record showing system name + achieved vs. target numbers side-by-side. Partial = test happened within the quarter but actuals missed one or both targets, OR the test is older than a quarter. No = no recent Tier-1 restore test.',
+    q3: 'In the past 12 months, has any backup been found compromised, corrupted, or unrecoverable — and if so, was the response documented (root cause, fix, retest)?',
+    q3_hint: 'Yes = either no failures occurred (with active testing in place to detect them) OR failures were detected and the documented response includes root cause, remediation, and a successful retest. Partial = active testing happens but the detection bar is thin (e.g., only checksums, no real restores). No = no detection capability — failures would go unnoticed.',
     q4_prompt: 'Describe a backup or restore improvement in the past year (failed restore caught, immutability added, retention extended).',
   },
 
@@ -640,8 +643,8 @@ export const CONTROL_QUESTIONS: Record<string, ControlQuestionnaire> = {
     q1_hint: 'Yes = baseline named and version-pinned for each platform. Partial = baselines exist but unpinned. No = no formal baselines.',
     q2: 'How are baselines deployed (Intune, MDM, Ansible, Terraform, Group Policy)? For a random workstation, is the baseline applied? Pull the compliance report.',
     q2_hint: 'Yes = automated deployment with high compliance %. Partial = manual or partial deployment. No = no enforcement.',
-    q3: 'When was the last drift-detection report run? How many systems drifted? How many were remediated?',
-    q3_hint: 'Yes = recent drift detection AND remediation. Partial = detection but slow remediation. No = no drift detection.',
+    q3: 'Within the past 30 days, has a drift-detection report been run, and were all identified drifted systems either re-baselined or documented as accepted exceptions?',
+    q3_hint: 'Yes = drift-detection report within the last 30 days AND every drifted system was re-baselined or documented as an exception with owner + reason. Partial = detection runs but drifted systems linger without remediation or exception, OR report is older than 30 days. No = no drift detection.',
     q4_prompt: 'Describe a configuration-management improvement in the past year (new baseline adopted, drift detection added, CIS benchmark upgrade).',
   },
   'PR.PS-02': {
@@ -702,8 +705,8 @@ export const CONTROL_QUESTIONS: Record<string, ControlQuestionnaire> = {
   'PR.IR-02': {
     q1: 'For facilities housing tech assets, what environmental protections are in place: fire suppression, redundant power (UPS/generator), HVAC monitoring, water detection?',
     q1_hint: 'Yes = ≥3 of 4 protections present. Partial = 1-2 present. No = minimal or none.',
-    q2: 'When was the last fire suppression inspection? UPS battery test? Generator load test? Show the records.',
-    q2_hint: 'Yes = all three within their documented intervals. Partial = some current, others stale. No = no testing records.',
+    q2: 'Within each protection\'s documented testing interval, has the most recent inspection or load test (fire suppression, UPS battery, generator) been performed with records on file?',
+    q2_hint: 'Yes = every applicable protection has its most recent inspection/test inside the documented interval, with records produced on request. Partial = at least one inspection is overdue or the record is missing. No = no testing records — inspections are not happening on cadence.',
     q3: 'Has any environmental incident or close call occurred in the past 12 months? What change resulted?',
     q3_hint: 'Yes = either no incidents OR incident drove improvement. Partial = incident but no follow-up. No = no monitoring to detect close calls.',
     q4_prompt: 'Describe an environmental-protection improvement in the past year (UPS upgrade, fire suppression test, leak sensor added).',
@@ -962,8 +965,8 @@ export const CONTROL_QUESTIONS: Record<string, ControlQuestionnaire> = {
   // ===========================================================================
 
   'RC.RP-01': {
-    q1: 'Pull the recovery procedure (within IR Plan or separate DR Plan). What are the activation criteria? Decision authority? Communication path to recovery team?',
-    q1_hint: 'Yes = all three explicitly defined. Partial = some elements vague. No = no procedure.',
+    q1: 'Does the recovery procedure (within the IR Plan or a separate DR Plan) explicitly define all three of: activation criteria, decision authority, and communication path to the recovery team?',
+    q1_hint: 'Yes = all three are named explicitly in the procedure with no ambiguity. Partial = one or two elements are defined but the third is vague. No = no procedure, or all three are informal.',
     q2: 'For the past 12 months, when was recovery last executed (real or tabletop)? Pull the record.',
     q2_hint: 'Yes = a real or simulated execution within 12 months. Partial = older. No = no exercises.',
     q3: 'For each gap identified during the most recent execution, show the closure tracker entry.',
@@ -980,12 +983,12 @@ export const CONTROL_QUESTIONS: Record<string, ControlQuestionnaire> = {
     q4_prompt: 'Describe a recovery-prioritization improvement in the past year.',
   },
   'RC.RP-03': {
-    q1: 'When was the most recent restoration test performed? For which Tier-1 system? What actual recovery time and recovery point were achieved? How did they compare to documented RTO/RPO targets?',
-    q1_hint: 'Yes = test within last quarter for a Tier-1 system, results within target. Partial = test but missed target. No = no recent restore test.',
+    q1: 'Within the past quarter, has a Tier-1 restoration test been performed with actual recovery time and recovery point at or under the documented RTO/RPO targets?',
+    q1_hint: 'Yes = a Tier-1 restore was tested within the last 90 days AND achieved RTO/RPO met the targets, with the test record showing system name + achieved vs. target numbers side-by-side. Partial = test was performed but actuals exceeded one or both targets. No = no Tier-1 restoration test within the quarter.',
     q2: 'Open the backup console. Show immutability or air-gap status for: M365, file storage, databases, cloud workloads.',
     q2_hint: 'Yes = all four covered. Partial = some covered. No = no immutable copies.',
-    q3: 'When was the last backup malware-scanned or hash-verified? Has any backup ever been found compromised? If yes, what was the response?',
-    q3_hint: 'Yes = scanning/verification within last quarter with no findings (or findings addressed). Partial = scanning irregular. No = no integrity verification.',
+    q3: 'Within the past quarter, has backup integrity been verified by malware scan or hash check, with any findings either resolved or absent?',
+    q3_hint: 'Yes = scan or hash verification was run within the last 90 days AND either no findings were detected OR every finding was documented and addressed. Partial = verification runs but on an irregular cadence (longer than quarterly), OR findings exist without documented response. No = no integrity verification.',
     q4_prompt: 'Describe a restoration test in the past year that surfaced a problem with backups, and what was changed.',
   },
   'RC.RP-04': {
@@ -1011,8 +1014,8 @@ export const CONTROL_QUESTIONS: Record<string, ControlQuestionnaire> = {
     q1_hint: 'Yes = explicit closure checklist with ≥4 required artifacts. Partial = checklist incomplete. No = no closure criteria.',
     q2: 'For the past five closed incidents, is the documentation package complete?',
     q2_hint: 'Yes = all five complete. Partial = most complete. No = significant gaps.',
-    q3: 'Pull the action-items tracker for incidents closed in the past 12 months. How many action items total? How many are closed with documented verification? What % closure rate?',
-    q3_hint: 'Yes = ≥80% closure rate AND every closure has verification artifact. Partial = 50-80% closure rate. No = <50% closure rate or no tracker.',
+    q3: 'For action items generated by incidents closed in the past 12 months, is the closure rate ≥80% with documented verification for every closed item?',
+    q3_hint: 'Yes = ≥80% of action items are closed AND every closure has a verification artifact (re-test, audit, before/after metric). Partial = 50-80% closure rate, OR closures exist without verification. No = <50% closure rate, or no action-items tracker.',
     q4_prompt: 'Describe a closure-process improvement in the past year.',
   },
 
