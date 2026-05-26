@@ -75,6 +75,10 @@ export async function POST(request: NextRequest) {
       findings_major:    typeof body.findings_major    === 'number' ? body.findings_major    : 0,
       findings_minor:    typeof body.findings_minor    === 'number' ? body.findings_minor    : 0,
       notes: body.notes?.toString() ?? null,
+      // Caller may pre-populate the checklist (e.g. with the default
+      // template); otherwise it stays null until the UI seeds one on
+      // first open.
+      checklist: body.checklist ?? null,
     })
     .select('*')
     .single();
@@ -107,6 +111,10 @@ export async function PATCH(request: NextRequest) {
   if (typeof body.findings_major    === 'number') patch.findings_major    = body.findings_major;
   if (typeof body.findings_minor    === 'number') patch.findings_minor    = body.findings_minor;
   if ('notes' in body) patch.notes = body.notes?.toString() ?? null;
+  // Checklist is sent as the full object on each save — UI debounces
+  // writes so we don't store one row per keystroke. Server doesn't
+  // shape-validate the items beyond accepting the JSON.
+  if ('checklist' in body) patch.checklist = body.checklist ?? null;
 
   if (Object.keys(patch).length === 0) return bad('no patchable fields');
 

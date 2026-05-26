@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from 'react';
 import type {
+  AttestationChecklist, AttestationChecklistItem,
   Vendor, VendorAttestation,
   VendorCriticality, VendorDataSensitivity, VendorType, VendorStatus,
   AttestationType, AttestationStatus,
@@ -72,6 +73,51 @@ const ATTESTATION_LABELS: Record<AttestationType, string> = {
   ddq:              'Vendor DDQ',
   other:            'Other',
 };
+
+/**
+ * Default TPSA / DDQ checklist. Used to populate the checklist field
+ * when a user creates a new TPSA/DDQ attestation from the UI without
+ * one already in place. Mirrors the server-side seed in migration
+ * 0028 / seed_bsp_vendors.py so existing rows and new rows share the
+ * same template_version.
+ */
+const DEFAULT_TPSA_CHECKLIST: AttestationChecklist = {
+  template_version: 'tpsa.v1',
+  items: [
+    { id: 'soc2_current',    label: 'Vendor maintains a current SOC 2 Type II (or equivalent) report. Date of last report on file:',                          response: null, notes: '' },
+    { id: 'iso_27001',       label: 'Vendor is ISO 27001 certified (or equivalent).',                                                                          response: null, notes: '' },
+    { id: 'encrypt_rest',    label: 'All customer data is encrypted at rest using AES-256 or stronger.',                                                       response: null, notes: '' },
+    { id: 'encrypt_transit', label: 'All customer data is encrypted in transit using TLS 1.2 or higher.',                                                      response: null, notes: '' },
+    { id: 'mfa_admin',       label: 'MFA is enforced on all administrative / privileged accounts on vendor side.',                                             response: null, notes: '' },
+    { id: 'least_privilege', label: 'Vendor follows least-privilege / role-based access for personnel handling our data.',                                     response: null, notes: '' },
+    { id: 'patch_cadence',   label: 'Vendor patches critical vulnerabilities within 72 hours and high within 14 days.',                                        response: null, notes: '' },
+    { id: 'pen_test_annual', label: 'Independent penetration test conducted at least annually; findings remediated.',                                          response: null, notes: '' },
+    { id: 'ir_plan',         label: 'Documented incident response plan; customer notification within 72 hours of confirmed incident affecting customer data.', response: null, notes: '' },
+    { id: 'bcp_dr',          label: 'Documented business continuity / DR plan with stated RTO and RPO.',                                                       response: null, notes: '' },
+    { id: 'backup_tested',   label: 'Backups are encrypted and restore tested at least annually.',                                                             response: null, notes: '' },
+    { id: 'data_retention',  label: 'Documented data retention and destruction policy; customer can request deletion.',                                        response: null, notes: '' },
+    { id: 'subprocessors',   label: 'Sub-processors disclosed; onward-transfer terms in place; customer notified of changes.',                                 response: null, notes: '' },
+    { id: 'personnel_bgc',   label: 'Personnel with access to customer data complete background checks and annual security training.',                         response: null, notes: '' },
+    { id: 'cyber_insurance', label: 'Vendor carries current cyber liability insurance; coverage amount on file.',                                              response: null, notes: '' },
+    { id: 'data_residency',  label: 'Data residency disclosed (countries / regions where data is stored or processed).',                                       response: null, notes: '' },
+    { id: 'baa_or_dpa',      label: 'Signed Business Associate Agreement (HIPAA) or Data Processing Agreement (UCPA / GDPR / CCPA) on file where applicable.', response: null, notes: '' },
+    { id: 'termination',     label: 'Documented process for data return/destruction at end of engagement; certificate-of-destruction provided.',               response: null, notes: '' },
+    { id: 'audit_rights',    label: 'Customer audit rights documented in contract.',                                                                           response: null, notes: '' },
+  ],
+};
+
+/** Cheap roll-up — total + answered + yes/no counts. Drives the
+ *  progress chip on the row. */
+function checklistProgress(c: AttestationChecklist | null): { answered: number; total: number; yes: number; no: number; na: number } {
+  if (!c) return { answered: 0, total: 0, yes: 0, no: 0, na: 0 };
+  let yes = 0, no = 0, na = 0;
+  for (const it of c.items) {
+    if (it.response === 'yes') yes++;
+    else if (it.response === 'no') no++;
+    else if (it.response === 'na') na++;
+  }
+  return { answered: yes + no + na, total: c.items.length, yes, no, na };
+}
 
 const ATTESTATION_STATUS_COLOR: Record<AttestationStatus, string> = {
   pending:    '#F59E0B',
@@ -457,6 +503,10 @@ function VendorEditor({
   const [newType, setNewType] = useState<AttestationType>('soc2_type2');
   const [newTitle, setNewTitle] = useState('');
   const [newExpires, setNewExpires] = useState('');
+  // Which TPSA/DDQ attestation has its checklist editor open right now.
+  // null = collapsed; otherwise = the attestation.id we're editing below
+  // the attestations table.
+  const [openChecklistId, setOpenChecklistId] = useState<string | null>(null);
   const crit = CRIT_META[vendor.criticality];
 
   return (
@@ -633,11 +683,32 @@ function VendorEditor({
                       </select>
                     </td>
                     <td>
-                      <AttestationFileCell
-                        evidenceArtifactId={a.evidence_artifact_id ?? null}
-                        onUpload={(file) => onUploadAttestationFile(a.id, file)}
-                        onDownload={() => a.evidence_artifact_id && onDownloadAttestationFile(a.evidence_artifact_id)}
-                      />
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <AttestationFileCell
+                          evidenceArtifactId={a.evidence_artifact_id ?? null}
+                          onUpload={(file) => onUploadAttestationFile(a.id, file)}
+                          onDownload={() => a.evidence_artifact_id && onDownloadAttestationFile(a.evidence_artifact_id)}
+                        />
+                        {(a.attestation_type === 'tpsa' || a.attestation_type === 'ddq') && (
+                          <ChecklistButton
+                            attestation={a}
+                            isOpen={openChecklistId === a.id}
+                            onToggle={() => {
+                              if (openChecklistId === a.id) {
+                                setOpenChecklistId(null);
+                              } else {
+                                // Initialize a fresh checklist on first open if the
+                                // attestation row doesn't have one yet (e.g. created
+                                // before migration 0028).
+                                if (!a.checklist) {
+                                  onPatchAttestation(a.id, { checklist: DEFAULT_TPSA_CHECKLIST });
+                                }
+                                setOpenChecklistId(a.id);
+                              }
+                            }}
+                          />
+                        )}
+                      </div>
                     </td>
                     <td><button className="action-btn danger" onClick={() => onRemoveAttestation(a.id)}>×</button></td>
                   </tr>
@@ -646,6 +717,19 @@ function VendorEditor({
             </tbody>
           </table>
         )}
+
+        {/* Checklist editor for the currently-open TPSA/DDQ row */}
+        {openChecklistId && (() => {
+          const att = attestations.find((a) => a.id === openChecklistId);
+          if (!att) return null;
+          return (
+            <ChecklistEditor
+              attestation={att}
+              onChange={(checklist) => onPatchAttestation(att.id, { checklist })}
+              onClose={() => setOpenChecklistId(null)}
+            />
+          );
+        })()}
 
         {/* Add attestation row */}
         <form
@@ -657,6 +741,10 @@ function VendorEditor({
               title: newTitle.trim(),
               expires_on: newExpires || null,
               status: 'current',
+              // Pre-populate the default checklist when the new
+              // attestation is a TPSA or DDQ so the auditor has the
+              // questions to fill in immediately.
+              checklist: (newType === 'tpsa' || newType === 'ddq') ? DEFAULT_TPSA_CHECKLIST : null,
             });
             setNewTitle(''); setNewExpires(''); setNewType('soc2_type2');
           }}
@@ -746,6 +834,141 @@ function AttestationFileCell({
         style={{ display: 'none' }}
         onChange={pickFile}
       />
+    </div>
+  );
+}
+
+/**
+ * Compact button shown on a TPSA / DDQ attestation row. Reads the
+ * checklist progress (e.g. "Checklist 7/19") and toggles the
+ * ChecklistEditor below the table.
+ */
+function ChecklistButton({
+  attestation, isOpen, onToggle,
+}: {
+  attestation: VendorAttestation;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  const p = checklistProgress(attestation.checklist);
+  return (
+    <button
+      type="button"
+      className="action-btn"
+      onClick={onToggle}
+      style={{
+        padding: '3px 9px', fontSize: 11,
+        background: isOpen ? 'var(--bg-deep)' : undefined,
+      }}
+      title={isOpen ? 'Close checklist editor' : 'Open checklist editor'}
+    >
+      {p.total === 0 ? 'Start checklist' : `Checklist ${p.answered}/${p.total}`}
+    </button>
+  );
+}
+
+/**
+ * Full audit-checklist editor — Yes / No / N/A radios + a notes field
+ * per item. State is held by the parent (the attestation row in the
+ * client component); every change pushes a whole-checklist PATCH up
+ * through onPatchAttestation. The PATCH is cheap (one row, JSON
+ * column) and the typing latency is fine — we use defaultValue on the
+ * notes textarea and onBlur to avoid one PATCH per keystroke.
+ */
+function ChecklistEditor({
+  attestation, onChange, onClose,
+}: {
+  attestation: VendorAttestation;
+  onChange: (checklist: AttestationChecklist) => void;
+  onClose: () => void;
+}) {
+  const checklist = attestation.checklist ?? DEFAULT_TPSA_CHECKLIST;
+  const p = checklistProgress(checklist);
+
+  function setItem(idx: number, updates: Partial<AttestationChecklistItem>) {
+    const next: AttestationChecklist = {
+      ...checklist,
+      items: checklist.items.map((it, i) => i === idx ? { ...it, ...updates } : it),
+    };
+    onChange(next);
+  }
+
+  return (
+    <div style={{
+      marginTop: 12, padding: 14,
+      background: 'var(--bg-card)',
+      border: '1px solid var(--bg-border)', borderRadius: 'var(--r-md)',
+    }}>
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        marginBottom: 10, paddingBottom: 8,
+        borderBottom: '1px solid var(--bg-border)',
+      }}>
+        <div>
+          <div style={{ fontWeight: 600, fontSize: 13 }}>
+            {attestation.title || 'Audit checklist'}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+            {p.answered} of {p.total} answered
+            {p.no > 0 && <span style={{ color: '#DC2626', marginLeft: 8 }}>· {p.no} concern{p.no === 1 ? '' : 's'}</span>}
+            <span style={{ marginLeft: 8 }}>· template {checklist.template_version}</span>
+          </div>
+        </div>
+        <button type="button" className="action-btn" onClick={onClose}>Close</button>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {checklist.items.map((it, idx) => (
+          <div key={it.id} style={{
+            display: 'grid', gridTemplateColumns: '1fr auto', gap: 10,
+            padding: 8, borderRadius: 4,
+            background: it.response === 'no' ? 'rgba(220,38,38,0.05)' : 'transparent',
+          }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 4 }}>
+                {idx + 1}. {it.label}
+              </div>
+              <textarea
+                className="score-select"
+                rows={2}
+                defaultValue={it.notes}
+                placeholder="Notes / evidence reference (e.g. SOC 2 page 14, BAA section 4)"
+                style={{ width: '100%', fontSize: 11, resize: 'vertical' }}
+                onBlur={(e) => {
+                  if (e.target.value !== it.notes) setItem(idx, { notes: e.target.value });
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignSelf: 'start' }}>
+              {(['yes', 'no', 'na'] as const).map((opt) => {
+                const active = it.response === opt;
+                const color = opt === 'yes' ? '#10B981' : opt === 'no' ? '#DC2626' : '#64748B';
+                return (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setItem(idx, { response: active ? null : opt })}
+                    style={{
+                      minWidth: 56, padding: '3px 10px', fontSize: 10.5,
+                      borderRadius: 3,
+                      border: '1px solid ' + color,
+                      background: active ? color : 'transparent',
+                      color: active ? '#fff' : color,
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      letterSpacing: '.04em',
+                      textTransform: 'uppercase',
+                    }}
+                    title={active ? 'Click to clear' : `Mark as ${opt.toUpperCase()}`}
+                  >
+                    {opt === 'na' ? 'N/A' : opt}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

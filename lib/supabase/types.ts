@@ -397,6 +397,20 @@ export type AttestationType =
   | 'other';
 export type AttestationStatus = 'pending' | 'current' | 'expired' | 'superseded' | 'archived';
 
+/** One question in a TPSA / DDQ audit checklist. response=null means
+ *  "unanswered" — the auditor hasn't gotten to it yet. */
+export interface AttestationChecklistItem {
+  id: string;
+  label: string;
+  response: 'yes' | 'no' | 'na' | null;
+  notes: string;
+}
+
+export interface AttestationChecklist {
+  template_version: string;
+  items: AttestationChecklistItem[];
+}
+
 export interface VendorAttestation {
   id: string;
   tenant_id: string;
@@ -411,6 +425,9 @@ export interface VendorAttestation {
   findings_major: number;
   findings_minor: number;
   notes: string | null;
+  /** Structured audit checklist. Populated automatically when the
+   *  attestation is of type 'tpsa' or 'ddq'; null otherwise. */
+  checklist: AttestationChecklist | null;
   created_at: string;
   updated_at: string;
 }
