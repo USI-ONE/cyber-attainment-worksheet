@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "$comment": [
+    "Pin serverless functions to pdx1 (Portland, OR) because the Supabase",
+    "project is in us-west-2 (Oregon). Default Vercel region is iad1",
+    "(Washington DC, us-east-1) which means every DB round-trip used to",
+    "cross the country — ~140-200ms per query. Same-region brings the RTT",
+    "under 10ms. Combined with the parallelization + per-request caching",
+    "shipped alongside this file, button-click latency drops by ~500ms-1s",
+    "for the typical API write.",
+    "",
+    "Applies to every per-tenant Vercel project that builds from this repo."
+  ],
+  "regions": ["pdx1"]
+}

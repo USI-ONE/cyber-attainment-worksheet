@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import type { Tenant } from '@/lib/supabase/types';
 
@@ -13,8 +14,13 @@ import type { Tenant } from '@/lib/supabase/types';
  * user signing in for the first time would otherwise be unable to load the
  * page they just authenticated to. The service-role client is server-side only
  * and only used to fetch the public tenant row (slug, hostname, branding).
+ *
+ * Wrapped in React's request-scoped `cache()` so that the layout, the page,
+ * and the API route guard each hitting `resolveTenant()` in the same request
+ * collapse to one DB round-trip instead of three. Re-evaluated fresh on the
+ * next request.
  */
-export async function resolveTenant(host?: string): Promise<Tenant | null> {
+export const resolveTenant = cache(async (host?: string): Promise<Tenant | null> => {
   const supabase = createServiceRoleClient();
   const envSlug = process.env.TENANT_SLUG?.trim();
 
@@ -45,4 +51,4 @@ export async function resolveTenant(host?: string): Promise<Tenant | null> {
   }
 
   return null;
-}
+});

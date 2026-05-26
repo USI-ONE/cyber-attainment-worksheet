@@ -30,6 +30,7 @@
  * prints the URL.
  */
 
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { createHash, randomBytes, scrypt as scryptCb, timingSafeEqual } from 'node:crypto';
 import { createServiceRoleClient } from '@/lib/supabase/server';
@@ -295,11 +296,16 @@ export async function destroyCurrentSession(): Promise<void> {
  *  valid session. Slides the session expiry forward by refreshing
  *  last_seen_at — but only if the existing expiry is more than 1 day old
  *  to avoid hammering the DB on every request. */
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+/**
+ * Per-request memoized wrapper. Multiple call sites in one server
+ * request (layout + page + API guard) collapse to a single DB hit.
+ * Behaves like the un-cached version on subsequent requests.
+ */
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const token = cookies().get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
   return getCurrentUserByToken(token);
-}
+});
 
 export async function getCurrentUserByToken(token: string): Promise<CurrentUser | null> {
   const supabase = createServiceRoleClient();
@@ -314,19 +320,24 @@ export async function getCurrentUserByToken(token: string): Promise<CurrentUser 
   if (session.revoked_at) return null;
   if (new Date(session.expires_at).getTime() < Date.now()) return null;
 
-  const { data: user } = await supabase
-    .from('profiles')
-    .select('id, email, display_name, is_platform_admin, status, password_must_change, last_login_at, created_at, updated_at')
-    .eq('id', session.user_id)
-    .maybeSingle();
+  // Once we know the user_id, profile and memberships are independent. Fire
+  // them concurrently — previously this was sequential and added ~140-200ms
+  // of cross-country RTT for no logical reason.
+  const [userRes, memRes] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id, email, display_name, is_platform_admin, status, password_must_change, last_login_at, created_at, updated_at')
+      .eq('id', session.user_id)
+      .maybeSingle(),
+    supabase
+      .from('memberships')
+      .select('user_id, tenant_id, role, created_at')
+      .eq('user_id', session.user_id),
+  ]);
+  const user = userRes.data;
   if (!user) return null;
   if (user.status !== 'active') return null;
-
-  const { data: memberships } = await supabase
-    .from('memberships')
-    .select('user_id, tenant_id, role, created_at')
-    .eq('user_id', user.id);
-  const memList = (memberships ?? []) as CawMembership[];
+  const memList = (memRes.data ?? []) as CawMembership[];
 
   // Admin elevation is now ENTIRELY per-user via profiles.is_platform_admin.
   // The previous admin-tenant magic (any role='admin' membership in a

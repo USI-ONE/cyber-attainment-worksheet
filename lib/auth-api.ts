@@ -57,10 +57,15 @@ export async function requireEditAccess(
   request: NextRequest,
 ): Promise<AuthContext | NextResponse> {
   const host = request.headers.get('host') ?? undefined;
-  const tenant = await resolveTenant(host);
+  // Tenant lookup and current-user lookup are independent of each other —
+  // fire them concurrently. Previously these awaited in series, adding one
+  // extra cross-country round-trip on every write request for no reason.
+  const [tenant, currentUser] = await Promise.all([
+    resolveTenant(host),
+    getCurrentUser(),
+  ]);
   if (!tenant) return bad('no tenant resolved', 400);
 
-  const currentUser = await getCurrentUser();
   const authRequired = process.env.AUTH_REQUIRED === 'true';
 
   if (!currentUser) {
@@ -79,10 +84,12 @@ export async function requireViewAccess(
   request: NextRequest,
 ): Promise<AuthContext | NextResponse> {
   const host = request.headers.get('host') ?? undefined;
-  const tenant = await resolveTenant(host);
+  const [tenant, currentUser] = await Promise.all([
+    resolveTenant(host),
+    getCurrentUser(),
+  ]);
   if (!tenant) return bad('no tenant resolved', 400);
 
-  const currentUser = await getCurrentUser();
   const authRequired = process.env.AUTH_REQUIRED === 'true';
 
   if (!currentUser) {

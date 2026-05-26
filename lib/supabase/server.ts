@@ -46,8 +46,18 @@ export function createClient() {
  * cookies; with the service-role key it does not behave as a fully privileged
  * client. The supabase-js client treats the key as a Bearer token and Postgres
  * sees the service_role JWT, which RLS bypasses by design.
+ *
+ * The client itself carries no per-request state (it's a fetch wrapper with
+ * service-role auth headers baked in), so we cache it at module scope. On
+ * Vercel a warm function instance re-uses module state across invocations,
+ * which means the same client — and the underlying undici connection pool —
+ * gets re-used. Cold starts still pay the construction cost once.
  */
-export function createServiceRoleClient() {
+// Module-scope cache for the service-role client. The non-cached factory
+// is split into its own function so its inferred return type — including
+// supabase-js's generic plumbing — can be referenced by `ReturnType<...>`
+// without creating a self-referential cycle on the exported wrapper.
+function _makeServiceRoleClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const secret = process.env.SUPABASE_SECRET_KEY!;
   if (!secret) {
@@ -61,4 +71,11 @@ export function createServiceRoleClient() {
       persistSession: false,
     },
   });
+}
+
+let _cachedServiceRoleClient: ReturnType<typeof _makeServiceRoleClient> | null = null;
+export function createServiceRoleClient(): ReturnType<typeof _makeServiceRoleClient> {
+  if (_cachedServiceRoleClient) return _cachedServiceRoleClient;
+  _cachedServiceRoleClient = _makeServiceRoleClient();
+  return _cachedServiceRoleClient;
 }
