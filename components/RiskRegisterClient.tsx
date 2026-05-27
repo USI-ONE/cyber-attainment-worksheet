@@ -205,7 +205,17 @@ export default function RiskRegisterClient({
       />
 
       {openRisk && (
+        // key={openRisk.id} forces a fresh mount when the user switches
+        // from one open risk to another. The title/description/rationale/
+        // code/owner inputs are uncontrolled (defaultValue + onBlur), and
+        // without remount, React reconciles the same component instance —
+        // so those fields keep showing the PREVIOUS risk's text while the
+        // controlled selects (category/status/etc.) correctly update. The
+        // user then types over what they think is Risk B's title but is
+        // actually Risk A's, blurs, and Risk B gets saved with stale text.
+        // Behavior looks like "I can't edit this risk."
         <RiskDetailEditor
+          key={openRisk.id}
           risk={openRisk}
           treatments={openTreatments}
           drPlanIndex={drPlanIndex}
