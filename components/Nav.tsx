@@ -62,6 +62,7 @@ const STATIC_GROUPS: NavGroup[] = [
     label: 'Govern',
     items: [
       { href: '/policies',  label: 'Policy Library',     tag: 'Standard-policy checklist with review cadence' },
+      { href: '/plans',     label: 'Plans Library',      tag: 'Operational plans (IR, DR, BCP, etc.) with status + attached files' },
       { href: '/policy',    label: 'Policy Documents',   tag: 'Cybersecurity policy + linked artifacts' },
       { href: '/evidence',  label: 'Evidence Library',   tag: 'Audit-ready artifact store' },
       { href: '/compliance', label: 'Compliance Progress', tag: 'Per-framework attainment dashboard' },

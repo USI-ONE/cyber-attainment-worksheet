@@ -218,6 +218,38 @@ export interface PolicyDocument {
 }
 
 // ---------------------------------------------------------------------------
+// Plans Library — operational counterpart to the Policy Library.
+// See db/migrations/0030_plans_library.sql.
+// ---------------------------------------------------------------------------
+
+export type PlanCategory = 'resilience' | 'operational' | 'risk_compliance' | 'strategic';
+export type PlanStatus   = 'missing' | 'draft' | 'active' | 'expired' | 'na';
+
+export interface PlanCatalogEntry {
+  code: string;
+  title: string;
+  category: PlanCategory;
+  description: string | null;
+  default_review_months: number;
+  sort_order: number;
+}
+
+export interface TenantPlanState {
+  id: string;
+  tenant_id: string;
+  plan_code: string;
+  status: PlanStatus;
+  version: string | null;
+  last_reviewed_at: string | null;
+  next_review_due: string | null;
+  owner_user_id: string | null;
+  plan_document_id: string | null;
+  notes: string | null;
+  updated_at: string;
+  updated_by: string | null;
+}
+
+// ---------------------------------------------------------------------------
 // DR Plans + IR Playbooks — see db/migrations/0012_dr_ir_planning.sql
 // ---------------------------------------------------------------------------
 
