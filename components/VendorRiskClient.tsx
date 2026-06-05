@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type {
   AttestationChecklist, AttestationChecklistItem,
   Vendor, VendorAttestation,
@@ -285,6 +285,20 @@ export default function VendorRiskClient({
   const open = openId ? vendors.find((v) => v.id === openId) ?? null : null;
   const openAtt = open ? attestationsByVendor.get(open.id) ?? [] : [];
 
+  // The editor renders below the vendor table. With a long table the user
+  // clicks a row, the editor mounts off-screen, and they think "nothing
+  // happened." Scroll the editor into view whenever the opened vendor
+  // changes so the click feels responsive.
+  const editorRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!openId) return;
+    // Defer to the next frame so the editor has actually mounted.
+    const id = requestAnimationFrame(() => {
+      editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [openId]);
+
   return (
     <>
       <div className="kpi-row" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
@@ -396,18 +410,20 @@ export default function VendorRiskClient({
       </section>
 
       {open && (
-        <VendorEditor
-          vendor={open}
-          attestations={openAtt}
-          onClose={() => setOpenId(null)}
-          onPatch={(fields) => patchVendor(open.id, fields)}
-          onDelete={() => removeVendor(open.id)}
-          onAddAttestation={(payload) => addAttestation(open.id, payload)}
-          onPatchAttestation={patchAttestation}
-          onRemoveAttestation={removeAttestation}
-          onUploadAttestationFile={uploadAttestationFile}
-          onDownloadAttestationFile={downloadAttestationFile}
-        />
+        <div ref={editorRef} style={{ scrollMarginTop: 12 }}>
+          <VendorEditor
+            vendor={open}
+            attestations={openAtt}
+            onClose={() => setOpenId(null)}
+            onPatch={(fields) => patchVendor(open.id, fields)}
+            onDelete={() => removeVendor(open.id)}
+            onAddAttestation={(payload) => addAttestation(open.id, payload)}
+            onPatchAttestation={patchAttestation}
+            onRemoveAttestation={removeAttestation}
+            onUploadAttestationFile={uploadAttestationFile}
+            onDownloadAttestationFile={downloadAttestationFile}
+          />
+        </div>
       )}
     </>
   );

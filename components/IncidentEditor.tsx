@@ -30,6 +30,15 @@ type UploadItem = {
  */
 const UPLOAD_CONCURRENCY = 3;
 
+/**
+ * Hard client-side ceiling, enforced again on the server. Lifted from the
+ * legacy ~4.5 MB cap (Vercel's serverless function request-body limit) by
+ * switching to a direct-to-Supabase upload path: the server hands us a
+ * signed URL, the browser PUTs the bytes straight to Storage, then the
+ * server inserts the DB row. Vercel never sees the file body.
+ */
+const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
+
 /** Convert an ISO string to the value a <input type="datetime-local"> expects. */
 function toLocalInput(iso: string | null): string {
   if (!iso) return '';
@@ -159,19 +168,56 @@ export default function IncidentEditor({
         const itemId = queue[idx].id;
         setUploadQueue((q) => q.map((x) => x.id === itemId ? { ...x, status: 'uploading' } : x));
         try {
-          const fd = new FormData();
-          fd.append('file', file);
-          const res = await fetch(`/api/incidents/${inc.id}/documents`, { method: 'POST', body: fd });
-          const json = await res.json().catch(() => ({}));
-          if (!res.ok || !json.ok) {
-            failures++;
-            setUploadQueue((q) => q.map((x) => x.id === itemId
-              ? { ...x, status: 'failed', error: json.error ?? `HTTP ${res.status}` }
-              : x));
-          } else {
-            setUploadQueue((q) => q.map((x) => x.id === itemId ? { ...x, status: 'done' } : x));
-            setDocs((d) => [json.document as IncidentDocument, ...d]);
+          if (file.size > MAX_UPLOAD_BYTES) {
+            throw new Error(`File exceeds ${MAX_UPLOAD_BYTES / 1024 / 1024} MB`);
           }
+
+          // 1) Ask the server for a signed upload URL. Tiny JSON exchange,
+          //    well under any platform body cap.
+          const initRes = await fetch(`/api/incidents/${inc.id}/documents/signed-upload`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              filename:     file.name,
+              content_type: file.type || null,
+              size:         file.size,
+            }),
+          });
+          const initJson = await initRes.json().catch(() => ({}));
+          if (!initRes.ok || !initJson.signed_url) {
+            throw new Error(initJson.error ?? `init failed (HTTP ${initRes.status})`);
+          }
+
+          // 2) PUT the file body straight to Supabase Storage. This bypasses
+          //    the Vercel serverless function body limit entirely.
+          const putRes = await fetch(initJson.signed_url, {
+            method: 'PUT',
+            headers: { 'Content-Type': file.type || 'application/octet-stream' },
+            body: file,
+          });
+          if (!putRes.ok) {
+            throw new Error(`storage upload failed (HTTP ${putRes.status})`);
+          }
+
+          // 3) Register the document. Server verifies the blob landed and
+          //    inserts the DB row.
+          const regRes = await fetch(`/api/incidents/${inc.id}/documents`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              storage_path: initJson.storage_path,
+              filename:     file.name,
+              content_type: file.type || null,
+              size:         file.size,
+            }),
+          });
+          const regJson = await regRes.json().catch(() => ({}));
+          if (!regRes.ok || !regJson.ok) {
+            throw new Error(regJson.error ?? `register failed (HTTP ${regRes.status})`);
+          }
+
+          setUploadQueue((q) => q.map((x) => x.id === itemId ? { ...x, status: 'done' } : x));
+          setDocs((d) => [regJson.document as IncidentDocument, ...d]);
         } catch (err) {
           failures++;
           setUploadQueue((q) => q.map((x) => x.id === itemId
