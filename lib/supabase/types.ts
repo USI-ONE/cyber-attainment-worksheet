@@ -213,6 +213,18 @@ export interface PolicyDocument {
   size_bytes: number | null;
   uploaded_by: string | null;
   linked_control_ids: string[];
+  // policy_code links this row to a Policy Library catalog entry.
+  // Migration 0026 added the column. Plans library docs store NULL
+  // here while a future migration drops the FK that today blocks the
+  // `plan:<code>` namespacing.
+  policy_code: string | null;
+  // Version history (migration 0031). All revisions of one document
+  // share `lineage_id`; `change_note` is a short caption written by
+  // the editor on save; `superseded_by` points an archived row at the
+  // revision that replaced it.
+  lineage_id: string;
+  change_note: string | null;
+  superseded_by: string | null;
   created_at: string;
   updated_at: string;
 }

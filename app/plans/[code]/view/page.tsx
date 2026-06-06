@@ -2,33 +2,36 @@ import Link from 'next/link';
 import { headers } from 'next/headers';
 import { resolveTenant } from '@/lib/tenant';
 import { createServiceRoleClient } from '@/lib/supabase/server';
-import { getCurrentUser, canAccessTenant } from '@/lib/auth';
-import MarkdownView from '@/components/MarkdownView';
+import { getCurrentUser, canAccessTenant, canEditTenant } from '@/lib/auth';
+import PlanDocumentEditor from '@/components/PlanDocumentEditor';
 import DownloadClient from '@/components/DocumentDownloadButton';
 
 /**
- * /plans/[code]/view — inline viewer for the document currently attached
- * to one plans-library entry on the current tenant. Resolves the active
- * plan_document_id from tenant_plans, fetches the bytes from Storage,
- * and renders:
+ * /plans/[code]/view — inline viewer for the document attached to one
+ * plans-library entry on the current tenant.
  *
- *   - text/markdown, text/plain  → MarkdownView (client component)
- *   - application/pdf            → <iframe> pointing at the inline
- *                                  /api/policy-documents/[id]/content
- *                                  route, so the PDF renders in-place
- *   - everything else            → graceful fallback with a download
- *                                  link, because not every type is
- *                                  inline-viewable in a browser
+ * Default: resolves the *current* plan_document_id from tenant_plans
+ * and renders it.
+ * With `?v=<docId>`: renders that specific historical version instead.
+ *   The version still has to belong to this tenant, and we trust the
+ *   client component to display a "viewing historical revision" banner.
  *
- * Tenant-scoped via canAccessTenant.
+ * Render mode by content type:
+ *   - text/markdown, text/plain → PlanDocumentEditor (read / edit / history)
+ *   - application/pdf           → <iframe> pointing at the inline content
+ *                                 endpoint
+ *   - everything else           → graceful fallback + download CTA
+ *
+ * Tenant-scoped via canAccessTenant. Edit mode is gated by canEditTenant.
  */
 export const dynamic = 'force-dynamic';
 const BUCKET = 'policy-documents';
 
 export default async function PlanViewPage({
-  params,
+  params, searchParams,
 }: {
   params: { code: string };
+  searchParams?: { v?: string };
 }) {
   const host = headers().get('host') ?? undefined;
   const tenant = await resolveTenant(host);
@@ -40,6 +43,7 @@ export default async function PlanViewPage({
   if (!canAccessTenant(cu, tenant.id)) {
     return <main className="app-main"><div className="banner error">You don&apos;t have access to this tenant.</div></main>;
   }
+  const canEdit = canEditTenant(cu, tenant.id);
 
   const sb = createServiceRoleClient();
 
@@ -50,9 +54,10 @@ export default async function PlanViewPage({
     .eq('code', params.code)
     .maybeSingle();
   if (!cat) {
-    return <NotFound tenantSlug={tenant.slug} code={params.code} reason="Unknown plan code." />;
+    return <NotFound reason="Unknown plan code." />;
   }
 
+  // Current tenant_plans row tells us the *current* doc id.
   const { data: tp } = await sb
     .from('tenant_plans')
     .select('plan_document_id, status, version, last_reviewed_at, next_review_due')
@@ -61,20 +66,36 @@ export default async function PlanViewPage({
     .maybeSingle();
 
   if (!tp?.plan_document_id) {
-    return <NotFound tenantSlug={tenant.slug} code={params.code}
+    return <NotFound
       reason="No document is attached to this plan yet. Upload one from the Plans Library to make it viewable." />;
+  }
+
+  // Which document are we actually rendering? Default: the current one.
+  // If ?v=<id> is supplied, render that historical version instead, but
+  // only after verifying it belongs to this tenant AND the same lineage
+  // as the current doc (no cross-plan id swapping).
+  const viewingId = searchParams?.v;
+  let docId = tp.plan_document_id;
+  if (viewingId && viewingId !== tp.plan_document_id) {
+    // Lookup the requested historical doc — must share lineage with current.
+    const [{ data: current }, { data: requested }] = await Promise.all([
+      sb.from('policy_documents').select('lineage_id').eq('id', tp.plan_document_id).eq('tenant_id', tenant.id).maybeSingle(),
+      sb.from('policy_documents').select('id, lineage_id').eq('id', viewingId).eq('tenant_id', tenant.id).maybeSingle(),
+    ]);
+    if (requested?.lineage_id && current?.lineage_id && requested.lineage_id === current.lineage_id) {
+      docId = requested.id;
+    }
   }
 
   const { data: doc } = await sb
     .from('policy_documents')
     .select('id, title, version, effective_date, status, storage_path, filename, content_type, size_bytes')
-    .eq('id', tp.plan_document_id)
+    .eq('id', docId)
     .eq('tenant_id', tenant.id)
     .maybeSingle();
 
   if (!doc) {
-    return <NotFound tenantSlug={tenant.slug} code={params.code}
-      reason="Linked document row could not be loaded." />;
+    return <NotFound reason="Linked document row could not be loaded." />;
   }
 
   const contentType = (doc.content_type ?? '').toLowerCase();
@@ -85,25 +106,30 @@ export default async function PlanViewPage({
   const isPdf      = contentType.startsWith('application/pdf') ||
                      /\.pdf$/i.test(doc.filename ?? '');
 
-  // For text-y bodies, fetch and pass to the client renderer.
+  // For text-y bodies, fetch and pass to the client renderer/editor.
   let body: string | null = null;
   if (isMarkdown || isPlain) {
     const { data: blob } = await sb.storage.from(BUCKET).download(doc.storage_path);
     if (blob) body = await blob.text();
   }
 
+  const docMeta = {
+    id: doc.id,
+    title: doc.title,
+    version: doc.version ?? tp.version ?? null,
+    effective_date: doc.effective_date,
+    last_reviewed_at: tp.last_reviewed_at,
+    next_review_due: tp.next_review_due,
+  };
+
   return (
     <main className="app-main">
       <Header
         planTitle={cat.title}
         category={cat.category}
+        currentDocId={tp.plan_document_id}
         doc={{
-          id: doc.id,
-          title: doc.title,
-          version: doc.version ?? tp.version ?? null,
-          effective_date: doc.effective_date,
-          last_reviewed_at: tp.last_reviewed_at,
-          next_review_due: tp.next_review_due,
+          ...docMeta,
           filename: doc.filename ?? null,
           content_type: doc.content_type ?? null,
           size_bytes: doc.size_bytes ?? null,
@@ -111,7 +137,16 @@ export default async function PlanViewPage({
       />
 
       <section className="scorecard" style={{ marginTop: 16, padding: 24 }}>
-        {isMarkdown && body !== null && <MarkdownView source={body} />}
+        {isMarkdown && body !== null && (
+          <PlanDocumentEditor
+            code={params.code}
+            planTitle={cat.title}
+            doc={docMeta}
+            initialBody={body}
+            canEdit={canEdit}
+            viewingId={viewingId ?? null}
+          />
+        )}
 
         {isPlain && body !== null && (
           <pre style={{
@@ -141,10 +176,11 @@ export default async function PlanViewPage({
 }
 
 function Header({
-  planTitle, category, doc,
+  planTitle, category, currentDocId, doc,
 }: {
   planTitle: string;
   category: string;
+  currentDocId: string;
   doc: {
     id: string;
     title: string;
@@ -157,6 +193,7 @@ function Header({
     size_bytes: number | null;
   };
 }) {
+  const viewingHistorical = doc.id !== currentDocId;
   return (
     <section className="scorecard">
       <div className="scorecard-header">
@@ -167,21 +204,16 @@ function Header({
             {doc.effective_date && <> · effective {doc.effective_date}</>}
             {doc.last_reviewed_at && <> · last reviewed {doc.last_reviewed_at}</>}
             {doc.next_review_due && <> · next due {doc.next_review_due}</>}
+            {viewingHistorical && <> · <strong style={{ color: '#9A3412' }}>viewing historical revision</strong></>}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <Link className="action-btn" href={'/plans' as never}>← Back to Plans Library</Link>
-          {/* The /content endpoint serves inline; the /document download
-              endpoint forces a save dialog. Both available from here. */}
-          <DownloadButton docId={doc.id} />
+          <DownloadClient docId={doc.id} />
         </div>
       </div>
     </section>
   );
-}
-
-function DownloadButton({ docId }: { docId: string }) {
-  return <DownloadClient docId={docId} />;
 }
 
 function FallbackUnviewable({ docId, filename }: { docId: string; filename: string }) {
@@ -198,8 +230,7 @@ function FallbackUnviewable({ docId, filename }: { docId: string; filename: stri
   );
 }
 
-function NotFound({ tenantSlug, code, reason }: { tenantSlug: string; code: string; reason: string }) {
-  void tenantSlug; void code;
+function NotFound({ reason }: { reason: string }) {
   return (
     <main className="app-main">
       <section className="scorecard">
