@@ -381,14 +381,28 @@ function DocumentCell({
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
       {docId && (
-        <button
-          type="button"
-          className="action-btn"
-          style={{ padding: '3px 9px', fontSize: 11 }}
-          onClick={download}
-        >
-          Download
-        </button>
+        <>
+          {/* View opens an in-browser renderer (markdown, PDF, etc.) +
+              admin edit mode + version history. Download still ships a
+              save-dialog flow for when you want the raw file. */}
+          <a
+            className="action-btn"
+            href={`/policies/${code}/view`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ padding: '3px 9px', fontSize: 11 }}
+          >
+            View
+          </a>
+          <button
+            type="button"
+            className="action-btn"
+            style={{ padding: '3px 9px', fontSize: 11 }}
+            onClick={download}
+          >
+            Download
+          </button>
+        </>
       )}
       {canEdit && (
         <button

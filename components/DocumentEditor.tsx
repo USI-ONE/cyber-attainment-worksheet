@@ -6,13 +6,18 @@ import MarkdownView from '@/components/MarkdownView';
 import DocumentDownloadButton from '@/components/DocumentDownloadButton';
 
 /**
- * Client controller for the /plans/[code]/view page.
+ * Client controller for the inline document viewer.
+ *
+ * Reused by /plans/[code]/view and /policies/[code]/view — the API
+ * paths differ (`/api/plans-library/...` vs `/api/policy-library/...`)
+ * but the UI flow is identical. The server page passes in the endpoint
+ * URLs and the base viewer path.
  *
  * Three modes:
  *   - "read"   : MarkdownView of the current body. Default.
  *   - "edit"   : textarea editor (admins only) + live preview alongside.
  *                Save bumps the document to a new version.
- *   - "history": list of every revision in the lineage with View / Restore.
+ *   - "history": list of every revision in the lineage.
  *
  * The server page hands us the current document metadata + body; the
  * client fetches version history on demand so the page loads instantly
@@ -20,7 +25,7 @@ import DocumentDownloadButton from '@/components/DocumentDownloadButton';
  */
 export type EditorMode = 'read' | 'edit' | 'history';
 
-export interface PlanDocumentMeta {
+export interface EditableDocumentMeta {
   id: string;
   title: string;
   version: string | null;
@@ -42,17 +47,23 @@ interface VersionEntry {
   is_current: boolean;
 }
 
-export default function PlanDocumentEditor({
-  code, planTitle, doc, initialBody, canEdit, viewingId,
+export default function DocumentEditor({
+  doc, initialBody, canEdit, viewingId,
+  editApi, versionsApi, viewerBase,
 }: {
-  code: string;
-  planTitle: string;
-  doc: PlanDocumentMeta;
+  doc: EditableDocumentMeta;
   initialBody: string;
   canEdit: boolean;
   // If present, we're rendering a *specific* historical version, not
   // the live one. Edit is disabled in that mode.
   viewingId?: string | null;
+  // Per-context API + URL paths. e.g. for plans:
+  //   editApi     = "/api/plans-library/<code>/edit"
+  //   versionsApi = "/api/plans-library/<code>/versions"
+  //   viewerBase  = "/plans/<code>/view"
+  editApi: string;
+  versionsApi: string;
+  viewerBase: string;
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<EditorMode>('read');
@@ -69,7 +80,7 @@ export default function PlanDocumentEditor({
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch(`/api/plans-library/${code}/edit`, {
+      const res = await fetch(editApi, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -129,7 +140,12 @@ export default function PlanDocumentEditor({
       )}
 
       {mode === 'history' && (
-        <HistoryPane code={code} currentDocId={doc.id} viewingId={viewingId ?? null} />
+        <HistoryPane
+          versionsApi={versionsApi}
+          viewerBase={viewerBase}
+          currentDocId={doc.id}
+          viewingId={viewingId ?? null}
+        />
       )}
     </>
   );
@@ -294,8 +310,13 @@ function EditPane({
 }
 
 function HistoryPane({
-  code, currentDocId, viewingId,
-}: { code: string; currentDocId: string; viewingId: string | null }) {
+  versionsApi, viewerBase, currentDocId, viewingId,
+}: {
+  versionsApi: string;
+  viewerBase: string;
+  currentDocId: string;
+  viewingId: string | null;
+}) {
   const [versions, setVersions] = useState<VersionEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -303,7 +324,7 @@ function HistoryPane({
     let alive = true;
     (async () => {
       try {
-        const res = await fetch(`/api/plans-library/${code}/versions`);
+        const res = await fetch(versionsApi);
         const j = await res.json().catch(() => ({}));
         if (!res.ok) { setError(j.error ?? `HTTP ${res.status}`); return; }
         if (alive) setVersions(j.versions ?? []);
@@ -312,7 +333,7 @@ function HistoryPane({
       }
     })();
     return () => { alive = false; };
-  }, [code]);
+  }, [versionsApi]);
 
   if (error) return <div className="banner error">{error}</div>;
   if (!versions) return <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>Loading…</div>;
@@ -360,7 +381,7 @@ function HistoryPane({
                 ) : (
                   <a
                     className="action-btn"
-                    href={`/plans/${code}/view?v=${v.id}`}
+                    href={`${viewerBase}?v=${v.id}`}
                     style={{ padding: '3px 9px', fontSize: 11 }}
                   >
                     View this version
