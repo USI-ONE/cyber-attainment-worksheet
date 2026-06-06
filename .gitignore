@@ -36,3 +36,5 @@ Thumbs.db
 supabase/.branches
 supabase/.temp
 tsconfig.tsbuildinfo
+
+.vercel
