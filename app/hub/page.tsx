@@ -1,6 +1,7 @@
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { computeAttention, summarize, type AttentionItem, type AttentionSummary } from '@/lib/attention';
 import PortfolioWatchlist, { type WatchlistEntry } from '@/components/PortfolioWatchlist';
+import TenantCardLink from '@/components/TenantCardLink';
 
 /**
  * Portfolio Hub — operator-only landing page that lists every tenant portal
@@ -165,7 +166,7 @@ export default async function HubPage() {
           <div>
             <div className="scorecard-title">Tenant Portals</div>
             <div className="scorecard-tag" style={{ marginTop: 4 }}>
-              {cards.length} {cards.length === 1 ? 'portal' : 'portals'} · click a card to open in a new tab
+              {cards.length} {cards.length === 1 ? 'portal' : 'portals'} · click a card to single-sign-on into that tenant
             </div>
           </div>
         </div>
@@ -173,15 +174,12 @@ export default async function HubPage() {
 
       <section className="dash">
         {cards.map((c) => (
-          <a
+          <TenantCardLink
             key={c.id}
-            href={c.url}
+            tenantId={c.id}
+            fallbackUrl={c.url}
             className="dash-card"
-            style={{
-              ['--fn-color' as never]: c.accent,
-              textDecoration: 'none',
-              color: 'inherit',
-            }}
+            style={{ ['--fn-color' as never]: c.accent }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
               {c.logo_url ? (
@@ -242,7 +240,7 @@ export default async function HubPage() {
               <span>{c.policy_doc_count} policy doc{c.policy_doc_count === 1 ? '' : 's'}</span>
               <span style={{ color: c.accent }}>Open portal →</span>
             </div>
-          </a>
+          </TenantCardLink>
         ))}
       </section>
     </main>

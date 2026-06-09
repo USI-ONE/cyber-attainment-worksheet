@@ -107,6 +107,31 @@ export default function PortfolioWatchlist({ items }: { items: WatchlistEntry[] 
                   href={w.tenant.url + w.item.href}
                   target="_blank"
                   rel="noreferrer"
+                  onClick={async (e) => {
+                    // Plain left-click goes through SSO so the user lands
+                    // already authenticated on the target tenant. Modifier
+                    // / middle-click keeps the bare-URL behaviour so the
+                    // browser's open-in-new-tab semantics still work.
+                    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                    e.preventDefault();
+                    try {
+                      const res = await fetch('/api/hub/sso/issue', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          tenant_id: w.tenant.id,
+                          target_path: w.item.href,
+                        }),
+                      });
+                      const j = await res.json().catch(() => ({}));
+                      const dest = res.ok && j.redirect_url ? j.redirect_url : (w.tenant.url + w.item.href);
+                      // Open SSO destination in a new tab so the watchlist
+                      // stays open (matches the prior target="_blank" intent).
+                      window.open(dest, '_blank', 'noopener,noreferrer');
+                    } catch {
+                      window.open(w.tenant.url + w.item.href, '_blank', 'noopener,noreferrer');
+                    }
+                  }}
                   style={{
                     display: 'grid', gridTemplateColumns: '4px 1fr auto auto', gap: 12, alignItems: 'center',
                     padding: '10px 12px', background: sevBg,
