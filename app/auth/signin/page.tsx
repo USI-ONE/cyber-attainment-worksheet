@@ -49,7 +49,7 @@ export default function SignInPage() {
   return (
     <main className="signin-page">
       <div className="signin-card">
-        <h1 className="signin-title">TrustOS</h1>
+        <h1 className="signin-title">SecureOS</h1>
         <p className="signin-sub">Sign in with your email and password.</p>
 
         <form onSubmit={submit}>

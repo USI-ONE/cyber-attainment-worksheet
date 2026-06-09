@@ -1,5 +1,5 @@
 /**
- * Standalone user-management & authentication for TrustOS.
+ * Standalone user-management & authentication for SecureOS.
  *
  * Design goals:
  *   - Zero external auth dependency: no Supabase Auth, no Clerk, no Auth0, no

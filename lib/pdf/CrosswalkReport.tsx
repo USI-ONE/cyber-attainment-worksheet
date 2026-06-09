@@ -106,7 +106,7 @@ export function CrosswalkReport({
       title={`${tenant.display_name} — ${targetName} Coverage via ${sourceName}`}
       author={tenant.display_name}
       subject="Compliance Crosswalk"
-      creator="TrustOS"
+      creator="SecureOS"
     >
       {/* ====================== Cover ====================== */}
       <Page size="LETTER" style={baseStyles.page}>
@@ -330,7 +330,7 @@ export function CrosswalkReport({
           The undersigned attest that {tenant.display_name}&apos;s {sourceName} v{sourceVersion}
           scoring (current as of {fmtDate(asOf.toISOString())}) is the basis for the inherited
           coverage on {targetName} v{targetVersion} summarized in this binder. Where mappings
-          differ from the auditor&apos;s expectation, refinements should be recorded in TrustOS
+          differ from the auditor&apos;s expectation, refinements should be recorded in SecureOS
           via the Compliance Crosswalk admin tools.
         </Text>
         <Text style={[baseStyles.para, { color: palette.muted, fontSize: 9 }]}>

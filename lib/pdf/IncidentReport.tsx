@@ -38,7 +38,7 @@ export function IncidentReport({
       title={`Incident Report — ${incident.title}`}
       author={preparedBy}
       subject="Executive Incident Briefing"
-      creator="TrustOS"
+      creator="SecureOS"
     >
       <Page size="LETTER" style={baseStyles.page}>
         {/* Header (every page) */}

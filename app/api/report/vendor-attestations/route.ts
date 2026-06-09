@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
       `Attestations:   ${attestationsRes.data?.length ?? 0}\n\n` +
       `Error: ${err?.message ?? 'unknown error'}\n\n` +
       `Stack:\n${err?.stack ?? '(no stack)'}\n\n` +
-      'Please send this file to your TrustOS administrator.\n';
+      'Please send this file to your SecureOS administrator.\n';
     return new Response(body, {
       status: 500,
       headers: {

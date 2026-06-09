@@ -103,7 +103,7 @@ export function DrPlansReport({
       title={`${tenant.display_name} — Disaster Recovery Plans`}
       author={tenant.display_name}
       subject="DR Plan Binder"
-      creator="TrustOS"
+      creator="SecureOS"
     >
       {/* ====================== Cover ====================== */}
       <Page size="LETTER" style={baseStyles.page}>

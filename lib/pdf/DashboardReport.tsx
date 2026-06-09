@@ -44,7 +44,7 @@ export function DashboardReport({
       title={`${tenant.display_name} — Executive Posture Briefing`}
       author={tenant.display_name}
       subject="NIST CSF 2.0 Attainment — Executive Briefing"
-      creator="TrustOS"
+      creator="SecureOS"
     >
       <Page size="LETTER" style={baseStyles.page}>
         <View style={baseStyles.pageHeader} fixed>

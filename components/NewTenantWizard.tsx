@@ -283,7 +283,7 @@ vercel env add NEXT_PUBLIC_SUPABASE_URL production <<< 'https://pfhlhwawiyzwwhwb
 vercel env add NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY production
 vercel env add SUPABASE_SECRET_KEY production
 vercel env add RESEND_API_KEY production
-vercel env add EMAIL_FROM production <<< 'TrustOS <no-reply@trustos.usicomputer.com>'
+vercel env add EMAIL_FROM production <<< 'SecureOS <no-reply@usisecureos.tech>'
 vercel env add AUTH_REQUIRED production <<< 'true'
 vercel --prod`;
 

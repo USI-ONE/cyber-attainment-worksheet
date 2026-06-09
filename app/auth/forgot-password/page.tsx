@@ -72,7 +72,7 @@ export default function ForgotPasswordPage() {
       <div className="signin-card">
         <h1 className="signin-title">Reset your password</h1>
         <p className="signin-sub">
-          Enter the email on your TrustOS account. We&apos;ll send a one-time
+          Enter the email on your SecureOS account. We&apos;ll send a one-time
           link to set a new password.
         </p>
 

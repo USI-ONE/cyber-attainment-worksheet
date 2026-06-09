@@ -205,7 +205,7 @@ export function AuditBinderReport({
       title={`${tenant.display_name} — Audit Binder`}
       author={tenant.display_name}
       subject="Audit Evidence Binder"
-      creator="TrustOS"
+      creator="SecureOS"
     >
       {/* ====================== Cover page ====================== */}
       <Page size="LETTER" style={baseStyles.page}>
@@ -304,7 +304,7 @@ export function AuditBinderReport({
           This binder walks each control in the {frameworkName} framework. For
           every control it lists the current score (Policy / Practice / Goal),
           the assessment answers on file, and every cross-reference recorded
-          in TrustOS — risks the control treats, policies that document it,
+          in SecureOS — risks the control treats, policies that document it,
           evidence artifacts that prove it, and DR plans / IR playbooks that
           operationalize it. Controls with no score and no linked artifacts
           are reported as &quot;Not yet assessed&quot; so coverage gaps surface
@@ -389,7 +389,7 @@ export function AuditBinderReport({
           against the {frameworkName} framework as of {fmtDate(asOf.toISOString())}.
         </Text>
         <Text style={[baseStyles.para, { color: palette.muted, fontSize: 9 }]}>
-          Source data lives in TrustOS. Evidence artifacts are stored in
+          Source data lives in SecureOS. Evidence artifacts are stored in
           tenant-private storage; signed download URLs are issued on demand
           to authorized auditors via the Evidence Library.
         </Text>

@@ -50,7 +50,7 @@ function asArray<T>(v: unknown): T[] {
  * Strategy: keep the first HALF and the last HALF, with a gap marker
  * in the middle. Executives reading the PDF still see the early signal
  * AND the closure events, which is what matters for board reporting.
- * The full timeline remains available on the incident page in TrustOS.
+ * The full timeline remains available on the incident page in SecureOS.
  */
 const TIMELINE_MAX_ROWS = 120;
 type TimelineEntry = { at: string; event: string };
@@ -64,7 +64,7 @@ function capTimeline(entries: TimelineEntry[]): TimelineEntry[] {
       at: '',
       event:
         `… ${omitted} middle entries omitted to keep the executive PDF under render limits. ` +
-        `The complete timeline is available on the incident page in TrustOS.`,
+        `The complete timeline is available on the incident page in SecureOS.`,
     },
     ...entries.slice(-half),
   ];
@@ -160,7 +160,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       'Stack:\n' +
       `${err?.stack ?? '(no stack available)'}\n` +
       '\n' +
-      'Please send this file to your TrustOS administrator so the underlying issue can be diagnosed.\n';
+      'Please send this file to your SecureOS administrator so the underlying issue can be diagnosed.\n';
     return new Response(body, {
       status: 500,
       headers: {

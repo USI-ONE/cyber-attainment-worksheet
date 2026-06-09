@@ -117,7 +117,7 @@ export function IrPlaybooksReport({
       title={`${tenant.display_name} — IR Playbook Binder`}
       author={tenant.display_name}
       subject="Incident Response Playbook Binder"
-      creator="TrustOS"
+      creator="SecureOS"
     >
       {/* ====================== Cover ====================== */}
       <Page size="LETTER" style={baseStyles.page}>

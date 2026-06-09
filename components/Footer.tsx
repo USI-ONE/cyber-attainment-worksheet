@@ -10,7 +10,7 @@ export default function Footer({ tenant }: { tenant: Tenant }) {
       </div>
       {tagline && <div className="app-footer-tag">{tagline}</div>}
       <div className="app-footer-meta">
-        TrustOS · Universal Systems Inc.
+        SecureOS · Universal Systems Inc.
       </div>
     </footer>
   );

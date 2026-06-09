@@ -148,7 +148,7 @@ export function VendorAttestationsReport({
       title={`Third-Party Vendor Risk Summary — ${tenant.display_name}`}
       author={preparedBy}
       subject="Third-Party Vendor Risk Summary"
-      creator="TrustOS"
+      creator="SecureOS"
     >
       <Page size="LETTER" style={baseStyles.page}>
         {/* Header + footer (every page) */}

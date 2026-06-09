@@ -15,7 +15,7 @@
  *                         invite URL is still surfaced in the admin UI for
  *                         manual copy/paste, exactly as before.
  *
- *   EMAIL_FROM            "TrustOS <noreply@usicomputer.com>" — the
+ *   EMAIL_FROM            "SecureOS <noreply@usicomputer.com>" — the
  *                         display name + address shown to the recipient.
  *                         Must use a domain you have verified in Resend
  *                         (SPF/DKIM/DMARC).
@@ -32,7 +32,7 @@
  *   1. Create a Resend account and verify usicomputer.com (or whichever
  *      sending domain you want).
  *   2. Generate an API key. Add as `RESEND_API_KEY` on Vercel.
- *   3. Set `EMAIL_FROM` to "TrustOS <noreply@usicomputer.com>".
+ *   3. Set `EMAIL_FROM` to "SecureOS <noreply@usicomputer.com>".
  *   4. Optionally set EMAIL_REPLY_TO and EMAIL_BCC.
  *   5. Redeploy. New invites will now actually send.
  *

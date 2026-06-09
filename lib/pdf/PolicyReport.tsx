@@ -43,7 +43,7 @@ export function PolicyReport({
       title={`${tenant.display_name} — Policy Coverage Briefing`}
       author={tenant.display_name}
       subject="Policy Coverage Executive Briefing"
-      creator="TrustOS"
+      creator="SecureOS"
     >
       <Page size="LETTER" style={baseStyles.page}>
         <View style={baseStyles.pageHeader} fixed>

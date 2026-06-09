@@ -112,7 +112,7 @@ export function RiskTreatmentPlanReport({
       title={`${tenant.display_name} — Risk Treatment Plan`}
       author={tenant.display_name}
       subject="Risk Treatment Plan"
-      creator="TrustOS"
+      creator="SecureOS"
     >
       {/* ===================================================================
           Page 1: Cover + heat map

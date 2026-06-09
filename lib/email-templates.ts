@@ -29,7 +29,7 @@ interface BrandPalette {
 }
 
 const BRAND: BrandPalette = {
-  productName: 'TrustOS',
+  productName: 'SecureOS',
   primary:      '#2563EB',
   primaryHover: '#1E40AF',
   body:         '#0F172A',
@@ -274,7 +274,7 @@ export function renderWelcomeEmail({
     ? 'You have platform-administrator access to every tenant and the admin tools.'
     : tenantName
       ? `You can sign in to ${escapeHtml(tenantName)} now.`
-      : 'You can sign in to TrustOS now.';
+      : 'You can sign in to SecureOS now.';
 
   const html = shell({
     preheader: `Your ${BRAND.productName} account is active. Sign in to get started.`,
