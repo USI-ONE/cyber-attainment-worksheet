@@ -25,6 +25,8 @@ export type AttentionKind =
   | 'task_overdue'
   | 'evidence_expired'
   | 'evidence_expiring'
+  | 'evidence_review_overdue'
+  | 'evidence_review_due_soon'
   | 'vendor_attestation_expired'
   | 'vendor_attestation_expiring'
   | 'vendor_assessment_overdue'
@@ -128,10 +130,9 @@ export async function computeAttention(
       .not('due_date', 'is', null)
       .lt('due_date', todayISO),
     db.from('evidence_artifacts')
-      .select('id, title, category, retention_until, status')
+      .select('id, title, category, retention_until, review_expires_at, status')
       .eq('tenant_id', tenantId)
-      .eq('status', 'current')
-      .not('retention_until', 'is', null),
+      .eq('status', 'current'),
     db.from('vendor_attestations')
       .select('id, title, attestation_type, expires_on, status, vendor_id')
       .eq('tenant_id', tenantId)
@@ -316,34 +317,68 @@ export async function computeAttention(
     });
   }
 
-  // ---- Evidence — current artifacts past or near retention ------------
+  // ---- Evidence — two separate cycles surface here ------------------
+  // (a) retention_until = disposal date. Past = stale audit evidence.
+  // (b) review_expires_at = next mandatory review. Past = needs review.
+  // The two are independent — an artifact can be within retention but
+  // overdue for review, or vice versa. Both produce attention items.
   for (const e of (evidenceRes.data ?? []) as {
     id: string; title: string; category: string;
-    retention_until: string | null; status: string;
+    retention_until: string | null;
+    review_expires_at: string | null;
+    status: string;
   }[]) {
-    if (!e.retention_until) continue;
-    const days = daysSince(e.retention_until);
-    if (days == null) continue;
-    if (days > 0) {
-      // Past retention while still status='current' = stale audit evidence.
-      out.push({
-        kind: 'evidence_expired',
-        severity: days > 90 ? 'medium' : 'low',
-        title: `Evidence expired: ${e.title}`,
-        detail: `Retention date passed ${fmtAge(days)} ago. Refresh, mark superseded, or archive.`,
-        href: '/evidence',
-        age_days: days,
-      });
-    } else if (days >= -30) {
-      // Within 30 days of expiry — soft warning so the operator can re-collect.
-      out.push({
-        kind: 'evidence_expiring',
-        severity: 'low',
-        title: `Evidence expiring soon: ${e.title}`,
-        detail: `Retention ends in ${Math.abs(days)} day${days === -1 ? '' : 's'}. Plan refresh.`,
-        href: '/evidence',
-        age_days: days,
-      });
+    // Retention (disposal) cycle
+    if (e.retention_until) {
+      const days = daysSince(e.retention_until);
+      if (days != null) {
+        if (days > 0) {
+          out.push({
+            kind: 'evidence_expired',
+            severity: days > 90 ? 'medium' : 'low',
+            title: `Evidence expired: ${e.title}`,
+            detail: `Retention date passed ${fmtAge(days)} ago. Refresh, mark superseded, or archive.`,
+            href: '/evidence',
+            age_days: days,
+          });
+        } else if (days >= -30) {
+          out.push({
+            kind: 'evidence_expiring',
+            severity: 'low',
+            title: `Evidence expiring soon: ${e.title}`,
+            detail: `Retention ends in ${Math.abs(days)} day${days === -1 ? '' : 's'}. Plan refresh.`,
+            href: '/evidence',
+            age_days: days,
+          });
+        }
+      }
+    }
+    // Review cycle (separate from retention)
+    if (e.review_expires_at) {
+      const days = daysSince(e.review_expires_at);
+      if (days == null) continue;
+      if (days > 0) {
+        // Review overdue — actionable. Bumps to high if the review has
+        // lapsed for more than a quarter, since that signals the artifact
+        // may no longer reflect reality.
+        out.push({
+          kind: 'evidence_review_overdue',
+          severity: days > 90 ? 'high' : 'medium',
+          title: `Evidence review overdue: ${e.title}`,
+          detail: `Review was due ${fmtAge(days)} ago. Open the artifact, confirm still accurate, then set a new Last reviewed and Review expires.`,
+          href: '/evidence',
+          age_days: days,
+        });
+      } else if (days >= -30) {
+        out.push({
+          kind: 'evidence_review_due_soon',
+          severity: 'low',
+          title: `Evidence review due soon: ${e.title}`,
+          detail: `Review due in ${Math.abs(days)} day${days === -1 ? '' : 's'}.`,
+          href: '/evidence',
+          age_days: days,
+        });
+      }
     }
   }
 

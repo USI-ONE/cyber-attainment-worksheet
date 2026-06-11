@@ -203,6 +203,7 @@ export default function EvidenceLibraryClient({
                 <th>Category</th>
                 <th>Collected</th>
                 <th>Retention until</th>
+                <th>Review expires</th>
                 <th>Linked</th>
                 <th>Status</th>
                 <th></th>
@@ -221,6 +222,11 @@ export default function EvidenceLibraryClient({
                   ? Math.floor((new Date(a.retention_until).getTime() - Date.now()) / 86400000)
                   : null;
                 const overdue = a.status === 'current' && days != null && days < 0;
+                const reviewDays = a.review_expires_at
+                  ? Math.floor((new Date(a.review_expires_at).getTime() - Date.now()) / 86400000)
+                  : null;
+                const reviewOverdue   = a.status === 'current' && reviewDays != null && reviewDays < 0;
+                const reviewDueSoon   = a.status === 'current' && reviewDays != null && reviewDays >= 0 && reviewDays <= 30;
                 return (
                   <tr key={a.id} style={{ cursor: 'pointer' }} onClick={() => setOpenId(a.id)}>
                     <td>
@@ -240,6 +246,15 @@ export default function EvidenceLibraryClient({
                     <td style={{ fontSize: 12, color: overdue ? 'var(--gap-pos)' : 'var(--text-mid)', fontWeight: overdue ? 600 : 400 }}>
                       {a.retention_until ?? '—'}
                       {overdue && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 600 }}>EXPIRED</span>}
+                    </td>
+                    <td style={{
+                      fontSize: 12,
+                      color: reviewOverdue ? 'var(--gap-pos)' : reviewDueSoon ? '#F59E0B' : 'var(--text-mid)',
+                      fontWeight: reviewOverdue ? 600 : 400,
+                    }}>
+                      {a.review_expires_at ?? '—'}
+                      {reviewOverdue && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 600 }}>REVIEW OVERDUE</span>}
+                      {reviewDueSoon && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 600 }}>DUE SOON</span>}
                     </td>
                     <td style={{ fontSize: 11 }}>
                       {totalLinks === 0
@@ -495,9 +510,17 @@ function EvidenceEditor({
             <input type="date" className="score-select" defaultValue={artifact.collected_date ?? ''}
               onChange={(e) => onPatch({ collected_date: e.target.value || null })} />
           </Field>
-          <Field label="Retention until" hint="When this evidence ages out and needs refresh.">
+          <Field label="Retention until" hint="When this evidence ages out and can be disposed.">
             <input type="date" className="score-select" defaultValue={artifact.retention_until ?? ''}
               onChange={(e) => onPatch({ retention_until: e.target.value || null })} />
+          </Field>
+          <Field label="Last reviewed" hint="When this artifact was last checked for accuracy.">
+            <input type="date" className="score-select" defaultValue={artifact.last_reviewed_at ?? ''}
+              onChange={(e) => onPatch({ last_reviewed_at: e.target.value || null })} />
+          </Field>
+          <Field label="Review expires" hint="Next mandatory review. A past date alerts on the dashboard.">
+            <input type="date" className="score-select" defaultValue={artifact.review_expires_at ?? ''}
+              onChange={(e) => onPatch({ review_expires_at: e.target.value || null })} />
           </Field>
           <Field label="Uploaded by">
             <input className="score-select" defaultValue={artifact.uploaded_by ?? ''}

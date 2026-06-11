@@ -73,10 +73,12 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     if (!STATUSES.includes(body.status as EvidenceStatus)) return bad('invalid status');
     patch.status = body.status;
   }
-  if ('description'     in body) patch.description     = body.description?.toString() ?? null;
-  if ('uploaded_by'     in body) patch.uploaded_by     = body.uploaded_by?.toString().trim() || null;
-  if ('collected_date'  in body) patch.collected_date  = body.collected_date || null;
-  if ('retention_until' in body) patch.retention_until = body.retention_until || null;
+  if ('description'       in body) patch.description       = body.description?.toString() ?? null;
+  if ('uploaded_by'       in body) patch.uploaded_by       = body.uploaded_by?.toString().trim() || null;
+  if ('collected_date'    in body) patch.collected_date    = body.collected_date || null;
+  if ('retention_until'   in body) patch.retention_until   = body.retention_until || null;
+  if ('last_reviewed_at'  in body) patch.last_reviewed_at  = body.last_reviewed_at || null;
+  if ('review_expires_at' in body) patch.review_expires_at = body.review_expires_at || null;
 
   if (Array.isArray(body.linked_control_ids))     patch.linked_control_ids     = strList(body.linked_control_ids);
   if (Array.isArray(body.linked_risk_ids))        patch.linked_risk_ids        = strList(body.linked_risk_ids);

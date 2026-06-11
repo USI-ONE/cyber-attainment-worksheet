@@ -534,7 +534,13 @@ export interface EvidenceArtifact {
   size_bytes: number | null;
   uploaded_by: string | null;
   collected_date: string | null;             // yyyy-mm-dd
-  retention_until: string | null;            // yyyy-mm-dd
+  retention_until: string | null;            // yyyy-mm-dd — disposal date
+  // Migration 0032 — review cycle, distinct from retention. Operators
+  // set both per-artifact: last_reviewed_at is the most recent check,
+  // review_expires_at is when the next review is due. A past
+  // review_expires_at fires the evidence_review_overdue attention signal.
+  last_reviewed_at: string | null;           // yyyy-mm-dd
+  review_expires_at: string | null;          // yyyy-mm-dd
   status: EvidenceStatus;
   linked_control_ids: string[];
   linked_risk_ids: string[];                 // uuid[]
