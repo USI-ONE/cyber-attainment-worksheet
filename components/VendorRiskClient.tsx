@@ -724,6 +724,19 @@ function VendorEditor({
                             }}
                           />
                         )}
+                        {/* Executive briefing PDF — works for every attestation
+                            type, not just TPSA/DDQ. Opens in a new tab so the
+                            user can keep editing the row underneath. */}
+                        <a
+                          className="action-btn"
+                          href={`/api/vendors/${vendor.id}/attestations/${a.id}/briefing`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ padding: '3px 9px', fontSize: 11 }}
+                          title="Generate a board-ready executive briefing PDF for this vendor response"
+                        >
+                          Briefing
+                        </a>
                       </div>
                     </td>
                     <td><button className="action-btn danger" onClick={() => onRemoveAttestation(a.id)}>×</button></td>
