@@ -483,6 +483,10 @@ export interface VendorAttestation {
   title: string;
   issued_on: string | null;
   expires_on: string | null;
+  /** Date the tenant received the attestation response from the vendor.
+   *  Distinct from `issued_on` (when the vendor produced the document).
+   *  Not null after migration 0033; defaults to current_date on insert. */
+  received_at: string;
   status: AttestationStatus;
   evidence_artifact_id: string | null;
   findings_critical: number;

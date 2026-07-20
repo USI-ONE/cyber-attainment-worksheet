@@ -263,9 +263,16 @@ export default function VendorRiskClient({
     if (!upRes.ok || !upJson.ok) return alert(upJson.error ?? 'upload failed');
 
     const artifactId: string = upJson.artifact.id;
-    // patchAttestation already optimistic-updates local state, so the row
-    // re-renders with the new evidence_artifact_id immediately.
-    await patchAttestation(attestationId, { evidence_artifact_id: artifactId });
+    // Uploading a new response file counts as "received today" — bump
+    // received_at alongside the artifact link so the vendor editor's
+    // "Latest received" chip advances immediately. Reviewer can back-
+    // date via the row's Received input if the file was actually
+    // received earlier and only now getting attached.
+    const today = new Date().toISOString().slice(0, 10);
+    await patchAttestation(attestationId, {
+      evidence_artifact_id: artifactId,
+      received_at: today,
+    });
   }
 
   /**
@@ -518,6 +525,7 @@ function VendorEditor({
 }) {
   const [newType, setNewType] = useState<AttestationType>('soc2_type2');
   const [newTitle, setNewTitle] = useState('');
+  const [newReceived, setNewReceived] = useState('');
   const [newExpires, setNewExpires] = useState('');
   // Which TPSA/DDQ attestation has its checklist editor open right now.
   // null = collapsed; otherwise = the attestation.id we're editing below
@@ -637,10 +645,16 @@ function VendorEditor({
       {/* Attestations */}
       <div style={{ marginTop: 22, paddingTop: 16, borderTop: '1px solid var(--bg-border)' }}>
         <div style={{
-          fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 13,
-          color: 'var(--text)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '.04em',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          marginBottom: 12,
         }}>
-          Attestations ({attestations.length})
+          <div style={{
+            fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 13,
+            color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '.04em',
+          }}>
+            Attestations ({attestations.length})
+          </div>
+          <LatestTpsaChip attestations={attestations} />
         </div>
 
         {attestations.length === 0 ? (
@@ -653,6 +667,7 @@ function VendorEditor({
               <tr>
                 <th>Type</th>
                 <th>Title</th>
+                <th>Received</th>
                 <th>Issued</th>
                 <th>Expires</th>
                 <th>Findings</th>
@@ -678,8 +693,17 @@ function VendorEditor({
                         onBlur={(e) => onPatchAttestation(a.id, { title: e.target.value })} />
                     </td>
                     <td>
+                      <input type="date" className="score-select"
+                        // Received-on is required (not-null via migration
+                        // 0033). Reject empty; leave the prior value.
+                        defaultValue={a.received_at}
+                        onChange={(e) => e.target.value && onPatchAttestation(a.id, { received_at: e.target.value })}
+                        title="Date this response was received from the vendor" />
+                    </td>
+                    <td>
                       <input type="date" className="score-select" defaultValue={a.issued_on ?? ''}
-                        onChange={(e) => onPatchAttestation(a.id, { issued_on: e.target.value || null })} />
+                        onChange={(e) => onPatchAttestation(a.id, { issued_on: e.target.value || null })}
+                        title="Date the vendor issued the underlying attestation" />
                     </td>
                     <td style={{ color: overdue ? 'var(--gap-pos)' : 'var(--text)' }}>
                       <input type="date" className="score-select" defaultValue={a.expires_on ?? ''}
@@ -768,6 +792,7 @@ function VendorEditor({
             onAddAttestation({
               attestation_type: newType,
               title: newTitle.trim(),
+              received_at: newReceived || new Date().toISOString().slice(0, 10),
               expires_on: newExpires || null,
               status: 'current',
               // Pre-populate the default checklist when the new
@@ -775,12 +800,12 @@ function VendorEditor({
               // questions to fill in immediately.
               checklist: (newType === 'tpsa' || newType === 'ddq') ? DEFAULT_TPSA_CHECKLIST : null,
             });
-            setNewTitle(''); setNewExpires(''); setNewType('soc2_type2');
+            setNewTitle(''); setNewReceived(''); setNewExpires(''); setNewType('soc2_type2');
           }}
           style={{
             marginTop: 12, padding: 10, background: 'var(--bg-card)',
             border: '1px solid var(--bg-border)', borderRadius: 'var(--r-md)',
-            display: 'grid', gridTemplateColumns: '180px 2fr 160px auto', gap: 8, alignItems: 'end',
+            display: 'grid', gridTemplateColumns: '180px 2fr 140px 140px auto', gap: 8, alignItems: 'end',
           }}
         >
           <Field label="Type">
@@ -791,6 +816,10 @@ function VendorEditor({
           <Field label="Title (required)">
             <input className="score-select" value={newTitle} onChange={(e) => setNewTitle(e.target.value)}
               placeholder="e.g. FY2025 SOC 2 Type II" />
+          </Field>
+          <Field label="Received" hint="Default: today">
+            <input type="date" className="score-select" value={newReceived}
+              onChange={(e) => setNewReceived(e.target.value)} />
           </Field>
           <Field label="Expires">
             <input type="date" className="score-select" value={newExpires} onChange={(e) => setNewExpires(e.target.value)} />
@@ -998,6 +1027,56 @@ function ChecklistEditor({
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Small chip that surfaces the most recent TPSA / DDQ received date for
+ * this vendor. Shown at the top of the Attestations section on the vendor
+ * editor. If the vendor has non-TPSA attestations only, we fall back to
+ * the newest received date across all types with an "any type" label.
+ * Hidden when the vendor has no attestations at all.
+ */
+function LatestTpsaChip({ attestations }: { attestations: VendorAttestation[] }) {
+  if (!attestations.length) return null;
+
+  const tpsaRows = attestations.filter(
+    (a) => a.attestation_type === 'tpsa' || a.attestation_type === 'ddq',
+  );
+  const scoped   = tpsaRows.length ? tpsaRows : attestations;
+  const isTpsa   = tpsaRows.length > 0;
+
+  // Newest received first.
+  const newest = [...scoped].sort(
+    (a, b) => (b.received_at ?? '').localeCompare(a.received_at ?? ''),
+  )[0];
+  if (!newest?.received_at) return null;
+
+  // Days-ago badge — over 12 months old goes red, over 6 months amber.
+  const days = Math.round(
+    (Date.now() - new Date(newest.received_at + 'T00:00:00').getTime()) / 86_400_000,
+  );
+  const color =
+    days > 365 ? '#DC2626' :
+    days > 180 ? '#F59E0B' :
+    '#10B981';
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8,
+      fontSize: 11, color: 'var(--text-mid)',
+    }}>
+      <span style={{
+        display: 'inline-block', padding: '3px 10px',
+        borderRadius: 999, fontSize: 10.5, fontWeight: 600,
+        background: `${color}1a`, color, border: `1px solid ${color}55`,
+        letterSpacing: '.04em', textTransform: 'uppercase',
+      }}>
+        {isTpsa ? 'Latest TPSA/DDQ received' : 'Latest attestation received'}
+        {' · '}{newest.received_at}
+        {' · '}{days === 0 ? 'today' : `${days}d ago`}
+      </span>
     </div>
   );
 }

@@ -62,6 +62,11 @@ export async function POST(request: NextRequest) {
   const status: AttestationStatus = STATS.includes(body.status as AttestationStatus)
     ? (body.status as AttestationStatus) : 'current';
 
+  // received_at defaults to today when not supplied. Client passes an
+  // explicit date when the reviewer wants to backdate the receipt (e.g.,
+  // ingesting an email response from a week ago).
+  const receivedAt = body.received_at?.toString() || new Date().toISOString().slice(0, 10);
+
   const { data, error } = await supabase
     .from('vendor_attestations')
     .insert({
@@ -69,6 +74,7 @@ export async function POST(request: NextRequest) {
       attestation_type, title,
       issued_on: body.issued_on || null,
       expires_on: body.expires_on || null,
+      received_at: receivedAt,
       status,
       evidence_artifact_id: body.evidence_artifact_id?.toString() || null,
       findings_critical: typeof body.findings_critical === 'number' ? body.findings_critical : 0,
@@ -106,6 +112,11 @@ export async function PATCH(request: NextRequest) {
     patch.status = body.status;
   if ('issued_on'  in body) patch.issued_on  = body.issued_on  || null;
   if ('expires_on' in body) patch.expires_on = body.expires_on || null;
+  if ('received_at' in body) {
+    const v = body.received_at?.toString().trim();
+    if (v) patch.received_at = v;
+    // Ignore blank clears — received_at is not-null.
+  }
   if ('evidence_artifact_id' in body) patch.evidence_artifact_id = body.evidence_artifact_id?.toString() || null;
   if (typeof body.findings_critical === 'number') patch.findings_critical = body.findings_critical;
   if (typeof body.findings_major    === 'number') patch.findings_major    = body.findings_major;
