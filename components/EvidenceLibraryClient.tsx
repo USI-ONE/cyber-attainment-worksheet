@@ -28,6 +28,15 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 const CATEGORY_KEYS = Object.keys(CATEGORY_LABELS);
 
+/**
+ * Hard client-side ceiling, enforced again on the server. Lifted from the
+ * legacy 50 MB (multipart-through-Vercel, capped at ~4.5 MB anyway) by
+ * switching to a direct-to-Supabase upload path: the server hands us a
+ * signed URL, the browser PUTs the bytes straight to Storage, then the
+ * server inserts the DB row. Vercel never sees the file body.
+ */
+const EVIDENCE_MAX_BYTES = 100 * 1024 * 1024;
+
 const STATUS_COLORS: Record<EvidenceStatus, string> = {
   current:    '#10B981',
   superseded: '#94A3B8',
@@ -92,14 +101,118 @@ export default function EvidenceLibraryClient({
     });
   }, [artifacts, filterCat, search]);
 
+  /**
+   * Upload flow with a 100 MB ceiling. Two paths:
+   *
+   *   - metadata-only (no file field on the form) → single multipart POST,
+   *     unchanged from before.
+   *   - file attached → 3-step direct-upload:
+   *       1. POST /api/evidence/signed-upload → returns signed URL, storage_path,
+   *          and a reserved artifact_id.
+   *       2. PUT the file body to the signed URL (bypasses Vercel's ~4.5 MB
+   *          serverless body cap entirely).
+   *       3. POST /api/evidence with JSON to register the DB row + link the
+   *          blob. Server pins size_bytes to actual Storage-observed bytes.
+   */
   async function uploadArtifact(form: FormData) {
     setUploading(true);
     try {
-      const res = await fetch('/api/evidence', { method: 'POST', body: form });
-      const j = await res.json();
-      if (!res.ok || !j.ok) return alert(j.error ?? 'upload failed');
-      setArtifacts((s) => [j.artifact as EvidenceArtifact, ...s]);
-      setOpenId(j.artifact.id);
+      const file = form.get('file');
+      const hasFile = file instanceof File && file.size > 0;
+
+      if (!hasFile) {
+        // Metadata-only path — legacy multipart POST.
+        const res = await fetch('/api/evidence', { method: 'POST', body: form });
+        const j = await res.json();
+        if (!res.ok || !j.ok) return alert(j.error ?? 'upload failed');
+        setArtifacts((s) => [j.artifact as EvidenceArtifact, ...s]);
+        setOpenId(j.artifact.id);
+        return;
+      }
+
+      if (file.size > EVIDENCE_MAX_BYTES) {
+        alert(`File exceeds ${EVIDENCE_MAX_BYTES / 1024 / 1024} MB`);
+        return;
+      }
+
+      // 1) Ask the server for a signed upload URL.
+      const initRes = await fetch('/api/evidence/signed-upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename:     file.name,
+          content_type: file.type || null,
+          size:         file.size,
+        }),
+      });
+      const initJson = await initRes.json().catch(() => ({}));
+      if (!initRes.ok || !initJson.signed_url) {
+        alert(initJson.error ?? `init failed (HTTP ${initRes.status})`);
+        return;
+      }
+
+      // 2) PUT the file body straight to Supabase Storage.
+      const putRes = await fetch(initJson.signed_url, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        body: file,
+      });
+      if (!putRes.ok) {
+        alert(`storage upload failed (HTTP ${putRes.status})`);
+        return;
+      }
+
+      // 3) Register the artifact. Server verifies the blob landed and
+      //    inserts the DB row using the reserved artifact_id.
+      const arrayField = (name: string): string[] => {
+        const raw = form.get(name);
+        if (!raw) return [];
+        const s = String(raw).trim();
+        if (!s) return [];
+        if (s.startsWith('[')) {
+          try {
+            const arr = JSON.parse(s);
+            return Array.isArray(arr) ? arr.map(String).map((x) => x.trim()).filter(Boolean) : [];
+          } catch { /* fall through */ }
+        }
+        return s.split(/[,\s]+/).map((x) => x.trim()).filter(Boolean);
+      };
+
+      const regRes = await fetch('/api/evidence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          artifact_id:      initJson.artifact_id,
+          storage_path:     initJson.storage_path,
+          filename:         file.name,
+          content_type:     file.type || null,
+          size:             file.size,
+          title:            form.get('title')?.toString() ?? '',
+          description:      form.get('description')?.toString() || null,
+          category:         form.get('category')?.toString() || 'other',
+          status:           form.get('status')?.toString() || 'current',
+          uploaded_by:      form.get('uploaded_by')?.toString() || null,
+          collected_date:   form.get('collected_date')?.toString() || null,
+          retention_until:  form.get('retention_until')?.toString() || null,
+          last_reviewed_at: form.get('last_reviewed_at')?.toString() || null,
+          review_expires_at: form.get('review_expires_at')?.toString() || null,
+          linked_control_ids:     arrayField('linked_control_ids'),
+          linked_risk_ids:        arrayField('linked_risk_ids'),
+          linked_treatment_ids:   arrayField('linked_treatment_ids'),
+          linked_dr_plan_ids:     arrayField('linked_dr_plan_ids'),
+          linked_ir_playbook_ids: arrayField('linked_ir_playbook_ids'),
+          linked_incident_ids:    arrayField('linked_incident_ids'),
+          linked_policy_doc_ids:  arrayField('linked_policy_doc_ids'),
+          tags:                   arrayField('tags'),
+        }),
+      });
+      const regJson = await regRes.json().catch(() => ({}));
+      if (!regRes.ok || !regJson.ok) {
+        alert(regJson.error ?? `register failed (HTTP ${regRes.status})`);
+        return;
+      }
+      setArtifacts((s) => [regJson.artifact as EvidenceArtifact, ...s]);
+      setOpenId(regJson.artifact.id);
     } finally {
       setUploading(false);
     }
@@ -413,7 +526,7 @@ function UploadForm({
       <Field label="Retention until" hint="Optional — used for expiry alerts.">
         <input type="date" className="score-select" value={retention} onChange={(e) => setRetention(e.target.value)} />
       </Field>
-      <Field label="File">
+      <Field label="File" hint="Up to 100 MB. Leave blank for a metadata-only record.">
         <input type="file" className="score-select" ref={fileRef} />
       </Field>
       <Field label="Description" style={{ gridColumn: 'span 3' }}>
