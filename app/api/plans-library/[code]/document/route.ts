@@ -90,10 +90,24 @@ export async function POST(
   const newVersion =
     (form.get('version')?.toString().trim()) || today;
 
+  // Thread lineage from the prior version so `/versions` returns the full
+  // history. First-ever upload starts a new lineage with the new row's
+  // own id — matches the invariant migration 0031 backfilled.
+  let lineageId = docId;
+  if (tpRow?.plan_document_id) {
+    const { data: prior } = await sb
+      .from('policy_documents')
+      .select('lineage_id')
+      .eq('id', tpRow.plan_document_id)
+      .maybeSingle();
+    if (prior?.lineage_id) lineageId = prior.lineage_id;
+  }
+
   const { data: newDoc, error: insErr } = await sb
     .from('policy_documents')
     .insert({
       id: docId,
+      lineage_id: lineageId,
       tenant_id: tenant.id,
       title: cat.title,
       version: newVersion,
@@ -106,11 +120,11 @@ export async function POST(
       size_bytes: file.size,
       uploaded_by: cu!.user.email || cu!.user.id,
       linked_control_ids: [],
-      // policy_code column was added by migration 0026 to tag policy
-      // library docs. Plans docs reuse it as a generic "doc kind" tag
-      // namespaced under `plan:<code>` so a future cleanup can split
-      // tables without breaking queries today.
-      policy_code: `plan:${params.code}`,
+      // Left NULL: the policy_code column has a FK to
+      // policy_library_catalog which rejects the `plan:<code>` namespace
+      // the earlier code tried to write. Plans docs are identified via
+      // tenant_plans.plan_document_id instead.
+      policy_code: null,
     })
     .select('*')
     .single();

@@ -93,10 +93,25 @@ export async function POST(
   const newVersion =
     (form.get('version')?.toString().trim()) || today;
 
+  // Thread lineage from the prior version so `/versions` returns the full
+  // history. If there's no prior document (first-ever upload for this
+  // policy code on this tenant), start a fresh lineage with the new
+  // row's own id — matches the invariant migration 0031 backfilled.
+  let lineageId = docId;
+  if (tpRow?.policy_document_id) {
+    const { data: prior } = await supabase
+      .from('policy_documents')
+      .select('lineage_id')
+      .eq('id', tpRow.policy_document_id)
+      .maybeSingle();
+    if (prior?.lineage_id) lineageId = prior.lineage_id;
+  }
+
   const { data: newDoc, error: insErr } = await supabase
     .from('policy_documents')
     .insert({
       id: docId,
+      lineage_id: lineageId,
       tenant_id: tenant.id,
       title: cat.title,
       version: newVersion,

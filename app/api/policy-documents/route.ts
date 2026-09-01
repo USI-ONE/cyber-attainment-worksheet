@@ -87,6 +87,11 @@ export async function POST(request: NextRequest) {
     .from('policy_documents')
     .insert({
       id: docId,
+      // Standalone Cybersecurity Policy Documents upload isn't threaded
+      // through a versioned catalog code, so every upload here starts a
+      // new lineage keyed to its own id. Migration 0031 requires the
+      // column be non-null on every row.
+      lineage_id: docId,
       tenant_id: tenant.id,
       title,
       version: form.get('version')?.toString().trim() || null,
