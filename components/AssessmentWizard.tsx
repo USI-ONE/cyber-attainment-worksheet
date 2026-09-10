@@ -199,6 +199,28 @@ export default function AssessmentWizard({
           wording rather than generic CMM-ladder text. Number of items
           varies per control; this maps over the dynamic list. */}
       <section className="scorecard">
+        {/* Independent-answer guidance. Assessors kept scoring later
+            questions "No" whenever an earlier question was "No" because
+            the wording of Q2/Q3 presupposes Q1's artifact exists. That
+            hides real work — you might not have a formal register yet
+            (Q1=No) but still review vendor contracts informally (Q2=Yes
+            on your own merits). This banner tells assessors to score
+            each item on the evidence they actually have. */}
+        <div style={{
+          padding: '10px 12px', marginBottom: 14,
+          background: 'var(--bg-deep)', border: '1px solid var(--bg-border)',
+          borderLeft: `3px solid ${accent}`, borderRadius: 2,
+          fontSize: 12, color: 'var(--text-mid)', lineHeight: 1.5,
+        }}>
+          <strong style={{ color: 'var(--text)', textTransform: 'uppercase', fontSize: 10, letterSpacing: '0.1em' }}>
+            Score each question independently.
+          </strong>{' '}
+          Answer every question below on its own evidence, even if a prior
+          answer was "No." If a question references an artifact you don't
+          have (e.g., "pull the register"), score based on the underlying
+          capability the question is testing — partial or informal work
+          still earns Partial or Yes. Cascading No's understate real progress.
+        </div>
         {questions.items.map((item, idx) => (
           <Question
             key={item.id}
