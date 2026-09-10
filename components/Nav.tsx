@@ -68,6 +68,7 @@ const STATIC_GROUPS: NavGroup[] = [
       { href: '/compliance', label: 'Compliance Progress', tag: 'Per-framework attainment dashboard' },
       { href: '/crosswalk', label: 'Compliance Crosswalk', tag: 'Per-control mapping drill-down' },
       { href: '/kpis',      label: 'Board KPIs',         tag: 'Executive metrics' },
+      { href: '/definitions', label: 'Definitions & Calculations', tag: 'Glossary of every scorecard metric' },
     ],
   },
 ];

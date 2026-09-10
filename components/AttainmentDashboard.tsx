@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import type { CurrentScore, FrameworkDefinition } from '@/lib/supabase/types';
 import { GROUP_COLORS } from '@/lib/scoring';
 import { computeAttainment } from '@/lib/attainment';
+import InfoIcon from '@/components/InfoIcon';
 
 type Scores = Record<string, Partial<CurrentScore>>;
 
@@ -60,7 +61,10 @@ export default function AttainmentDashboard({
     <section className="scorecard">
       <div className="scorecard-header" style={{ alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
         <div>
-          <div className="scorecard-title">Compliance Attainment</div>
+          <div className="scorecard-title">
+            Compliance Attainment
+            <InfoIcon metricId="overall-attainment" />
+          </div>
           <div className="scorecard-tag" style={{ marginTop: 4 }}>
             NIST CSF 2.0 · controls where current Practice meets or exceeds the Goal you set
           </div>
@@ -76,6 +80,7 @@ export default function AttainmentDashboard({
             letterSpacing: 0, marginTop: 2,
           }}>
             {summary.overall.attained} of {summary.overall.total} controls attained
+            <InfoIcon metricId="attained-controls" align="right" />
           </div>
         </div>
       </div>
@@ -96,15 +101,19 @@ export default function AttainmentDashboard({
               <>
                 <strong style={{ color: 'var(--text)' }}>{summary.overall.unmeasured}</strong>{' '}
                 awaiting Practice score
+                <InfoIcon metricId="awaiting-practice" />
                 {summary.overall.below > 0 && ' · '}
               </>
             )}
             {summary.overall.below > 0 && (
               <>
                 <strong style={{ color: 'var(--text)' }}>{summary.overall.below}</strong>{' '}
-                below goal · avg{' '}
+                below goal
+                <InfoIcon metricId="below-goal" />
+                {' · avg '}
                 <strong style={{ color: 'var(--text)' }}>{summary.overall.gap_avg.toFixed(2)}</strong>{' '}
                 tier gap
+                <InfoIcon metricId="tier-gap-avg" />
               </>
             )}
           </span>
@@ -148,7 +157,11 @@ export default function AttainmentDashboard({
                 <div style={{
                   fontFamily: 'Inter, sans-serif', fontVariantNumeric: 'tabular-nums',
                   fontWeight: 700, fontSize: 14, color: 'var(--text)',
-                }}>{f.percent.toFixed(1)}%</div>
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                }}>
+                  {f.percent.toFixed(1)}%
+                  <InfoIcon metricId="function-attainment" align="right" size={12} />
+                </div>
                 <div style={{
                   fontSize: 10.5, color: 'var(--text-mid)',
                   fontVariantNumeric: 'tabular-nums',

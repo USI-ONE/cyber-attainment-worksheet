@@ -7,6 +7,7 @@ import type { AssessmentAnswer, AssessmentResponse, ItemAnswer, PolicyDocument }
 import { GROUP_COLORS } from '@/lib/scoring';
 import { computePracticeScore, isComplete, tierForScore, itemsFromResponse } from '@/lib/assessment';
 import { CONTROL_QUESTIONS, type ControlQuestionnaire } from '@/lib/assessment-questions';
+import InfoIcon from '@/components/InfoIcon';
 
 // Generic CMM-ladder fallback used when a control is missing from the
 // hand-authored CONTROL_QUESTIONS map. Identical to the original v1 wording
@@ -284,6 +285,7 @@ export default function AssessmentWizard({
           <div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
               Computed Practice score
+              <InfoIcon metricId="practice-score" />
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginTop: 4 }}>
               <span style={{

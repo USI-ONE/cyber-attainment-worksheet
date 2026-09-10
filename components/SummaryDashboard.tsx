@@ -11,6 +11,7 @@ import {
 } from '@/lib/scoring';
 import Radar from '@/components/Radar';
 import AttainmentDashboard from '@/components/AttainmentDashboard';
+import InfoIcon from '@/components/InfoIcon';
 
 type Scores = Record<string, Partial<CurrentScore>>;
 
@@ -75,18 +76,28 @@ function KpiTiles({ totals }: { totals: ReturnType<typeof computeOverallTotals> 
   const gapAccent = gap == null ? '#94A3B8' : gap > 0 ? '#DC2626' : '#10B981';
   return (
     <div className="kpi-row">
-      <Tile label="Avg Policy"   value={fmt(totals.pol_avg)} sub={`${totals.scored_pol}/${totals.total} scored`} accent="#2563EB" />
-      <Tile label="Avg Practice" value={fmt(totals.pra_avg)} sub={`${totals.scored_pra}/${totals.total} scored`} accent="#F59E0B" />
-      <Tile label="Avg Goal"     value={fmt(totals.gol_avg)} sub={`${totals.scored_gol}/${totals.total} scored`} accent="#10B981" />
-      <Tile label="Gap to Goal"  value={gapStr} sub={gap == null ? 'awaiting scores' : gap > 0 ? 'below target' : 'meeting target'} accent={gapAccent} />
+      <Tile label="Avg Policy"   metricId="avg-policy"   value={fmt(totals.pol_avg)} sub={`${totals.scored_pol}/${totals.total} scored`} accent="#2563EB" />
+      <Tile label="Avg Practice" metricId="avg-practice" value={fmt(totals.pra_avg)} sub={`${totals.scored_pra}/${totals.total} scored`} accent="#F59E0B" />
+      <Tile label="Avg Goal"     metricId="avg-goal"     value={fmt(totals.gol_avg)} sub={`${totals.scored_gol}/${totals.total} scored`} accent="#10B981" />
+      <Tile label="Gap to Goal"  metricId="gap-to-goal"  value={gapStr} sub={gap == null ? 'awaiting scores' : gap > 0 ? 'below target' : 'meeting target'} accent={gapAccent} align="right" />
     </div>
   );
 }
 
-function Tile({ label, value, sub, accent }: { label: string; value: string; sub: string; accent: string }) {
+function Tile({ label, metricId, value, sub, accent, align }: {
+  label: string;
+  metricId: string;
+  value: string;
+  sub: string;
+  accent: string;
+  align?: 'left' | 'right';
+}) {
   return (
     <div className="kpi-tile" style={{ ['--accent' as never]: accent }}>
-      <div className="kpi-tile-label">{label}</div>
+      <div className="kpi-tile-label">
+        {label}
+        <InfoIcon metricId={metricId} align={align} />
+      </div>
       <div className="kpi-tile-value">{value}</div>
       <div className="kpi-tile-sub">{sub}</div>
     </div>
@@ -111,11 +122,11 @@ function FunctionTable({ avgs, totals }: { avgs: GroupAverage[]; totals: ReturnT
       <thead>
         <tr>
           <th>Function</th>
-          <th className="num">Policy</th>
-          <th className="num">Practice</th>
-          <th className="num">Goal</th>
-          <th className="num">Gap</th>
-          <th className="num">Scored</th>
+          <th className="num">Policy <InfoIcon metricId="function-policy" /></th>
+          <th className="num">Practice <InfoIcon metricId="function-practice" /></th>
+          <th className="num">Goal <InfoIcon metricId="function-goal" /></th>
+          <th className="num">Gap <InfoIcon metricId="function-gap" align="right" /></th>
+          <th className="num">Scored <InfoIcon metricId="function-scored" align="right" /></th>
         </tr>
       </thead>
       <tbody>
