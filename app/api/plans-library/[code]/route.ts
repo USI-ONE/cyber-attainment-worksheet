@@ -53,6 +53,11 @@ export async function PATCH(
   if ('next_review_due' in body)  patch.next_review_due  = body.next_review_due  || null;
   if ('owner_user_id' in body)    patch.owner_user_id    = body.owner_user_id    || null;
   if ('plan_document_id' in body) patch.plan_document_id = body.plan_document_id || null;
+  if ('section_ref' in body) {
+    const raw = typeof body.section_ref === 'string' ? body.section_ref.trim() : '';
+    if (raw.length > 200) return bad('section_ref exceeds 200 chars');
+    patch.section_ref = raw || null;
+  }
   if ('notes' in body) {
     patch.notes = typeof body.notes === 'string' && body.notes.trim() ? body.notes.trim() : null;
   }

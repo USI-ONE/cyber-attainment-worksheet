@@ -24,6 +24,11 @@ export interface PolicyLibraryItem {
     next_review_due: string | null;
     owner_user_id: string | null;
     policy_document_id: string | null;
+    /** Optional citation into the linked document — e.g., "§4.2 Access
+     *  Control". Used when one document backs multiple catalog rows
+     *  (umbrella IPS Policy covering 15+ topics). Free-text, up to 200
+     *  chars. Renders as a small chip under the Document cell. */
+    section_ref: string | null;
     notes: string | null;
     updated_at: string;
     updated_by: string | null;
@@ -312,8 +317,10 @@ function PolicyRow({
         <DocumentCell
           code={item.code}
           docId={item.state?.policy_document_id ?? null}
+          sectionRef={item.state?.section_ref ?? null}
           canEdit={canEdit}
           onReplaced={onReplaced}
+          onSectionRefChange={(v) => onChange(item.code, { section_ref: v })}
         />
       </td>
     </tr>
@@ -334,12 +341,14 @@ function PolicyRow({
  * repoints tenant_policies.
  */
 function DocumentCell({
-  code, docId, canEdit, onReplaced,
+  code, docId, sectionRef, canEdit, onReplaced, onSectionRefChange,
 }: {
   code: string;
   docId: string | null;
+  sectionRef: string | null;
   canEdit: boolean;
   onReplaced: (code: string, file: File, version?: string) => Promise<string | null>;
+  onSectionRefChange: (v: string | null) => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<'idle' | 'downloading' | 'uploading'>('idle');
@@ -379,50 +388,89 @@ function DocumentCell({
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-      {docId && (
-        <>
-          {/* View opens an in-browser renderer (markdown, PDF, etc.) +
-              admin edit mode + version history. Download still ships a
-              save-dialog flow for when you want the raw file. */}
-          <a
-            className="action-btn"
-            href={`/policies/${code}/view`}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ padding: '3px 9px', fontSize: 11 }}
-          >
-            View
-          </a>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {docId && (
+          <>
+            {/* View opens an in-browser renderer (markdown, PDF, etc.) +
+                admin edit mode + version history. Download still ships a
+                save-dialog flow for when you want the raw file. */}
+            <a
+              className="action-btn"
+              href={`/policies/${code}/view`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ padding: '3px 9px', fontSize: 11 }}
+            >
+              View
+            </a>
+            <button
+              type="button"
+              className="action-btn"
+              style={{ padding: '3px 9px', fontSize: 11 }}
+              onClick={download}
+            >
+              Download
+            </button>
+          </>
+        )}
+        {canEdit && (
           <button
             type="button"
             className="action-btn"
             style={{ padding: '3px 9px', fontSize: 11 }}
-            onClick={download}
+            onClick={() => fileRef.current?.click()}
           >
-            Download
+            {docId ? 'Replace' : 'Upload'}
           </button>
-        </>
+        )}
+        {!docId && !canEdit && (
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>—</span>
+        )}
+        <input
+          ref={fileRef}
+          type="file"
+          style={{ display: 'none' }}
+          onChange={pickFile}
+        />
+      </div>
+
+      {/* Section citation — visible only when a document is attached, since
+          it has nothing to cite otherwise. Editors get a small text input
+          they can blur-save; viewers see the value as a compact chip. Lets
+          one umbrella document back many catalog rows without every row
+          rendering the same title/version blob. */}
+      {docId && canEdit && (
+        <input
+          type="text"
+          maxLength={200}
+          defaultValue={sectionRef ?? ''}
+          placeholder="Section (e.g., §4.2 Access Control)"
+          onBlur={(e) => {
+            const v = e.target.value.trim();
+            if (v !== (sectionRef ?? '')) onSectionRefChange(v || null);
+          }}
+          style={{
+            fontSize: 11, padding: '2px 6px',
+            background: 'var(--bg-deep)', border: '1px solid var(--bg-border)',
+            color: 'var(--text-mid)', borderRadius: 2,
+            width: '100%', maxWidth: 240,
+          }}
+        />
       )}
-      {canEdit && (
-        <button
-          type="button"
-          className="action-btn"
-          style={{ padding: '3px 9px', fontSize: 11 }}
-          onClick={() => fileRef.current?.click()}
+      {docId && !canEdit && sectionRef && (
+        <span style={{
+          display: 'inline-block', maxWidth: 240,
+          fontSize: 10.5, color: 'var(--text-mid)',
+          padding: '1px 6px', borderRadius: 2,
+          background: 'var(--bg-deep)',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}
+        title={sectionRef}
         >
-          {docId ? 'Replace' : 'Upload'}
-        </button>
+          {sectionRef}
+        </span>
       )}
-      {!docId && !canEdit && (
-        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>—</span>
-      )}
-      <input
-        ref={fileRef}
-        type="file"
-        style={{ display: 'none' }}
-        onChange={pickFile}
-      />
     </div>
   );
 }
@@ -436,6 +484,7 @@ function makeBlankState(): NonNullable<PolicyLibraryItem['state']> {
     next_review_due: null,
     owner_user_id: null,
     policy_document_id: null,
+    section_ref: null,
     notes: null,
     updated_at: new Date().toISOString(),
     updated_by: null,
